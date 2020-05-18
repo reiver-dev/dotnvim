@@ -1,0 +1,14 @@
+# Ignore everything
+/*
+
+# Except 
+!.gitignore
+!init.vim
+!ginit.vim
+!pack
+!pack/local
+!lua
+!fnl/my
+
+lua/my
+pack/minpac
