@@ -1,12 +1,10 @@
 ;;; My
 
-(module my.init
-  {require {options my.options}})
+(module my
+  {require {lsp my.lsp}})
 
-
-
-
-(options.setup)
+(defn setup [] 
+  (lsp.setup))
 
 ;;; my.fnl ends here
 
