@@ -12,7 +12,7 @@ function _trampouline(modname, funcname, ...)
     end
     local func = mod[funcname]
     if func == nil then
-        error ("Failed to find function %s:%s"):format(modname, funcname)
+        error(("Failed to find function %s:%s"):format(modname, funcname))
     end
     return mod[funcname](...)
 end
