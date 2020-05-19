@@ -131,6 +131,8 @@ local function packages()
     pkg.def { name = "lightline.vim", url = "itchyny/lightline.vim" }
     pkg.def { name = "readline.vim", url = "ryvnf/readline.vim" }
     pkg.def { name = "vim-bufkill", url = "qpkorr/vim-bufkill" }
+    pkg.def { name = "vim-vinegar", url = "tpope/vim-vinegar" }
+    pkg.def { name = "which-key", url = "liuchengxu/vim-which-key" }
 
     pkg.def { 
         name = "completion-nvim",
@@ -138,11 +140,17 @@ local function packages()
         init = function()
             hook.on.bufenter("*", function()
                 require("completion").on_attach()
+                vim.api.nvim_set_keymap('i', '<C-TAB>',
+                                        'completion#trigger_completion()',
+                                        { noremap = true,
+                                          silent = true,
+                                          expr = true })
             end)
         end
     }
 
     pkg.def { name = "nvim-lsp", url = "neovim/nvim-lsp" }
+    pkg.def { name = "vista", url = "liuchengxu/vista.vim" }
 end
 
 
@@ -212,6 +220,8 @@ local function setup()
     keybind.setup()
     packages()
     plugin_commands()
+    fennel_init()
+    require"my.lsp".setup()
 end
 
 

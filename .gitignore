@@ -8,6 +8,7 @@
 !pack
 !pack/local
 !lua
+!fnl
 !fnl/my
 
 lua/my
