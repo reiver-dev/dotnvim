@@ -70,23 +70,6 @@ local function debugall(ast, scope, parent, opts)
 end
 
 
-local function provide(ast, scope, parent, opts)
-    local k = 2
-    local v = 3
-    local len = #ast - 1
-    local result = { ["aniseed/module"] = filename_to_module(ast.filename) }
-    while len > 0 do
-        local ka = ast[k]
-        local va = ast[v]
-        result[ka] = va
-        k = k + 1
-        v = v + 1
-        len = len - 1
-    end
-    return fennel.compile1(result, scope, parent, opts)
-end
-
-
 local function modcall(ast, scope, parent, opts)
     if #ast < 2 then
         error(string.format("Must have >3 args: %s", vim.inspect(ast)))
@@ -171,7 +154,6 @@ specials["debugast"] = debugast
 specials["debugparent"] = debugparent
 specials["debugopts"] = debugopts
 specials["debugall"] = debugall
-specials["provide"] = provide
 specials["modcall"] = modcall
 
 my["recompile"] = recompile
