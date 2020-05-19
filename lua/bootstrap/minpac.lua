@@ -65,6 +65,11 @@ function M.updateall(cb)
 end
 
 
+function M.install()
+    return vim.fn["minpac#update"]()
+end
+
+
 function M.download()
     local config = vim.api.nvim_call_function("stdpath", {"config"})
     local path = config .. "/pack/minpac/opt/minpac/"

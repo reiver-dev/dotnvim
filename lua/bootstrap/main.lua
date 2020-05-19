@@ -154,6 +154,13 @@ local function plugin_commands()
     }
     vim.api.nvim_command(update)
 
+    local install = interop.command {
+        name = "PluginInstall",
+        modname = "bootstrap.main",
+        funcname = "plugin_install",
+    }
+    vim.api.nvim_command(install)
+
     local status = interop.command {
         name = "PluginStatus",
         modname = "bootstrap.main",
@@ -179,12 +186,17 @@ end
 
 
 local function plugin_update()
-    minpac.updateall()
+    return minpac.updateall()
+end
+
+
+local function plugin_install()
+    return minpac.install()
 end
 
 
 local function plugin_status()
-    minpac.status()
+    return minpac.status()
 end
 
 
@@ -208,6 +220,7 @@ return {
     plugin_update = plugin_update,
     plugin_status = plugin_status,
     plugin_list = plugin_list,
+    plugin_install = plugin_install
 }
 
 --- main.lua ends here
