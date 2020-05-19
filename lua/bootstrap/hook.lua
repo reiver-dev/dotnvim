@@ -88,7 +88,7 @@ local function call(hooks, args)
         local messages = {}
         for _, err in ipairs(errors) do
             local msg = string.format("Error (%s): %s",
-                debug.getinfo(hooks[i]).short_src, err)
+                debug.getinfo(hooks[err[2]]).short_src, err[1])
             messages[#messages + 1] = msg
         end
         error(table.concat(messages, '\n'))

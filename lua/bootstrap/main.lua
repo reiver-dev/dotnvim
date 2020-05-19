@@ -22,6 +22,7 @@ local function fennel_init()
         local fennel = require("bootstrap.fennel")
         fennel.compiler_init()
         fennel.recompile()
+        vim.schedule(function() require"my".setup() end)
     end)
     
     local def = interop.command{
@@ -48,13 +49,13 @@ local function packages()
     pkg.def {
 	name = "aniseed",
 	url = "Olical/aniseed",
-	kind = "opt",
-	init = fennel_init
+	kind = "opt"
     }
 
     pkg.def {
         name = "conjure",
         url = "Olical/conjure",
+        kind = "opt"
     }
 
     pkg.def {
@@ -88,6 +89,7 @@ local function packages()
     pkg.def {
         name = "bufferize.vim",
 	url = "AndrewRadev/bufferize.vim",
+        kind = "opt"
     }
 
     pkg.def {
@@ -137,14 +139,16 @@ local function packages()
     pkg.def { 
         name = "completion-nvim",
         url = "haorenW1025/completion-nvim" ,
+        kind = "opt",
         init = function()
-            hook.on.bufenter("*", function()
-                require("completion").on_attach()
-                vim.api.nvim_set_keymap('i', '<C-TAB>',
-                                        'completion#trigger_completion()',
-                                        { noremap = true,
-                                          silent = true,
-                                          expr = true })
+            hook.after.bufenter(".*", function()
+                pkg.add("completion-nvim")
+            end)
+            vim.schedule(function()
+                hook.on.bufenter(".*", function()
+                    require("completion").on_attach()
+                    vim.api.nvim_set_keymap('i', '<C-TAB>', 'completion#trigger_completion()', { noremap = true, silent = true, expr = true })
+                end)
             end)
         end
     }
@@ -221,11 +225,11 @@ local function setup()
     packages()
     plugin_commands()
     fennel_init()
-    require"my.lsp".setup()
 end
 
 
 return {
+    packages = packages,
     setup = setup,
     plugin_update = plugin_update,
     plugin_status = plugin_status,
