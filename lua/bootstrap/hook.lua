@@ -288,8 +288,8 @@ local HOOK = {
     FileType = hook_on_filetype,
     FuncUndefined = hook_on_function,
     CmdUndefined = hook_on_command,
-    BufRead = hook_on_bufnew,
-    BufNew = hook_on_bufread,
+    BufRead = hook_on_bufread,
+    BufNew = hook_on_bufnew,
     BufEnter = hook_on_bufenter,
     User = hook_on_user
 }
