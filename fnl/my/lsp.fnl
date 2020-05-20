@@ -44,7 +44,7 @@
 
 (defn on-attach []
   (each [key action (pairs keymap)]
-    (kmap 0 :n key action { :silent true :noremap true }))
+    (kmap 0 :n key action {:silent true :noremap true}))
   (kmap 0 :v :<localleader>f
         "<cmd>lua _trampouline('my.lsp', 'format-region')<CR>" {}))
 

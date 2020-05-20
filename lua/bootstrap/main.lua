@@ -161,19 +161,29 @@ local function packages()
         end
     }
 
-    pkg.def { 
+    pkg.def {
         name = "completion-nvim",
         url = "haorenW1025/completion-nvim" ,
         kind = "opt",
         init = function()
             hook.after.bufenter(".*", function()
                 pkg.add("completion-nvim")
+                vim.api.nvim_set_keymap(
+                    'i', '<C-TAB>', 'completion#trigger_completion()',
+                    { noremap = true, silent = true, expr = true }
+                )
             end)
-            vim.schedule(function()
-                hook.on.bufenter(".*", function()
-                    require("completion").on_attach()
-                    vim.api.nvim_set_keymap('i', '<C-TAB>', 'completion#trigger_completion()', { noremap = true, silent = true, expr = true })
-                end)
+        end
+    }
+
+    pkg.def {
+        name = "diagnostic-nvim",
+        url = "haorenW1025/diagnostic-nvim" ,
+        kind = "opt",
+        init = function()
+            hook.after.bufenter(".*", function()
+                pkg.add("diagnostic-nvim")
+                vim.g["diagnostic_insert_delay"] = 1
             end)
         end
     }
