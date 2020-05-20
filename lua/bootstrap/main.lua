@@ -68,7 +68,7 @@ local function packages()
     pkg.def {
         name = "vim-fugitive",
         url = "tpope/vim-fugitive",
-        kind = "opt"
+        kind = "start"
     }
 
     pkg.def {
