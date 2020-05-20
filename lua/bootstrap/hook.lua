@@ -10,6 +10,7 @@ local FUNCTION_HOOK = {}
 local BUFFER_NEW_HOOK = {}
 local BUFFER_READ_HOOK = {}
 local BUFFER_ENTER_HOOK = {}
+local USER_HOOK = {}
 
 local SOURCE_ONCE = {}
 local FILETYPE_ONCE = {}
@@ -18,6 +19,7 @@ local FUNCTION_ONCE = {}
 local BUFFER_NEW_ONCE = {}
 local BUFFER_READ_ONCE = {}
 local BUFFER_ENTER_ONCE = {}
+local USER_ONCE = {}
 
 
 local function append(hook, key, fun)
@@ -151,6 +153,12 @@ local function hook_on_bufenter()
     call(find_if(BUFFER_ENTER_HOOK, fnmatch(opts.file)), opts)
 end
 
+local function hook_on_user()
+    local opts = { file = expand("<afile>"), match = expand("<amatch>") }
+    call(extract_if(USER_ONCE, fnmatch(opts.match)), opts)
+    call(find_if(USER_HOOK, fnmatch(opts.match)), opts)
+end
+
 
 local function loaded()
     return _loaded_vim
@@ -205,6 +213,11 @@ local function on_bufenter(pat, fun)
 end
 
 
+local function on_user(pat, fun)
+    append(USER_HOOK, pat, fun)
+end
+
+
 local function on_source_once(pattern, fun)
     for _, file in ipairs(loaded()) do
         if string.match(file, pattern) then
@@ -246,6 +259,11 @@ local function on_bufenter_once(pat, fun)
 end
 
 
+local function on_user_once(pat, fun)
+    append(USER_ONCE, pat, fun)
+end
+
+
 local AUTOCMD = [[
 augroup hook
     autocmd!
@@ -256,6 +274,7 @@ augroup hook
     au BufRead *?           :lua _run_hook('BufRead')
     au BufNew,BufNewFile *? :lua _run_hook('BufNew')
     au BufEnter *           :lua _run_hook('BufEnter')
+    au User *               :lua _run_hook('User')
 augroup end
 ]]
 
@@ -271,13 +290,15 @@ local HOOK = {
     CmdUndefined = hook_on_command,
     BufRead = hook_on_bufnew,
     BufNew = hook_on_bufread,
-    BufEnter = hook_on_bufenter
+    BufEnter = hook_on_bufenter,
+    User = hook_on_user
 }
 
 
 function _run_hook(hook, ...)
     HOOK[hook](...)
 end
+
 
 vim.api.nvim_exec(AUTOCMD, false)
 if vim.v.vim_did_enter ~= 1 then
@@ -293,7 +314,8 @@ return {
         func = on_function,
         bufnew = on_bufnew,
         bufread = on_bufread,
-        bufenter = on_bufenter
+        bufenter = on_bufenter,
+        user = on_user
     },
     after = {
         startup = on_startup,
@@ -304,6 +326,7 @@ return {
         bufnew = on_bufnew_once,
         bufread = on_bufread_once,
         bufenter = on_bufenter_once,
+        user = on_user_once,
     },
     hook = {
         on = {
@@ -314,6 +337,7 @@ return {
             bufnew = BUFFER_NEW_HOOK,
             bufread = BUFFER_READ_HOOK,
             bufenter = BUFFER_ENTER_HOOK,
+            user = USER_HOOK
         },
         after = {
             startup = STARTUP_HOOK,
@@ -324,6 +348,7 @@ return {
             bufnew = BUFFER_NEW_ONCE,
             bufread = BUFFER_READ_ONCE,
             bufenter = BUFFER_ENTER_ONCE,
+            user = USER_ONCE
         },
     }
 }
