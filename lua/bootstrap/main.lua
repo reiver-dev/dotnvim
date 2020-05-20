@@ -74,6 +74,7 @@ local function packages()
         url = "airblade/vim-rooter",
         init = function()
             vim.schedule(function()
+                vim.g['rooter_use_lcd'] = 1
                 vim.g['rooter_change_directory_for_non_project_files'] = "current"
             end)
         end
