@@ -23,6 +23,12 @@ local EMACS = [[
     inoremap <M-d> <C-\><C-o>dw
     inoremap <M-h> <C-\><C-o>db
     inoremap <M-k> <End><C-u>
+
+    inoremap <M-BS> <C-\><C-o>db
+    inoremap <M-DEL> <C-\><C-o>dw
+
+    inoremap <C-BS> <C-\><C-o>d0
+    inoremap <C-DEL> <C-\><C-o>D
 ]]
 
 
