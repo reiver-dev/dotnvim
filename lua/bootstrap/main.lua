@@ -136,6 +136,18 @@ local function packages()
     pkg.def { name = "vim-vinegar", url = "tpope/vim-vinegar" }
     pkg.def { name = "which-key", url = "liuchengxu/vim-which-key" }
 
+    pkg.def {
+        name = "vim-clap",
+        url = "liuchengxu/vim-clap",
+        kind = "opt",
+        init = function()
+            hook.after.command("Clap", function()
+                pkg.add("vim-clap")
+                _trampouline("my.pack.clap", "setup")
+            end)
+        end
+    }
+
     pkg.def { 
         name = "completion-nvim",
         url = "haorenW1025/completion-nvim" ,
