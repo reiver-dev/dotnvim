@@ -64,6 +64,12 @@ local function packages()
     }
 
     pkg.def {
+        name = "vim-fugitive",
+        url = "tpope/vim-fugitive",
+        kind = "opt"
+    }
+
+    pkg.def {
         name = "vim-rooter",
         url = "airblade/vim-rooter",
         init = function()
