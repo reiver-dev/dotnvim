@@ -15,23 +15,26 @@ local keybind = require "bootstrap.keybind"
 local pkg = require "bootstrap.pkgmanager"
 
 
-local function fennel_init()
-    pkg.add("aniseed")
+local M = {}
 
-    vim.schedule(function()
-        local fennel = require("bootstrap.fennel")
-        fennel.compiler_init()
-        fennel.recompile()
-        vim.schedule(function() require"my".setup() end)
-    end)
-    
+
+local function fennel_init()
+    require"my".setup()
+
     local def = interop.command{
         name = "EvalExpr",
         nargs = 1,
         modname = "bootstrap.fennel",
         funcname = "eval_print"
     }
-    
+    vim.api.nvim_command(def)
+
+    def = interop.command{
+        name = "InitRecompile",
+        nargs = "*",
+        modname = "bootstrap.fennel",
+        funcname = "recompile"
+    }
     vim.api.nvim_command(def)
 end
 
@@ -47,15 +50,14 @@ end
 
 local function packages()
     pkg.def {
-	name = "aniseed",
-	url = "Olical/aniseed",
-	kind = "opt"
-    }
-
-    pkg.def {
         name = "conjure",
         url = "Olical/conjure",
-        kind = "opt"
+        kind = "opt",
+        init = function()
+            hook.after.filetype("fennel", function()
+                pkg.add("conjure")
+            end)
+        end
     }
 
     pkg.def {
@@ -232,44 +234,58 @@ local function plugin_commands()
 end
 
 
-local function plugin_update()
+function M.plugin_update()
     return minpac.updateall()
 end
 
 
-local function plugin_install()
+function M.plugin_install()
     return minpac.install()
 end
 
 
-local function plugin_status()
+function M.plugin_status()
     return minpac.status()
 end
 
 
-local function plugin_list()
+function M.plugin_list()
     print(vim.inspect(minpac.getpluglist()))
 end
 
 
-local function setup()
+function M.setup()
     minpac.download()
     options.setup()
     indent.setup()
     keybind.setup()
-    packages()
-    plugin_commands()
+
+    pkg.def {
+	name = "aniseed",
+	url = "Olical/aniseed",
+	kind = "opt"
+    }
+
+    pkg.add("aniseed")
+end
+
+function M.runlisp()
+    local ok, msg = pcall(require, "my")
+    if not ok then
+        fennel = require"bootstrap.fennel"
+        fennel.compiler_init()
+        fennel.recompile()
+    end
     fennel_init()
 end
 
 
-return {
-    packages = packages,
-    setup = setup,
-    plugin_update = plugin_update,
-    plugin_status = plugin_status,
-    plugin_list = plugin_list,
-    plugin_install = plugin_install
-}
+function M.finalize()
+    packages()
+    plugin_commands()
+end
+
+
+return M 
 
 --- main.lua ends here

@@ -101,6 +101,8 @@ endfunction
 
 
 lua require("bootstrap.main").setup()
+lua require("bootstrap.main").runlisp()
+lua require("bootstrap.main").finalize()
 
 
 """ init.vim ends here
