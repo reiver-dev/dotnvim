@@ -22,6 +22,11 @@ local BUFFER_ENTER_ONCE = {}
 local USER_ONCE = {}
 
 
+
+local expand = vim.fn.expand
+
+
+
 local function append(hook, key, fun)
     local h = hook[key]
     if h ~= nil then
@@ -69,7 +74,6 @@ local function extract(hook, key, default)
     return default
 end
 
-local expand = vim.fn.expand
 
 
 local function call(hooks, args)
