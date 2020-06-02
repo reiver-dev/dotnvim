@@ -4,7 +4,6 @@
 require "bootstrap.loaded"
 local hook = require "bootstrap.hook"
 require "bootstrap.trampouline"
-require "bootstrap.reload"
 require "bootstrap.terminal"
 
 local minpac = require "bootstrap.minpac"
@@ -16,6 +15,40 @@ local pkg = require "bootstrap.pkgmanager"
 
 
 local M = {}
+
+local function fennel_files(root)
+    local result = {}
+    local srcdir = root .. "/fnl"
+    local dstdir = root .. "/lua"
+    local prefixlen = srcdir:len()
+    local sources = vim.fn.globpath(srcdir, "**/*.fnl", true, true)
+    local getftime = vim.fn.getftime
+    for _, srcpath in ipairs(sources) do
+        local srcpath = srcpath:gsub("\\", "/")
+        local suffix = srcpath:sub(prefixlen + 1)
+        local dstpath = dstdir .. suffix:sub(1, -4) .. "lua"
+        if getftime(srcpath) > getftime(dstpath) then
+            result[srcpath] = dstpath
+        end
+    end
+    return result
+end
+
+
+local function fennel_compile()
+    local sources = fennel_files(vim.fn.stdpath('config'):gsub('\\', '/')) 
+
+    if vim.tbl_isempty(sources) then
+        return
+    end
+
+    fennel = require"bootstrap.fennel"
+    fennel.compiler_init()
+
+    for src, dst in pairs(sources) do
+        fennel.compile_file(src, dst, {}, true)
+    end
+end
 
 
 local function fennel_init()
@@ -141,6 +174,7 @@ local function packages()
     pkg.def { name = "impromptu.nvim", url = "Vigemus/impromptu.nvim" }
     pkg.def { name = "lightline.vim", url = "itchyny/lightline.vim" }
     pkg.def { name = "readline.vim", url = "ryvnf/readline.vim" }
+
     pkg.def {
         name = "vim-bufkill",
         url = "qpkorr/vim-bufkill",
@@ -148,7 +182,7 @@ local function packages()
             vim.api.nvim_set_keymap('n', '<C-x><C-k>', '<cmd>BD<CR>', {})
         end
     }
-    pkg.def { name = "vim-vinegar", url = "tpope/vim-vinegar" }
+
     pkg.def { name = "which-key", url = "liuchengxu/vim-which-key" }
 
     pkg.def {
@@ -266,23 +300,23 @@ function M.setup()
 	kind = "opt"
     }
 
-    pkg.add("aniseed")
+    if not pcall(pkg.add, "aniseed") then
+        minpac.install()
+        pkg.add("aniseed")
+    end
 end
 
 function M.runlisp()
-    local ok, msg = pcall(require, "my")
-    if not ok then
-        fennel = require"bootstrap.fennel"
-        fennel.compiler_init()
-        fennel.recompile()
-    end
-    fennel_init()
+    fennel_compile()
+    require"my".setup()
 end
 
 
 function M.finalize()
     packages()
     plugin_commands()
+    hook.on.source("netrw", function() vim.g.netrw_keepdir = 0 end)
+    require"bootstrap.gui".setup()
 end
 
 

@@ -5,7 +5,7 @@ local compile = require "aniseed.compile"
 local fennel = require "aniseed.fennel"
 local view = require("aniseed.view").serialise
 
-local dir = vim.api.nvim_call_function("stdpath", {"config"})
+local dir = vim.api.nvim_call_function("stdpath", {"config"}):gsub("\\", "/")
 local root = dir .. "/fnl/"
 
 local my = {}
@@ -104,12 +104,74 @@ local function modcall(ast, scope, parent, opts)
 end
 
 
+local function compile_source(text, opts)
+    local code = "(require-macros \"aniseed.macros\")\n" .. text
+    return xpcall(function() return fennel.compileString(code, opts) end,
+                  fennel.traceback)
+end
+
+
+local function compile_source2(text, opts)
+    local code = "(import-macros [:module] \"aniseed.macros\")\n" .. text
+    return xpcall(function() return fennel.compileString(code, opts) end,
+                  fennel.traceback)
+end
+
+
+local function slurp(path)
+    local fd, err = io.open(path, "r")
+    if fd == nil then
+        return false, err
+    end
+    local data = fd:read("*all")
+    fd:close()
+    return true, data
+end
+
+
+local function spew(path, text)
+    local fd, err = io.open(path, "w")
+    if fd == nil then
+        return false, err
+    end
+    local res = fd:write(text)
+    fd:close()
+    return true, res
+end
+
+
+local function compile_file(src, dst, opts, force)
+    if force ~= nil or vim.fn.getftime(src) > vim.fn.getftime(dst) then
+        local ok, text = slurp(src)
+        if ok then
+            local compiled, code = compile_source(text, opts)
+            if compiled then
+                vim.fn.mkdir(vim.fn.fnamemodify(dst, ":h"), "p")
+                spew(dst, code)
+            else
+                vim.api.nvim_err_writeln(code)
+            end
+        end
+    end
+end
+
+
 local function recompile()
-    compile.glob("**/*.fnl", dir .. "/fnl", dir .. "/lua")
+    local srcdir = dir .. "/fnl"
+    local dstdir = dir .. "/lua"
+    local prefixlen = srcdir:len()
+    local sources = vim.fn.globpath(srcdir, "**/*.fnl", true, true)
+    for _, srcpath in ipairs(sources) do
+        local srcpath = srcpath:gsub("\\", "/")
+        local suffix = srcpath:sub(prefixlen + 1)
+        local dstpath = dstdir .. suffix:sub(1, -4) .. "lua"
+        compile_file(srcpath, dstpath, { filename = suffix:sub(2) })
+    end
 end
 
 
 local function compiler_init()
+    fennel.path = fennel.path:gsub('\\', '/')
     fennel.eval [[
     (eval-compiler
        (local fnl (require :bootstrap.fennel))
@@ -161,6 +223,7 @@ my["eval"] = eval
 my["repl"] = repl
 my["eval_print"] = eval_print
 my["compiler_init"] = compiler_init
+my["compile_file"] = compile_file
 
 
 return my
