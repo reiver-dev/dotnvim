@@ -65,8 +65,11 @@ let g:clipboard = {
 ]], "\n *", " ")
 
 
-local function configure()
-    vim.g.nvim_qt_channel = channel()
+local function configure(chan)
+    vim.g.nvim_qt_channel = chan or channel()
+    vim.rpcnotify(chan, 'Gui', 'Option', 'Tabline', false) 
+    vim.rpcnotify(chan, 'Gui', 'Option', 'Popupopen', false) 
+    vim.api.nvim_command("ClipboardReset")
     vim.api.nvim_command(GUI_CLIPBOARD)
 end
 

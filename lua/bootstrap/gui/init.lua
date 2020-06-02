@@ -2,25 +2,37 @@
 --
 
 
-local function configure()
-    local fvim = require "bootstrap.gui.fvim"
-    local nvim_qt = require "bootstrap.gui.nvim_qt"
+local au = [[
+augroup BootstrapUi
+autocmd!
+autocmd UIEnter * call v:lua._trampouline("bootstrap.gui", "enter", v:event['chan'])
+autocmd UILeave * call v:lua._trampouline("bootstrap.gui", "leave", v:event['chan'])
+augroup END
+]]
 
-    if fvim.has() then
-        fvim.configure()
+local M = {}
+
+
+function M.enter(chan)
+    local info = vim.api.nvim_get_chan_info(chan)
+    if not (info and info.client) then
+        return
     end
-
-    local nvim_qt_chan = nvim_qt.channel()
-    if nvim_qt_chan ~= nil then
-	nvim_qt.configure()
+    if info.client.name == "nvim-qt" then
+        require"bootstrap.gui.nvim_qt".configure(chan)
     end
 end
 
 
-return {
-    configure = configure,
+function M.leave(chan)
+end
 
-}
 
+function M.setup()
+   vim.api.nvim_exec(au, nil) 
+end
+
+
+return M
 
 --- gui/init.lua ends here

@@ -1,7 +1,7 @@
 """ Gui nvim configuration
 """
 
-lua (require "bootstrap.gui").configure()
+" lua (require "bootstrap.gui").configure()
 
 inoremap <silent> <S-Insert> <C-R>+
 nnoremap <silent> <S-Insert> "+p
