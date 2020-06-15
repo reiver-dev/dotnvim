@@ -24,12 +24,12 @@ end
 
 local function configure()
    request("cursor.smoothblink", true)
-   request("cursor.smoothmove", true)
+   request("cursor.smoothmove", false)
 end
 
 
 return {
-    configure = configue,
+    configure = configure,
     close = close,
     has = has,
 }

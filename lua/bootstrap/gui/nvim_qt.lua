@@ -42,7 +42,7 @@ end
 
 
 local function popupmenu(enable)
-    return rpcnotify(channel(), 'Gui', 'Option', 'Popupmen', enable)
+    return rpcnotify(channel(), 'Gui', 'Option', 'Popupmenu', enable)
 end
 
 
@@ -68,8 +68,8 @@ let g:clipboard = {
 local function configure(chan)
     vim.g.nvim_qt_channel = chan or channel()
     vim.rpcnotify(chan, 'Gui', 'Option', 'Tabline', false) 
-    vim.rpcnotify(chan, 'Gui', 'Option', 'Popupopen', false) 
-    vim.api.nvim_command("ClipboardReset")
+    vim.rpcnotify(chan, 'Gui', 'Option', 'Popupmenu', false) 
+    vim.fn.ClipboardReset()
     vim.api.nvim_command(GUI_CLIPBOARD)
 end
 

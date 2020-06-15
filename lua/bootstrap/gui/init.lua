@@ -1,7 +1,6 @@
 --- Gui client configuration
 --
 
-
 local au = [[
 augroup BootstrapUi
 autocmd!
@@ -13,18 +12,60 @@ augroup END
 local M = {}
 
 
-function M.enter(chan)
+M._pending_configuration = {}
+
+
+local function client_info(chan)
     local info = vim.api.nvim_get_chan_info(chan)
-    if not (info and info.client) then
+    if info and info.client and info.client.type then
+        return info
+    end
+end
+
+
+local function handle_gui_info(info)
+    if info.client.name == "nvim-qt" then
+        require"bootstrap.gui.nvim_qt".configure(info.id)
+        return true
+    elseif info.client.name == "FVim" then
+        require"bootstrap.gui.fvim".configure(info.id)
+    end
+    return false
+end
+
+
+local function append(arr, val)
+    arr[#arr + 1] = val
+end
+
+
+function M.enter(chan)
+    vim.g.bootstrap_last_ui_enter = chan
+    if chan == 0 then
         return
     end
-    if info.client.name == "nvim-qt" then
-        require"bootstrap.gui.nvim_qt".configure(chan)
+    local info = client_info(chan)
+    if info then
+        handle_gui_info(info)
+    else
+        append(M._pending_configuration, chan)
     end
 end
 
 
 function M.leave(chan)
+    vim.g.bootstrap_last_ui_leave = chan
+end
+
+
+function M.configure()
+    for _, chan in ipairs(M._pending_configuration) do
+        local info = client_info(chan)
+        if info then
+            handle_gui_info(info)
+        end
+    end
+    M._pending_configuration = {}
 end
 
 
