@@ -18,7 +18,8 @@
    :<C-K> "<cmd>lua vim.lsp.buf.signature_help()<CR>"
    :gr "<cmd>lua vim.lsp.buf.references()<CR>"
    :g0 "<cmd>lua vim.lsp.buf.document_symbol()<CR>"
-   :gW "<cmd>lua vim.lsp.buf.workspace_symbol()<CR>"})
+   :gW "<cmd>lua vim.lsp.buf.workspace_symbol()<CR>"
+   :<localleader>d "<cmd>lua vim.lsp.util.show_line_diagnostics()<CR>"})
 
 
 
