@@ -42,7 +42,7 @@ local function fennel_compile()
         return
     end
 
-    fennel = require"bootstrap.fennel"
+    local fennel = require"bootstrap.fennel"
     fennel.compiler_init()
 
     for src, dst in pairs(sources) do
@@ -308,7 +308,7 @@ end
 
 function M.runlisp()
     fennel_compile()
-    require"my".setup()
+    fennel_init()
 end
 
 
