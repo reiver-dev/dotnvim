@@ -175,14 +175,6 @@ local function packages()
     pkg.def { name = "lightline.vim", url = "itchyny/lightline.vim" }
     pkg.def { name = "readline.vim", url = "ryvnf/readline.vim" }
 
-    pkg.def {
-        name = "vim-bufkill",
-        url = "qpkorr/vim-bufkill",
-        init = function()
-            vim.api.nvim_set_keymap('n', '<C-x><C-k>', '<cmd>BD<CR>', {})
-        end
-    }
-
     pkg.def { name = "which-key", url = "liuchengxu/vim-which-key" }
 
     pkg.def {
