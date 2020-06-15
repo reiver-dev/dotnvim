@@ -10,9 +10,11 @@ if !filereadable(s:dest)
     execute s:cmd
 endif
 
+lua fun = require("fun")
+
 lua <<EOF
-for k, v in pairs(require("fun")) do
-    rawset(_G, k, v)
+for k, v in pairs(fun) do
+    rawset(_G, "-" .. k:gsub('_', '-'), v)
 end
 EOF
 
