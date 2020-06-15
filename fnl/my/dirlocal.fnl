@@ -33,7 +33,7 @@
   (= 1 (vim.fn.filereadable path)))
 
 
-(defn- eval [script-dir script-file target-dir target-file]
+(defn- evaluate [script-dir script-file target-dir target-file]
   (match (pcall slurp script-file)
     (true text)
     (let [eval (. (require "aniseed.fennel") :eval)
@@ -70,11 +70,11 @@
         (each [_ dir (ipairs dirs)]
           (let [src (.. dir "/.lnvim.fnl")]
             (when (file-readable? src)
-              (eval dir src cwd target))))))))
+              (evaluate dir src cwd target))))))))
 
 
 
 (defn setup []
-  (let [addhook (. (require "bootstrap.hook") :on :bufread)]
+  (let [addhook (. (require "bootstrap.hook") :on :bufenter)]
     (addhook ".*" execute)))
 
