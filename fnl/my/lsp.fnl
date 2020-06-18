@@ -6,7 +6,12 @@
 
 
 (defn format-region []
-  (vim.lsp.buf.range_formatting {} (s.point-min) (s.point-max)))
+  (let [p (s.visual-point)]
+    (vim.lsp.buf.range_formatting {} p.min p.max)))
+
+
+(defn format-line []
+  (vim.lsp.buf.range_formatting {} (s.line-begin) (s.line-end)))
 
 
 (def keymap
@@ -19,6 +24,8 @@
    :gr "<cmd>lua vim.lsp.buf.references()<CR>"
    :g0 "<cmd>lua vim.lsp.buf.document_symbol()<CR>"
    :gW "<cmd>lua vim.lsp.buf.workspace_symbol()<CR>"
+   :<localleader>F "<cmd>lua vim.lsp.buf.formatting()<CR>"
+   :<localleader>f "<cmd>lua _trampouline('my.lsp', 'format-line')<CR>"
    :<localleader>d "<cmd>lua vim.lsp.util.show_line_diagnostics()<CR>"})
 
 

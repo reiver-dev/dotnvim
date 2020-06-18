@@ -25,7 +25,6 @@ local function setup()
 
     setw("number", true)
     setw("relativenumber", true)
-    setw("colorcolumn", "+1")
     setb("textwidth", 79)
 
     set("clipboard", "unnamedplus")

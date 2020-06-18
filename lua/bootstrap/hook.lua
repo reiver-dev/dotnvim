@@ -1,4 +1,3 @@
---- Hook at main plugin events
 --
 
 local STARTUP_HOOK = {}
@@ -165,7 +164,7 @@ end
 
 
 local function loaded()
-    return _loaded_vim
+    return require"bootstrap.loaded".loaded_vim
 end
 
 

@@ -1,6 +1,10 @@
 --- Global trampouline function
+--
 
-function _trampouline(modname, funcname, ...)
+
+local M = {}
+
+function M.trampouline(modname, funcname, ...)
     local mod
     if modname ~= nil and #modname > 0 then
         mod = package.loaded[modname]
@@ -16,5 +20,13 @@ function _trampouline(modname, funcname, ...)
     end
     return mod[funcname](...)
 end
+
+
+function M.setup()
+    _trampouline = M.trampouline
+end
+
+
+return M
 
 --- trampouline.lua ends here

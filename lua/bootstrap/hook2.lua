@@ -276,7 +276,7 @@ end
 
 
 local function loaded()
-
+    return require"bootstrap.loaded".loaded_vim
 end
 
 

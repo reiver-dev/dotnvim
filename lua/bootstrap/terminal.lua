@@ -1,11 +1,22 @@
 --- Terminal settings 
 
-vim.api.nvim_exec([[
+local M = {}
+
+
+local cmd = [[
 augroup boostrap_terminal
-    autocmd!
-    autocmd TermOpen * setlocal nonumber norelativenumber
-    autocmd TermOpen * startinsert
+autocmd!
+autocmd TermOpen * setlocal nonumber norelativenumber
+autocmd TermOpen * startinsert
 augroup end
-]], false)
+]]
+
+
+function M.setup()
+    vim.api.nvim_exec(cmd, false)
+end
+
+
+return M
 
 --- terminal.lua ends here

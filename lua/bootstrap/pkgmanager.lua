@@ -1,19 +1,19 @@
 --- Package management
 --
 
-local minpac = require "bootstrap.minpac"
+local packager = require "bootstrap.packager"
 local util = require "bootstrap.util"
 
-
+local M = {}
 local PACKAGES = {}
 
 
-local function packages()
+function M.packages()
     return PACKAGES
 end
 
 
-local function package(name)
+function M.package(name)
     return PACKAGES[name]
 end
 
@@ -22,7 +22,7 @@ local function call_on_update(package)
     local pkg = PACKAGES[package]
     if pkg ~= nil and pkg.on_update ~= nil then
         local name = pkg.name
-        local dir = minpac.getpluginfo(name).dir
+        local dir = packager.plugin(name).dir
         if dir ~= nil then
             return util.with_directory(dir, pkg.on_update)
         end
@@ -30,26 +30,64 @@ local function call_on_update(package)
 end
 
 
-local function hook_on_add(args)
-    local hook_type = args[1]
-    local package_name = args[2]
-    local package = PACKAGES[package_name]
-    if package ~= nil then
-        local cb = package.on_update
-        if cb ~= nil then
-            cb()
-        end
+local function call_on_load()
+    local pkg = PACKAGES[package]
+    if pkg ~= nil and pkg.config ~= nil then
+        pkg.config()
     end
 end
 
 
-local function schedule_install(url, dir, kind)
+function maybe_call(func)
+    if func ~= nil then
+        func()
+    end
+end
+
+
+function M._hook_on_add(name)
+    local package = PACKAGES[name]
+    if package ~= nil then
+        local dir = packager.plugin(package.pkg.dir).dir
+        if dir ~= nil then
+            return util.with_directory(dir, package.on_update)
+        end
+        maybe_call(package.init)
+    end
+end
+
+
+local function is_dir(path)
+    local stat = vim.loop.fs_stat(path)
+    return stat ~= nil and stat.type == "directory"
+end
+
+
+function M.installed(name)
+    local info = PACKAGES[name]
+    if info ~= nil then
+        local info = info.pkg
+        local path = ("%s/%s/%s"):format(packager.root(), info.kind, info.dir)
+        return is_dir(path)
+    end
+    return false
+end
+
+local FUNCREF = '{... -> v:lua._trampouline("bootstrap.pkgmanager", "_hook_on_add", %q)}'
+
+
+local function schedule_install(name, url, dir, kind)
     local opts = {
         name = dir,
         type = kind,
-        ["do"] = "function('LuaCall', ['bootstrap.pkgmanager', 'hook_on_add'])"
     }
-    minpac.add(url, opts)
+
+    local pkg = PACKAGES[dir]
+    if pkg ~= nil and pkg.on_update ~= nil then
+        opts["do"] = FUNCREF:format(name)
+    end
+
+    packager.add(url, opts)
 end
 
 
@@ -57,15 +95,15 @@ local function load_package(name)
 end
 
 
-local function def(opts)
+function M.def(opts)
     local name = opts.name
     local url = opts.url
-    local dir = opts.dir
-    local kind = opts.kind
+    local dir = opts.dir or opts.name
+    local kind = opts.kind or "start"
 
     local on_update = opts.on_update
 
-    local init = opts.init    
+    local init = opts.init
     local config = opts.config
     local autocmd = opts.autocmd
     local filetype = opts.filetype
@@ -89,11 +127,7 @@ local function def(opts)
 
     PACKAGES[name] = pkgdata
 
-    if url ~= nil then
-        schedule_install(url, dir, kind)
-    end
-
-    if init ~= nil and (url == nil or minpac.installed(name)) then
+    if init ~= nil and (url == nil or M.installed(name)) then
         init() 
     end
 
@@ -101,26 +135,56 @@ local function def(opts)
 end
 
 
-local function add(name)
+function M.add(name)
     vim.api.nvim_command("packadd " .. name)
 end
 
 
-local function loaddall()
+function M.loaddall()
     vim.api.nvim_command("packloadall")
 end
 
 
-return {
-    def = def,
-    add = add,
-    loadall = loadall,
-    packages = packages,
-    package = package,
-    on_update = call_on_update,
+local function schedule()
+    for name, info in pairs(PACKAGES) do
+        schedule_install(info.name, info.pkg.url, info.pkg.dir, info.pkg.kind)
+    end
+end
 
-    hook_on_add = hook_on_add,
-}
+
+function M.plugin_update(opt)
+    packager.setup()
+    schedule()
+    local force = 0
+    if opt and opt.bang == "!" then
+        force = 1
+    end
+    return packager.updateall({ force_hooks = force })
+end
+
+
+function M.plugin_status()
+    packager.setup()
+    schedule()
+    return packager.status()
+end
+
+
+function M.plugin_clean()
+    packager.setup()
+    schedule()
+    return packager.clean()
+end
+
+
+function M.plugin_install()
+    packager.setup()
+    schedule()
+    packager.install()
+end
+
+
+return M 
 
 
 --- pkgmanager.lua ends here

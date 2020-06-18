@@ -2,7 +2,7 @@
 
 
 (defn- slurp [path]
-  "Read the file into a string."
+  "Read the file from PATH into a string."
   (match (io.open path "r")
     (nil msg) nil
     f (let [content (f:read "*all")]
@@ -33,48 +33,72 @@
   (= 1 (vim.fn.filereadable path)))
 
 
-(defn- evaluate [script-dir script-file target-dir target-file]
+(defn- evaluate [script-file options]
+  "Execute fennel SCRIPT-FILE with OPTIONS table as `_A` global variable."
   (match (pcall slurp script-file)
     (true text)
     (let [eval (. (require "aniseed.fennel") :eval)
-          view (. (require "aniseed.view") :serialise)
-          expand vim.fn.expand
-          buffer (expand "<abuf>")
-          file (expand "<afile>")
-          options {:self-file script-file
-                   :self-dir script-dir
-                   :buffer buffer
-                   :target-file target-file
-                   :target-dir target-dir
-                   :target-match file}]
+          view (. (require "aniseed.view") :serialise)]
       (match
-        (pcall 
-          eval
-          text
-          {:env (setmetatable {:_A  options :view view}
-                              {:__index _G})})
+        (pcall eval text {:env (setmetatable {:_A  options :view view}
+                                             {:__index _G})})
         (false err) (print "dir-locals eval failed: " err)))
     (false err) (print "dir-locals read failed:" err)))
 
 
-(defn execute []
-  "Iterate over all directories from the root to the cwd.
-  For every .lnvim.fnl, compile it to .lvim.lua (if required) and execute it.
-  If a .lua is found without a .fnl, delete the .lua to clean up."
-  (let [target (vim.fn.expand "<amatch>")
-        target-name (vim.fn.fnamemodify target ":p:t")]
-    (when (not (= target-name ".lnvim.fnl"))
-      (let [cwd (vim.fn.fnamemodify target ":h")
-            dirs (parents cwd)]
-        (table.insert dirs cwd)
+(defn- valid? [tbl]
+  "Is TBL non-empty table."
+  (and (~= nil tbl)
+       (~= nil (next tbl))))
+
+
+(defn- target-options []
+  (let [target-file (vim.fn.expand "<afile>")
+        target-match (vim.fn.expand "<match")
+        target-dir (vim.fn.fnamemodify target-match ":h")
+        target-name (vim.fn.fnamemodify target-match ":p:t")
+        target-bufnr (vim.fn.expand "<abuf>")]
+    {:dir target-dir
+     :file target-file
+     :name target-name
+     :match target-match
+     :bufnr target-bufnr}))
+
+
+(defn prepare []
+  "Collect every `.lnvim.fnl` over all parent directories starting from root.
+  Result is stored in buffer-local variable `dirlocal_pending`."
+  (let [target (target-options)
+        pending []]
+    (when (not (= target.name ".lnvim.fnl"))
+      (let [dirs (parents target.dir)]
+        (table.insert dirs target.dir)
         (each [_ dir (ipairs dirs)]
           (let [src (.. dir "/.lnvim.fnl")]
             (when (file-readable? src)
-              (evaluate dir src cwd target))))))))
+              (table.insert pending
+                            {:self {:dir dir :file src}
+                             :target target}))))))
+    (when (valid? pending)
+      (vim.api.nvim_buf_set_var target.bufnr :dirlocal_pending pending))))  
 
+
+(defn execute []
+  "Evaluate script definitions stored in buffer-local `dirlocal_pending`."
+  (let [pending vim.b.dirlocal_pending]
+    (when (valid? pending)
+      (set vim.b.dirlocal_pending [])
+      (each [_ entry (ipairs pending)]
+        (evaluate entry.self.file entry))))) 
+
+
+(def- command
+  "augroup dirlocal
+  autocmd!
+  autocmd BufReadPost * call v:lua._trampouline('my.dirlocal', 'prepare')
+  autocmd BufWinEnter * call v:lua._trampouline('my.dirlocal', 'execute')
+  augroup END")
 
 
 (defn setup []
-  (let [addhook (. (require "bootstrap.hook") :on :bufenter)]
-    (addhook ".*" execute)))
-
+  (vim.api.nvim_exec command nil))

@@ -100,6 +100,11 @@ function! Apply(target, onargs, args) abort
 endfunction
 
 
+function! ProjectRoot()
+    return v:lua._trampouline("my.project", "project-root")
+endfunction
+
+
 lua require("bootstrap.main").setup()
 lua require("bootstrap.main").runlisp()
 lua require("bootstrap.main").finalize()
