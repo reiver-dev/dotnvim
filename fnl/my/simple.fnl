@@ -1,14 +1,30 @@
 (module my.simple)
 
-(defn set-local-var [name value]
+
+(defn str-join [sep ...]
+  (table.concat [...] sep))
+
+
+(defn message [...]
+  (let [ln (select :# ...)
+        write vim.api.nvim_out_write]
+    (when (> ln 0)
+      (write (tostring (select 1 ...)))
+      (for [i 2 ln]
+        (write " ")
+        (write (tostring (select i ...)))))
+    (write "\n")))
+
+
+(defn var-set [name value]
   (vim.api.nvim_buf_set_var 0 name value))
 
 
-(defn get-local-var [name]
+(defn var-get [name]
   (vim.api.nvim_buf_get_var 0 name))
 
 
-(defn set-local-option [name value]
+(defn option-set [name value]
   (vim.fn.setbufvar "" (.. "&" name)
                     (match value
                       (true) 1
@@ -16,43 +32,43 @@
                       (any) any)))
 
 
-(defn get-local-option [name]
+(defn option-get [name]
   (vim.fn.getbufvar "" (.. "&" name)))
 
 
-(defn list-local-options []
+(defn option-list []
   {:buf (vim.fn.getbufvar "" "&")
    :win (vim.fn.getbufvar 0 "&")})
 
 
-(defn list-local-var []
+(defn var-list []
   {:buf (vim.fn.getbufvar "" "")
    :win (vim.fn.getbufvar 0 "")})
 
 
-(defn list-commands []
+(defn command-list []
   {:global (vim.api.nvim_get_commands {})
    :local (vim.api.nvim_buf_get_commands 0 {})})
 
 
+(defn- flags [...]
+  (let [res {}]
+    (for [i 1 (select :# ...)]
+      (tset res (select i ...) true))
+    res))
+
+
 (defn kmap [mode key action ...]
-  (let [opts {}]
-    (each [_i opt (ipairs [...])]
-      (tset opts opt true))
-    (vim.api.nvim_buf_set_keymap 0 mode key action opts)))
+  (vim.api.nvim_buf_set_keymap 0 mode key action (flags ...)))
 
 
-(defn point []
-  (vim.api.nvim_buf_get_mark 0 "."))
+(defn kmap-global [mode key action ...]
+  (vim.api.nvim_set_keymap mode key action (flags ...)))
 
 
-(defn visual-point []
-  (let [(sb se) (unpack (vim.api.nvim_buf_get_mark 0 "v"))
-        (eb ee) (unpack (vim.api.nvim_buf_get_mark 0 "."))]
-    {:min [(math.min sb eb)
-           (math.min se ee)]
-     :max [(math.max sb eb)
-           (math.max se ee)]}))
+(defn getpos [name]
+  (let [pos (vim.fn.getpos name)]
+    [(. pos 2) (- (. pos 3) 1)]))
 
 
 (defn line []
@@ -65,6 +81,19 @@
 
 (defn eol []
   (- (vim.fn.col "$") 1))
+
+
+(defn point []
+  (getpos "."))
+
+
+(defn visual-point []
+  (let [(sb se) (unpack (getpos "v"))
+        (eb ee) (unpack (getpos "."))]
+    {:min [(math.min sb eb)
+           (math.min se ee)]
+     :max [(math.max sb eb)
+           (math.max se ee)]}))
 
 
 (defn line-begin []
