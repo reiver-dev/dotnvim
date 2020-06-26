@@ -1,8 +1,22 @@
 (module my.editing
-  {require {pkg bootstrap.pkgmanager}})
+  {require {pkg bootstrap.pkgmanager
+            s my.simple}})
+
+
+(defn macro-every-line []
+  (s.message "macro-every-line @" (vim.fn.getcmdline))
+  (vim.api.nvim_exec
+    (.. ":'<,'>normal @" (vim.fn.nr2char (vim.fn.getchar)))
+    false))
+
+
+(defn- define-command []
+  (s.kmap-global :x "@" ":<C-u>call v:lua._T('my.editing', 'macro-every-line')"
+                 :noremap))
 
 
 (defn setup []
+  (define-command)
   (pkg.def 
     {:name :table-mode
      :url "dhruvasagar/vim-table-mode"})
