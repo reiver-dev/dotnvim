@@ -1,7 +1,7 @@
 --- Fennel compiler special forms
 --
 
-local fennel = "aniseed.fennel"
+local fennel = "aniseed.deps.fennel"
 
 local M = {}
 

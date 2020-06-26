@@ -1,26 +1,32 @@
 --- Fennel lisp user routines
 --
 
-require"bootstrap.compiler".initialize()
+require"bootstrap.fennel.compiler".initialize()
+local fennel = require "aniseed.deps.fennel"
+local view = require "aniseed.deps.fennelview"
 
-local function eval(opts, env)
+local M = {}
+
+function M.eval(opts, env)
     local options = {
         env = setmetatable({ _A = opts }, {__index = env or _ENV or _G})
     }
-    return require"aniseed.fennel".eval(opts.rawargs, options)
+    return fennel.eval(opts.rawargs, options)
 end
 
 
-local function eval_print(opts)
-    print(require"aniseed.fennel".serialize(eval(opts)))
+function M.eval_print(opts)
+    print(view(M.eval(opts)))
 end
 
 
-local function repl(opts, env)
+function M.repl(opts, env)
     local options = {
         env = setmetatable({ _A = opts }, {__index = env or _ENV or _G})
     }
-    return require"aniseed.fennel".repl(options)
+    return fennel.repl(options)
 end
+
+return M
 
 --- repl.lua ends here

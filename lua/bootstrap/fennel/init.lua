@@ -49,7 +49,7 @@ function M.init()
     local def = interop.command{
         name = "EvalExpr",
         nargs = 1,
-        modname = "bootstrap.fennel",
+        modname = "bootstrap.fennel.repl",
         funcname = "eval_print"
     }
     vim.api.nvim_command(def)
@@ -57,7 +57,7 @@ function M.init()
     def = interop.command{
         name = "InitRecompile",
         nargs = "*",
-        modname = "bootstrap.fennel",
+        modname = "bootstrap.fennel.repl",
         funcname = "recompile"
     }
     vim.api.nvim_command(def)
