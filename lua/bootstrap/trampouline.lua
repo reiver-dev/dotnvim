@@ -24,6 +24,7 @@ end
 
 function M.setup()
     _trampouline = M.trampouline
+    _T = M.trampouline
 end
 
 
