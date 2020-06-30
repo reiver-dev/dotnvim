@@ -11,7 +11,7 @@
 
 
 (defn- define-command []
-  (s.kmap-global :x "@" ":<C-u>call v:lua._T('my.editing', 'macro-every-line')"
+  (s.kmap-global :x "@" ":<C-u>call v:lua._T('my.editing', 'macro-every-line')<CR>"
                  :noremap))
 
 
