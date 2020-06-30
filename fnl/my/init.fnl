@@ -15,6 +15,7 @@
   (tasks.setup)
   (editing.setup)
   (vcs.setup)
+  (_T "my.commands" "setup")
   (_trampouline "my.lang.cpp" "setup"))
 
 

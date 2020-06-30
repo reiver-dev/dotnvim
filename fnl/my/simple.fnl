@@ -16,6 +16,26 @@
     (write "\n")))
 
 
+(def- empty-preview-template
+  (.. "silent! pedit! +setlocal"
+      "\\ buftype=nofile"
+      "\\ nobuflisted"
+      "\\ noswapfile"
+      "\\ nonumber"
+      "\\ nowrap"
+      "\\ filetype=%s"
+      " %s"))
+
+
+(defn verbose [command]
+  (let [output (vim.api.nvim_exec command true)]
+    (vim.cmd (string.format empty-preview-template :text "Verbose"))
+    (vim.cmd "wincmd P")
+    (let [bufnr vim.api.nvim_get_cuttent_buf]
+      (vim.api.nvim_paste output 0 -1)
+      (vim.api.nvim_buf_set_keymap bufnr :n "q" ":bd<CR>" {:noremap true}))))
+
+
 (defn var-set [name value]
   (vim.api.nvim_buf_set_var 0 name value))
 
