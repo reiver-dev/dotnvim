@@ -1,7 +1,8 @@
 --- Fennel compiler special forms
 --
 
-local fennel = "aniseed.deps.fennel"
+local fennel = require "aniseed.deps.fennel"
+local view = require "aniseed.deps.fennelview"
 
 local M = {}
 
