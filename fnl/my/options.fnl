@@ -22,11 +22,12 @@
   (seto :clipboard "unnamedplus")
   (seto :mouse "a")
   (seto :termguicolors true)
-  (seto :shortmess "I")
+  (seto :autochdir true)
+  (seto :shortmess "Ic")
   (seto :undofile true)
   (seto :showtabline 2)
-  (vim.cmd "let mapleader=\",\""))
-  
+  (seto :hidden true)
+  (seto :completeopt "menuone,noinsert,noselect")
 
-  
-  
+  (vim.cmd "let mapleader=\",\"")
+  (vim.cmd "let maplocalleader=\";\""))
