@@ -29,6 +29,7 @@ local function handle_gui_info(info)
         return true
     elseif info.client.name == "FVim" then
         require"bootstrap.gui.fvim".configure(info.id)
+        return true
     end
     return false
 end
@@ -58,11 +59,21 @@ function M.leave(chan)
 end
 
 
+function execute_after(info)
+    local ok, mod = pcall(function() return require"after.gui" end)
+    if ok and mod.setup then
+        mod.setup(info)
+    end
+end
+
+
 function M.configure()
     for _, chan in ipairs(M._pending_configuration) do
         local info = client_info(chan)
         if info then
-            handle_gui_info(info)
+            if handle_gui_info(info) then
+                execute_after(info)
+            end
         end
     end
     M._pending_configuration = {}
