@@ -171,7 +171,7 @@ end
 
 
 local function on_startup(fun)
-    if vim.v.vim_did_enter then
+    if vim.v.vim_did_enter == 1 then
         fun()
     else
         table.insert(STARTUP_HOOK, fun)
