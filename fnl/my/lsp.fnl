@@ -26,7 +26,7 @@
    :gW "<cmd>lua vim.lsp.buf.workspace_symbol()<CR>"
    :<localleader>F "<cmd>lua vim.lsp.buf.formatting()<CR>"
    :<localleader>f "<cmd>lua _trampouline('my.lsp', 'format-line')<CR>"
-   :<localleader>d "<cmd>lua vim.lsp.util.show_line_diagnostics()<CR>"})
+   :<localleader>d "<cmd>lua vim.lsp.diagnostic.show_line_diagnostics()<CR>"})
 
 
 
@@ -38,6 +38,15 @@
       (tset v :col (+ v.range.character 1))
       (tset v :text v.message))
     (vim.lsp.util.set_qflist result.diagnostics)))
+
+
+(defn- configure-diagnostic []
+  (tset vim.lsp.callbacks "textDocument/publishDiagnostics"
+        (vim.lsp.with vim.lsp.diagnostic.on_publish_diagnostics
+                      {:underline true
+                       :virtual_text false
+                       :signs true
+                       :update_in_insert false})))
 
 
 
@@ -57,4 +66,5 @@
         "<cmd>lua _trampouline('my.lsp', 'format-region')<CR>" {}))
 
 
-(defn setup [])
+(defn setup []
+  (configure-diagnostic))
