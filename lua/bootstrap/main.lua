@@ -15,6 +15,9 @@ local function packages()
         kind = "opt",
         init = function()
             hook.after.filetype("fennel", function()
+                require("bootstrap.fennel.compiler").initialize()
+                local var = "conjure#client#fennel#aniseed#aniseed_module_prefix"
+                vim.g[var] = "aniseed."
                 pkg.add("conjure")
             end)
         end
