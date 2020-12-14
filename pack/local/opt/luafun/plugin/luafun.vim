@@ -14,7 +14,7 @@ lua fun = require("fun")
 
 lua <<EOF
 for k, v in pairs(fun) do
-    rawset(_G, "-" .. k:gsub('_', '-'), v)
+    rawset(_G, "f-" .. k:gsub('_', '-'), v)
 end
 EOF
 
