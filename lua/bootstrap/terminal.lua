@@ -7,7 +7,6 @@ local cmd = [[
 augroup boostrap_terminal
 autocmd!
 autocmd TermOpen * setlocal nonumber norelativenumber
-autocmd TermOpen * startinsert
 augroup end
 ]]
 
