@@ -54,7 +54,7 @@
 
 (defn- target-options []
   (let [target-file (vim.fn.expand "<afile>")
-        target-match (vim.fn.expand "<match")
+        target-match (vim.fn.expand "<amatch>")
         target-dir (vim.fn.fnamemodify target-match ":h")
         target-name (vim.fn.fnamemodify target-match ":p:t")
         target-bufnr (vim.fn.expand "<abuf>")]
