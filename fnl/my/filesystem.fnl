@@ -134,15 +134,15 @@
 (defn- stat [path]
   (let [(res msg code) (vim.loop.fs_stat path)]
     (if (not= res nil)
-      res
-      (if (= code "EPERM")
-        EMPTY_STAT
-        (error msg)))))
-  
+      (values true res)
+      (values false msg))))
+
+
 
 (defn file? [path]
-  (let [{:type t} (stat path)]
-    (= t FT_FILE)))
+  (match (stat path)
+    (true {:type t}) (= t FT_FILE)
+    (false _) false))
 
 
 (defn mode [path]
@@ -156,19 +156,23 @@
     
 
 (defn directory? [path]
-  (let [{:type t} (stat path)]
-    (= t FT_DIRECTORY)))
+  (match (stat path)
+    (true {:type t}) (= t FT_DIRECTORY)
+    (false _) false))
 
 
 (defn readable? [path]
-  (let [{:mode m :type t} (stat path)]
-    (if (= t FT_DIRECTORY)
-      (bit.band m RX)
-      (bit.band m R))))
+  (match (stat path)
+    (true {:type t :mode m}) (if (= t FT_DIRECTORY)
+                               (bit.band m RX)
+                               (bit.band m R))
+    (false _) false))
+    
     
 
 (defn writable? [path]
-  (let [{:mode m :type t} (stat path)]
-    (if (= t FT_DIRECTORY)
-      (bit.band m RWX)
-      (bit.band m RW))))
+  (match (stat path)
+    (true {:type t :mode m}) (if (= t FT_DIRECTORY)
+                               (bit.band m RWX)
+                               (bit.band m RW))
+    (false _) false))
