@@ -50,7 +50,8 @@ function M.compile_file(src, dst, opts, force)
                 vim.fn.mkdir(vim.fn.fnamemodify(dst, ":h"), "p")
                 spew(dst, code)
             else
-                vim.api.nvim_err_writeln(code)
+                local msg = ("Failed compile: %s\n%s"):format(src, code)
+                vim.api.nvim_err_writeln(msg)
             end
         end
     end
@@ -58,20 +59,10 @@ end
 
 
 function M.compiler_init()
-    fennel.path = fennel.path:gsub('\\', '/')
-    fennel.eval [[
-    (eval-compiler
-       (local fnl (require :bootstrap.fennel.special))
-       (tset _SPECIALS :debug-scope fnl.debugscope)
-       (tset _SPECIALS :debug-ast fnl.debugast)
-       (tset _SPECIALS :debug-parent fnl.debugparent)
-       (tset _SPECIALS :debug-opts fnl.debugopts)
-       (tset _SPECIALS :debug-all fnl.debugall)
-       (tset _SPECIALS :current-file fnl.currentfile)
-       (tset _SPECIALS :current-module fnl.currentmodule)
-       (tset _SPECIALS :! fnl.modcall)
-    )
-    ]]
+    local macros = vim.api.nvim_get_runtime_file("fnl/aniseed/macros.fnl",
+                                                 false)[1]
+    local aniseed_root = vim.fn.fnamemodify(macros, ":h:h")
+    fennel.path = ("%s/?.fnl;%s"):format(aniseed_root, fennel.path)
 end
 
 

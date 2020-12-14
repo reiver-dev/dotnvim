@@ -24,6 +24,7 @@ function M.compile()
     local cfg = vim.fn.stdpath('config'):gsub('\\', '/')
     local sources = gather_files(cfg) 
     local afterfiles = gather_files(cfg .. "/after")
+    local opts = { useMetadata = true, ["compiler-env"] = _G }
 
     if vim.tbl_isempty(sources) and vim.tbl_isempty(afterfiles) then
         return
@@ -33,10 +34,12 @@ function M.compile()
     fennel.initialize()
 
     for src, dst in pairs(sources) do
+        opts.filename = src
         fennel.compile_file(src, dst, {}, true)
     end
 
     for src, dst in pairs(afterfiles) do
+        opts.filename = src
         fennel.compile_file(src, dst, {}, true)
     end
 end
@@ -57,8 +60,8 @@ function M.init()
     def = interop.command{
         name = "InitRecompile",
         nargs = "*",
-        modname = "bootstrap.fennel.repl",
-        funcname = "recompile"
+        modname = "bootstrap.fennel",
+        funcname = "compile"
     }
     vim.api.nvim_command(def)
 end
