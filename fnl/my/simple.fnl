@@ -36,6 +36,115 @@
       (vim.api.nvim_buf_set_keymap bufnr :n "q" ":bd<CR>" {:noremap true}))))
 
 
+(defn- find-pos-1 [predicate next tbl idx]
+  (let [(nidx val) (next tbl idx)]
+    (when nidx
+      (if (predicate val)
+        nidx
+        (find-pos-1 predicate next tbl nidx)))))
+
+
+(defn find-pos [predicate tbl]
+  (find-pos-1 predicate (ipairs tbl)))
+
+
+(defn find-key [predicate tbl]
+  (find-pos-1 predicate (pairs tbl)))
+
+
+(defn loaded-buffers []
+  (let [tbl []
+        buffers (vim.api.nvim_list_bufs)]
+    (var i 1)
+    (each [_ b (ipairs buffers)]
+      (when (vim.api.nvim_buf_is_loaded b)
+        (tset tbl i b)
+        (set i (+ i 1))))
+    tbl))
+
+
+(defn other-buffer [bufnr]
+  (let [bufnr (or bufnr (vim.api.nvim_get_current_buf))
+        altbufnr (vim.fn.bufnr "#")]
+    (if (and (> altbufnr 0)
+             (vim.fn.buflisted altbufnr)
+             (vim.api.nvim_buf_is_loaded altbufnr))
+      altbufnr
+      (let [buffers (loaded-buffers)
+            buflen (length buffers)]
+        (when (> buflen 1)
+          (let [pos (find-pos #(= $1 bufnr) buffers)]
+            (if pos
+              (. buffers (let [prevpos (- pos 1)]
+                           (if (not= prevpos 0) prevpos buflen)))
+              bufnr)))))))
+
+
+(defn buffer-number [bufnr]
+  (if (and (~= nil bufnr) (> 0 bufnr))
+     bufnr
+     (vim.api.nvim_get_current_buf)))
+
+
+(defn buffer-modified? [bufnr]
+  (vim.api.nvim_buf_get_option bufnr :modified))
+
+
+
+(defn create-scratch-buffer []
+  (let [buf (vim.api.nvim_create_buf false false)]
+    (vim.api.nvim_buf_set_option buf :swapfile false)
+    (vim.api.nvim_buf_set_option buf :bufhidden :wipe)
+    (vim.api.nvim_buf_set_option buf :buftype "")
+    buf))
+
+
+(defn- prepare-delete-buffer [bufnr force]
+  (if (not (buffer-modified? bufnr))
+    (do
+      (when (vim.api.nvim_buf_get_option bufnr :buflisted)
+        (vim.api.nvim_buf_set_option bufnr :bufhidden "hide"))
+      true)
+    (if force
+      (do
+        (when (vim.api.nvim_buf_get_option bufnr :buflisted)
+          (vim.api.nvim_buf_set_option bufnr :bufhidden "hide"))
+        true)
+      (match
+        (vim.fn.confirm "Save changes?" "&Yes\n&No\n&Cancel" 0 "Question")
+        0 (error "E89: No write since last change for buffer")
+        1 (do
+            (vim.api.nvim_buf_call bufnr (fn [] (vim.cmd "write")))
+            (vim.api.nvim_buf_set_option bufnr :bufhidden "hide")
+            true)
+        2 (do
+            (vim.api.nvim_buf_set_option bufnr :bufhidden "hide")
+            true)
+        3 false))))
+
+
+(defn kill-buffer [bufnr force]
+  (let [bufnr (buffer-number bufnr)]
+    (when (prepare-delete-buffer bufnr force)
+      (let [otherbufnr (let [buf (other-buffer bufnr)]
+                         (if (and buf (not= buf bufnr))
+                           buf
+                           (create-scratch-buffer)))
+            windows (vim.api.nvim_list_wins)]
+        (each [i win (ipairs windows)]
+          (let [winbufnr (vim.api.nvim_win_get_buf win)]
+            (when (= winbufnr bufnr)
+              (vim.api.nvim_win_set_buf win otherbufnr)))))
+      (when (vim.api.nvim_buf_is_loaded bufnr)
+        (if (vim.api.nvim_buf_get_option bufnr :buflisted)
+          (vim.cmd (.. "bdelete! " bufnr))
+          (vim.cmd (.. "bwipeout! " bufnr)))))))
+
+
+(defn kill-current-buffer [force]
+  (kill-buffer (vim.api.nvim_get_current_buf) force))
+
+
 (defn var-set [name value]
   (vim.api.nvim_buf_set_var 0 name value))
 
