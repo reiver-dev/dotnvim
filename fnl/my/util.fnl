@@ -1,6 +1,28 @@
 (module my.util)
 
 
+
+(defn nothing [])
+
+
+(defn identity [id] id)
+
+
+(defn str-join [sep ...]
+  (table.concat [...] sep))
+
+
+(def- inspect-1
+  (match (pcall (fn [] (require "aniseed.deps.fennelview")))
+    (true view) view
+    _ vim.inspect))
+
+
+(defn inspect [first ...]
+  (if (= (select :# ...) 0)
+    (inspect-1 first)
+    (values (inspect-1 first) (inspect ...))))
+
 (defn- cycle-iter [state param a b c]
   (let [param (+ 1 (% param state.end))]
     (when (not= param state.begin)
