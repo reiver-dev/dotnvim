@@ -1,12 +1,20 @@
-(local nvim (require :aniseed.nvim))
+(module my.keybind
+  {require {s my.simple}})
 
 
-(fn map-ft [ft mode from to]
-  (nvim.ex.autocmd
-   :FileType ft
-   (.. mode :map)
-   (.. :<localleader> from)
-   to))
-
-
-(provide :map-ft map-ft)
+(defn setup []
+  (s.kmap-global :n
+                 :<C-h> :<cmd>nohlsearch<cr>
+                 :noremap)
+  (s.kmap-global :v
+                 :<C-h> :<cmd>nohlsearch<cr>
+                 :noremap)
+  (s.kmap-global :n
+                 :<leader><leader>
+                 :<C-^>)
+  (s.kmap-global :n
+                 :<C-x>k "<cmd>lua _T('my.simple', 'kill-current-buffer')<CR>"
+                 :noremap)
+  (s.kmap-global :n
+                 :<C-x><C-k> "<cmd>confirm bdelete<CR>"
+                 :noremap))
