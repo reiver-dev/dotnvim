@@ -27,5 +27,5 @@
     {:name :surround
      :url "tpope/vim-surround"})
   (pkg.def
-    {:name :multiple-cursors
-     :url "terryma/vim-multiple-cursors"}))
+    {:name :visual-multi
+     :url "mg979/vim-visual-multi"}))
