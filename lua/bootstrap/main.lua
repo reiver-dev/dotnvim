@@ -12,7 +12,7 @@ local function packages()
     pkg.def {
         name = "conjure",
         url = "Olical/conjure",
-        kind = "opt",
+        opt = true,
         init = function()
             hook.after.filetype("fennel", function()
                 require("bootstrap.fennel.compiler").initialize()
@@ -24,47 +24,68 @@ local function packages()
     }
 
     pkg.def {
-        name = "vim-vinegar",
-        url = "tpope/vim-vinegar" 
+        name = "colorbuddy.nvim",
+        url = "tjdevries/colorbuddy.vim",
+        opt = true
     }
 
     pkg.def {
-        name = "vim-fugitive",
-        url = "tpope/vim-fugitive",
-        kind = "start"
+        name = "colorizer",
+        url = "norcalli/nvim-colorizer.lua"
     }
 
     pkg.def {
-        name = "rooter",
-        url = "airblade/vim-rooter",
+        name = "profiler",
+        url = "norcalli/profiler.nvim"
+    }
+
+    pkg.def{ name = "popup", url = "nvim-lua/popup.nvim" }
+    pkg.def{ name = "plenary", url = "nvim-lua/plenary.nvim" }
+    pkg.def{ name = "telescope", url = "nvim-lua/telescope.nvim" }
+
+    pkg.def {
+        name = "fix-cursor-hold",
+        url = "antoinemadec/FixCursorHold.nvim",
         init = function()
-            vim.schedule(function()
-                vim.g.rooter_use_lcd = 1
-                vim.g.rooter_change_directory_for_non_project_files = "current"
-            end)
+            vim.g.cursorhold_updatetime = 100
         end
     }
 
     pkg.def {
-        name = "nord-theme",
-        url = "arcticicestudio/nord-vim",
-        init = function() vim.api.nvim_command("colorscheme nord") end
+        name = "onebuddy-theme",
+        url = "Th3Whit3Wolf/onebuddy",
+        opt = true,
+        init = function()
+            vim.cmd "packadd colorbuddy.nvim"
+            vim.cmd "packadd onebuddy-theme"
+            require('colorbuddy').colorscheme('onebuddy')
+        end
     }
 
     pkg.def {
-        name = "bufferize.vim",
-	url = "AndrewRadev/bufferize.vim",
-        kind = "opt"
+        name = "vim-vinegar",
+        url = "tpope/vim-vinegar"
     }
 
     pkg.def {
 	name = "lightline.vim",
 	url = "itchyny/lightline.vim",
-	init = function()
-            if pkg.installed("nord-theme") then
-	        vim.g.lightline = { colorscheme = "nord" }
-	    end
-	end
+        init = function()
+            vim.g.lightline = {
+                active = {
+                    left = {{'mode', 'paste'},
+                            {'readonly', 'filename', 'modified'},
+                            {'directory'}},
+                    right = {{'lineinfo'},
+                             {'percent'},
+                             {'project', 'fileformat', 'fileencoding', 'filetype'}}
+                },
+                component = {
+                    directory = "%<D:%(%<%{fnamemodify(getbufvar('', 'default_directory', ''), ':~')}%)",
+                    project = "%<P:%(%<%{fnamemodify(getbufvar('', 'projectile', ''), ':~')}%)",
+                }
+            }
+        end
     }
 
     pkg.def {
@@ -93,7 +114,7 @@ local function packages()
         end
     }
 
-    pkg.def { name = "fennel.vim", url = "bakpakin/fennel.vim" } 
+    pkg.def { name = "fennel.vim", url = "bakpakin/fennel.vim" }
     pkg.def { name = "readline.vim", url = "ryvnf/readline.vim" }
 
     pkg.def { name = "which-key", url = "liuchengxu/vim-which-key" }
@@ -101,7 +122,7 @@ local function packages()
     pkg.def {
         name = "vim-clap",
         url = "liuchengxu/vim-clap",
-        kind = "opt",
+        opt = true,
         init = function()
             hook.after.command("Clap", function()
                 pkg.add("vim-clap")
@@ -109,36 +130,51 @@ local function packages()
             end)
         end
     }
-
     pkg.def {
         name = "completion-nvim",
         url = "haorenW1025/completion-nvim" ,
-        kind = "opt",
         init = function()
-            hook.after.bufenter(".*", function()
-                pkg.add("completion-nvim")
-                vim.api.nvim_set_keymap(
-                    'i', '<C-TAB>', 'completion#trigger_completion()',
-                    { noremap = true, silent = true, expr = true }
-                )
+            vim.lsp.handlers = vim.lsp.callbacks
+            vim.g.completion_enable_snippet = "vim-vsnip"
+            vim.g.completion_enable_auto_popup = 0
+            vim.g.completion_chain_complete_list = {
+                default = {
+                    comment = {},
+                    default = {
+                        { complete_items = {"lsp", "snippet", "ts"} },
+                        { mode = "<c-p>" },
+                        { mode = "<c-n>" }
+                    }
+                }
+            }
+            hook.on.bufenter(".*", function()
+                if vim.bo.buftype == "" then
+                    require'completion'.on_attach()
+                    vim.api.nvim_buf_set_keymap(0, 'i',
+                        '<C-x><C-x>', 'completion#trigger_completion()',
+                        { noremap = true, silent = true, expr = true }
+                    )
+                end
             end)
         end
     }
+
+    pkg.def { name = "vim-vsnip", url =  "hrsh7th/vim-vsnip" }
+    pkg.def { name = "vim-vsnip-integ", url = "hrsh7th/vim-vsnip-integ" }
 
     pkg.def {
-        name = "diagnostic-nvim",
-        url = "haorenW1025/diagnostic-nvim" ,
-        kind = "opt",
+        name = "nvim-lspconfig",
+        url = "neovim/nvim-lspconfig",
         init = function()
-            hook.after.bufenter(".*", function()
-                pkg.add("diagnostic-nvim")
-                vim.g["diagnostic_insert_delay"] = 1
-            end)
+            package.loaded["nvim_lsp"] = require("lspconfig")
         end
     }
 
-    pkg.def { name = "nvim-lsp", url = "neovim/nvim-lsp" }
     pkg.def { name = "vista", url = "liuchengxu/vista.vim" }
+
+    pkg.def { name = "nvim-treesitter", url = "nvim-treesitter/nvim-treesitter" }
+    pkg.def { name = "nvim-treesitter-playground", url = "nvim-treesitter/playground" }
+    pkg.def { name = "nvim-treesitter-completion", url = "nvim-treesitter/completion-treesitter" }
 end
 
 
@@ -185,7 +221,6 @@ end
 function M.setup()
     require"bootstrap.trampouline".setup()
     require"bootstrap.loaded".setup()
-    require"bootstrap.options".setup()
     require"bootstrap.indent".setup()
     require"bootstrap.keybind".setup()
     require"bootstrap.terminal".setup()
@@ -193,7 +228,7 @@ function M.setup()
     pkg.def {
 	name = "aniseed",
 	url = "Olical/aniseed",
-	kind = "opt"
+	opt = true
     }
 
     pcall(pkg.add, "aniseed")
@@ -213,9 +248,13 @@ function M.finalize()
     plugin_commands()
     hook.on.source("netrw", function() vim.g.netrw_keepdir = 0 end)
     require"bootstrap.gui".setup()
+    local ok, mod = pcall(function() return require"after" end)
+    if ok and mod and mod.setup then
+        mod.setup()
+    end
 end
 
 
-return M 
+return M
 
 --- main.lua ends here

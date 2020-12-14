@@ -104,7 +104,7 @@ function M.def(opts)
     local name = opts.name
     local url = opts.url
     local dir = opts.dir or opts.name
-    local kind = opts.kind or "start"
+    local kind = opts.opt and "opt" or "start"
 
     local on_update = opts.on_update
 
