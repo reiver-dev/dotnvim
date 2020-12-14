@@ -74,7 +74,6 @@ local function extract(hook, key, default)
 end
 
 
-
 local function call(hooks, args)
     if hooks == nil then
         return
@@ -83,7 +82,7 @@ local function call(hooks, args)
     local errors = {}
 
     for i, hook in ipairs(hooks) do
-        local ok, res = pcall(hook, args)	
+        local ok, res = xpcall(hook, debug.traceback, args)	
         if not ok then
             errors[#errors + 1] = {res, i}
         end
@@ -92,8 +91,11 @@ local function call(hooks, args)
     if #errors > 0 then
         local messages = {}
         for _, err in ipairs(errors) do
-            local msg = string.format("Error (%s): %s",
-                debug.getinfo(hooks[err[2]]).short_src, err[1])
+            local info = debug.getinfo(hooks[err[2]], "S")
+            local src = info.short_src
+            local at = (info.linedefined or -1)
+            local detail = err[1]:gsub("\n", "\n    ")
+            local msg = string.format("Error (%s:%d)\n    %s", src, at, detail)
             messages[#messages + 1] = msg
         end
         error(table.concat(messages, '\n'))
