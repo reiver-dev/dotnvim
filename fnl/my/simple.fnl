@@ -1,19 +1,40 @@
-(module my.simple)
+(module my.simple
+  {require {v my.vararg}})
 
 
-(defn str-join [sep ...]
-  (table.concat [...] sep))
+(def- argpack v.pack)
+(def- argunpack v.unpack)
+
+
+(defn- remove-tabs [text]
+  (let [result (string.gsub text "\t" "    ")]
+    result))
+
+
+(defn message-1 [write ...]
+  (let [ln (select :# ...)]
+    (when (> ln 0)
+      (write (remove-tabs (tostring (select 1 ...))))
+      (for [i 2 ln]
+        (write " ")
+        (write (remove-tabs (tostring (select i ...))))))
+    (write "\n")))
+
+
+(defn- message-safe [write ...]
+  (if (vim.in_fast_event)
+    (vim.schedule
+      (let [args (argpack ...)]
+        (fn [] (message-1 write (argunpack args)))))
+    (message-1 write ...)))
 
 
 (defn message [...]
-  (let [ln (select :# ...)
-        write vim.api.nvim_out_write]
-    (when (> ln 0)
-      (write (tostring (select 1 ...)))
-      (for [i 2 ln]
-        (write " ")
-        (write (tostring (select i ...)))))
-    (write "\n")))
+  (message-safe vim.api.nvim_out_write ...))
+
+
+(defn errmsg [...]
+  (message-safe vim.api.nvim_err_write ...))
 
 
 (def- empty-preview-template
