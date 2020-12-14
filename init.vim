@@ -1,37 +1,6 @@
 """ Main nvim config
 """
 
-
-let s:bootstrap_funcrefs = {}
-
-
-function! LuaClosure(modname, funcname)
-    return { ... -> v:lua._trampouline(a:modname, a:funcname, a:000) }
-endfunction
-
-
-function! LuaCall(modname, funcname, ...)
-    return v:lua._trampouline(a:modname, a:funcname, a:000)
-endfunction
-
-
-function! LuaClosure_Add(name, modname, funcname)
-    let f = LuaClosure(a:modname, a:funcname)
-    s:bootstrap_funcrefs[a:name] = f
-    return f 
-endfunction
-
-
-function! LuaClosure_Del(name)
-    remove(s:bootstrap_funcrefs, a:name)
-endfunction
-
-
-function! LuaClosure_Clear()
-    s:bootstrap_funcrefs = {}
-endfunction
-
-
 function! s:clipboard_set(name)
     return { lines, regtype -> v:lua.setclipboard(lines, regtype, name) }
 endfunction
@@ -108,6 +77,5 @@ endfunction
 lua require("bootstrap.main").setup()
 lua require("bootstrap.main").runlisp()
 lua require("bootstrap.main").finalize()
-
 
 """ init.vim ends here
