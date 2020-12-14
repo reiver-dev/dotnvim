@@ -21,6 +21,9 @@
     {:name :table-mode
      :url "dhruvasagar/vim-table-mode"})
   (pkg.def
+    {:name :tabular
+     :url "godlygeek/tabular"})
+  (pkg.def
     {:name :easy-align
      :url "junegunn/vim-easy-align"})
   (pkg.def
