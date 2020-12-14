@@ -83,8 +83,13 @@ local function schedule_install(name, url, dir, kind)
     }
 
     local pkg = PACKAGES[dir]
-    if pkg ~= nil and pkg.on_update ~= nil then
-        opts["do"] = FUNCREF:format(name)
+    if pkg and pkg.on_update then
+        local dt = type(pkg.on_update)
+        if dt == "string" then
+            opts["do"] = pkg.on_update
+        elseif dt == "function" then
+            opts["do"] = FUNCREF:format(name)
+        end
     end
 
     packager.add(url, opts)
