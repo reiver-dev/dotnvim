@@ -1,22 +1,28 @@
 ;;; My
 
-(module my
-  {require {lsp my.lsp
-            dirlocal my.dirlocal
-            tasks my.tasks
-            editing my.editing
-            proj my.project
-            vcs my.vcs}})
+(module my)
+
+
+(def- modules 
+  ["my.log"
+   "my.bufreg"
+   "my.options"
+   "my.dirlocal"
+   "my.tasks"
+   "my.terminal"
+   "my.editing"
+   "my.vcs"
+   "my.project"
+   "my.lsp"
+   "my.treesitter"
+   "my.keybind"
+   "my.commands"
+   "my.lang.cpp"
+   "my.pack.fzf"])
 
 
 (defn setup [] 
-  (lsp.setup)
-  (dirlocal.setup)
-  (tasks.setup)
-  (editing.setup)
-  (vcs.setup)
-  (_T "my.commands" "setup")
-  (_trampouline "my.lang.cpp" "setup"))
-
+  (each [_ mod (ipairs modules)]
+    (_T mod "setup")))
 
 ;;; my.fnl ends here
