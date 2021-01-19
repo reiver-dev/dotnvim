@@ -1,6 +1,8 @@
 (module my.util)
 
 
+(def clock vim.loop.hrtime)
+
 
 (defn nothing [])
 
@@ -22,6 +24,21 @@
   (if (= (select :# ...) 0)
     (inspect-1 first)
     (values (inspect-1 first) (inspect ...))))
+
+
+(defn bench [name fun]
+  (var i 1000)
+  (while (< 0 i)
+    (fun)
+    (set i (- i 1)))
+  (let [begin (clock)]
+    (var i 100000)
+    (while (< 0 i)
+      (fun)
+      (set i (- i 1)))
+    (let [end (clock)]
+      (log "Bench" :name name :time (- end begin)))))
+
 
 (defn- cycle-iter [state param a b c]
   (let [param (+ 1 (% param state.end))]
