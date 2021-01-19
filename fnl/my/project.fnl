@@ -10,14 +10,17 @@
 
 
 (defn- empty? [str]
+  "Check if STR string is nil or empty."
   (or (= nil str) (= "" str)))
 
 
 (defn- non-empty? [str]
+  "Check if string exists and has characters."
   (and str (~= "" str)))
 
 
 (defn- directory? [path]
+  "Check if PATH is existing directory."
   (if (non-empty? path)
     (let [(res msg code) (vim.loop.fs_stat path)]
       (and res (= (. res :type) "directory")))
@@ -25,43 +28,8 @@
 
 
 (defn- current-buffer-dir []
+  "Find directory path for current buffer."
   (vim.fn.expand "%:p:h" 1))
-
-
-(defn- git-check-root-at [dir]
-  (util.with_directory
-    dir (fn []
-          (vim.fn.system "git rev-parse --show-toplevel 2>/dev/null ||:"))))
-  
-
-(defn- hg-check-root-at [dir]
-  (util.with_directory
-    dir (fn []
-          (vim.fn.system "hg root 2>/dev/null ||:"))))
-
-
-(defn git-root [dir]
-  (string.gsub (git-check-root-at dir) "\n" ""))
-
-
-(defn hg-root [dir]
-  (string.gsub (hg-check-root-at dir) "\n" ""))
-
-
-(defn- find-file-location [root name]
-  (let [res (vim.fn.findfile name (.. root ";"))]
-    (when (non-empty? res)
-      (vim.fn.fnamemodify res ":h"))))
-
-
-(defn projectile-file-root [dir]
-  (find-file-location dir ".projectile"))
-
-
-(def- project-providers 
-  [[:projectile-file projectile-file-root] 
-   [:git git-root]
-   [:hg hg-root]])
 
 
 (def- autocmd
@@ -74,21 +42,8 @@
   ")
 
 
-(defn- find-project-root-1 [dir next tbl idx]
-  (let [(idx value) (next tbl idx)]
-    (when value
-      (let [[name func] value
-            root (func dir)]
-        (if (empty? root)
-          (find-project-root-1 dir next tbl idx)
-          (values root name))))))
-
-
-(defn- find-project-root [dir]
-  (find-project-root-1 dir (ipairs project-providers)))
-
-
 (defn- getbufvar [bufnr name]
+  "Get buffer-local variable for BUFNR buffer by variable NAME."
   (match (pcall
            (fn []
              (vim.api.nvim_buf_get_var (or bufnr 0) name)))
@@ -96,24 +51,21 @@
     _ ""))
   
 
-(defn- setbufvar [bufnr name val]
-  (vim.api.nvim_buf_set_var (or bufnr 0) name val))
+(defn- setbufvar [bufnr name value]
+  "Assign buffer-local variable for BUFNR buffer by variable NAME to VALUE."
+  (vim.api.nvim_buf_set_var (or bufnr 0) name value))
 
 
 (defn project-root [bufnr]
+  "Provide project root for BUFNR buffer."
   (let [pr (b.get-local bufnr :project :root)]
     (if pr
       pr
       (getbufvar bufnr :projectile))))
         
 
-(defn- set-project-root [bufnr path]
-  (b.set-local bufnr :project :root path)
-  (setbufvar bufnr :projectile path)
-  (setbufvar bufnr :asyncrun_root path))
-
-
 (defn default-directory [bufnr]
+  "Provide directory path for BUFNR buffer."
   (let [dd (b.get-local bufnr :directory)]
     (if dd
       dd
@@ -126,6 +78,8 @@
 
 
 (defn- find-nearest-provider [...]
+  "Find project provider entry from multiple arrays
+  which has with longest path."
   (var provider nil)
   (var shortest-path nil)
   (var shortest-len 1e10)
@@ -146,21 +100,25 @@
 
 
 (defn- fire-user-event [bufnr event]
+  "Execute autocmd user event for BUFNR buffer by EVENT name."
   (when (vim.fn.exists (string.format "#User#%s" event))
     (let [cmd (string.format "doautocmd <nomodeline> User %s" event)]
       (vim.api.nvim_buf_call bufnr (fn [] (vim.cmd cmd))))))
   
 
-
 (defn- fire-project-updated [bufnr]
+  "Execute autocmd Projectile for BUFNR buffer."
   (fire-user-event bufnr "Projectile"))
 
 
 (defn- fire-default-directory-updated [bufnr]
+  "Execute autocmd DefaultDirectory for BUFNR buffer."
   (fire-user-event bufnr "DefaultDirectory"))
 
 
 (defn- do-project-search [bufnr path]
+  "Perform search for project-related files.
+  BUFNR is buffer number. PATH is intended directory within project."
   (let [(files dirs) (fw.async-gather path interesting-files
                                       interesting-directories)
         data {: files : dirs}]
@@ -176,6 +134,7 @@
         (fn []
           (when (vim.api.nvim_buf_is_valid bufnr)
             (setbufvar bufnr :projectile path)
+            (setbufvar bufnr :asyncrun_root path)
             (setbufvar bufnr :projectile_provider name)
             (setbufvar bufnr :projectile_locs data)
             (fire-project-updated bufnr)))))))
@@ -183,10 +142,13 @@
 
 
 (defn- defer-project-search [bufnr path]
+  "Schedule search for project-related files.
+  BUFNR is buffer number. PATH is intended directory within project."
   (p.new do-project-search bufnr path))
 
 
 (defn- apply-default-directory [bufnr]
+  "Attempt to update default-directory for BUFNR buffer."
   (let [dd (default-directory bufnr)]
     (vim.api.nvim_buf_call 
       bufnr
@@ -199,6 +161,9 @@
 
 
 (defn on-file-open []
+  "Update default-directory for current buffer.
+  Happens when buffer is not special and is loaded
+  and buffer's file has not changed."
   (let [bufnr (tonumber (vim.fn.expand "<abuf>"))]
     (when (and (empty? (vim.api.nvim_buf_get_option bufnr :buftype))
                (vim.api.nvim_buf_is_loaded bufnr))
@@ -214,6 +179,7 @@
 
 
 (defn on-file-enter []
+  "Ensure local current directory is default-directory for current buffer."
   (when (empty? vim.bo.buftype)
     (let [bufnr (tonumber (vim.fn.expand "<abuf>"))
           dd (default-directory bufnr)]
