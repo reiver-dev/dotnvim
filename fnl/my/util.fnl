@@ -49,3 +49,39 @@
     (let [idx (% idx end)
           begin (if (not= idx 0) idx end)]
       (cycle-apply-impl func begin end (+ 1 (% idx end))))))
+
+
+(defn- nset-1 [root n map key ...]
+  (if (< 2 n)
+    (do
+      (var nested (. map key))
+      (when (not nested)
+        (let [new {}]
+          (tset map key new)
+          (set nested new)))
+      (nset-1 root (- n 1) nested ...))
+    (do
+      (tset map key ...)
+      root)))
+  
+
+(defn nset [map ...]
+  "Set MAP value by key. VARARG is sequence of keys and last value.
+  If multiple keys supplied, they are used to traverse or create nested maps."
+  (nset-1 map (select :# ...) map ...))
+
+
+(defn- nget-1 [map n key ...]
+  (let [nested (. map key)]
+    (if (and (< 1 n) nested)
+      (nget-1 nested (- n 1) ...)
+      nested)))
+    
+
+(defn nget [map ...]
+  "Get value from MAP by key. VARARG is sequence of keys.
+  If multiple keys supplied, they are used to traverse nested maps."
+  (nget-1 map (select :# ...) ...))
+
+
+;;; util.fnl ends here
