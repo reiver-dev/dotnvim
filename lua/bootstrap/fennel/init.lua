@@ -20,11 +20,25 @@ local function gather_files(root)
 end
 
 
+local function ensure_modules()
+    package.preload["fennel"] = function()
+        return require "aniseed.deps.fennel"
+    end
+    package.preload["fennelview"] = function()
+        return require "aniseed.deps.fennelview"
+    end
+end
+
+
 function M.compile()
     local cfg = vim.fn.stdpath('config'):gsub('\\', '/')
     local sources = gather_files(cfg) 
     local afterfiles = gather_files(cfg .. "/after")
-    local opts = { useMetadata = true, ["compiler-env"] = _G }
+    local opts = {
+        useMetadata = true,
+        compilerEnv = _G,
+        ["compiler-env"] = _G
+    }
 
     if vim.tbl_isempty(sources) and vim.tbl_isempty(afterfiles) then
         return
@@ -35,17 +49,18 @@ function M.compile()
 
     for src, dst in pairs(sources) do
         opts.filename = src
-        fennel.compile_file(src, dst, {}, true)
+        fennel.compile_file(src, dst, opts, true)
     end
 
     for src, dst in pairs(afterfiles) do
         opts.filename = src
-        fennel.compile_file(src, dst, {}, true)
+        fennel.compile_file(src, dst, opts, true)
     end
 end
 
 
 function M.init()
+    ensure_modules()
     require"my".setup()
     interop = require"bootstrap.interop"
 
