@@ -82,6 +82,28 @@
     (values found-files found-dirs)))
 
 
-(defn async-gather [path files directories]
-  (async-gather-1 path files directories))
+(defn- async-gather-2 [path files directories]
+  (let [found-dirs {}
+        found-files {}]
+    (when (and path (or files directories)
+               (= (select 2 (a.wait (astat path))) "directory"))
+      (let [paths []
+            handles []]
+        (each [base (dirup path)]
+          (when files
+            (each [_ fname (ipairs files)]
+              (table.insert paths ["file" found-files fname base])
+              (table.insert handles (astat (ps.join base fname)))))
+          (when directories
+            (each [_ dirname (ipairs directories)]
+              (table.insert paths ["directory" found-dirs dirname base])
+              (table.insert handles (astat (ps.join base dirname))))))
+        (each [i oldpath filetype (a.iter handles)]
+          (when filetype
+            (let [[kind collection base path] (. paths i)]
+              (assign collection base path))))))
+    (values found-files found-dirs)))
 
+
+(defn async-gather [path files directories]
+  (async-gather-2 path files directories))
