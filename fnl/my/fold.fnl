@@ -89,6 +89,9 @@
   (map-append {} iter state idx))
 
 
-(defn collect [acc key item]
+(defn store [acc key item]
   (tset acc key item)
   acc)
+
+
+;;; fold.fnl ends here
