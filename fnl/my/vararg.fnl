@@ -6,7 +6,7 @@
 
 (defn lj-pack [...]
   (let [count (select :# ...)
-        tbl (table-new (+ count 1) 1)]
+        tbl (table-new count 1)]
     (set tbl.n count)
     (for [i 1 count 1]
       (tset tbl i (select i ...)))
@@ -14,12 +14,10 @@
 
 
 (defn lua-pack [...]
-  (let [count (select :# ...)]
-    (if (< 0 count)
-      (let [args [...]]
-        (set args.n count)
-        args)
-      {:n 0})))
+  (let [count (select :# ...)
+        tbl [...]]
+    (set tbl.n count)
+    tbl))
 
 
 (def pack (if table-new lj-pack lua-pack))
@@ -41,3 +39,6 @@
   (if (and tbl (< 0 tbl.n))
     (unpack-1 tbl.n tbl tail)
     tail))
+
+
+;;; vararg.fnl ends here
