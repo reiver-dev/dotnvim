@@ -1,40 +1,25 @@
-(module my.bufreg)
+(module my.bufreg
+  {require {u my.util}})
 
 
-(def- state (setmetatable {} {:__mode :v}))
-
-
-(defn- assign-1 [root n map key ...]
-  (if (< 2 n)
-    (do
-      (var nested (. map key))
-      (when (not nested)
-        (let [new {}]
-          (tset map key new)
-          (set nested new)))
-      (assign-1 root (- n 1) nested ...))
-    (do
-      (tset map key ...)
-      root)))
-  
-
-(defn- assoc [map ...]
-  (assign-1 map (select :# ...) map ...))
-
-
-(defn- nget-1 [map n key ...]
-  (let [nested (. map key)]
-    (if (and (< 1 n) nested)
-      (nget-1 nested (- n 1) ...)
-      nested)))
-    
-
-(defn- nget [map ...]
-  (nget-1 map (select :# ...) ...))
+(def- global-buffer-registry (setmetatable {} {:__mode :v}))
 
 
 (def current-buffer vim.api.nvim_get_current_buf)
 (def buffer-valid? vim.api.nvim_buf_is_valid)
+
+
+(defn- new-buffer-state [bufnr]
+  "Create new state value for BUFNR buffer."
+  (let [bufferstate {:bufnr bufnr}]
+    (tset global-buffer-registry bufnr bufferstate)
+    (vim.fn.setbufvar bufnr "__buffer_state_ref_holder__" (fn [] bufferstate))
+    bufferstate))
+
+
+(defn- get-buffer-state [bufnr]
+  "Get state for BUFNR buffer. Create new state if missing."
+  (or (. global-buffer-registry bufnr) (new-buffer-state bufnr)))
   
 
 (defn- buffer [bufnr]
@@ -45,27 +30,25 @@
 
 
 (defn set-local [bufnr ...]
-  (assoc state (buffer bufnr) ...))
+  "Associate value with BUFNR buffer state."
+  (u.nset global-buffer-registry (buffer bufnr) ...))
 
 
 (defn get-local [bufnr ...]
-  (nget state (buffer bufnr) ...))
+  "Get associated value from BUFNR buffer state."
+  (u.nget global-buffer-registry (buffer bufnr) ...))
 
 
 (defn- on-unload [_event bufnr]
   (set-local bufnr :loaded false)
-  (tset state bufnr nil)
+  (tset global-buffer-registry bufnr nil)
   nil)
 
 
 (defn new []
-  (let [bufnr (tonumber (vim.fn.expand "<abuf>"))]
-    (var bufferstate (. state bufnr))
-    (when (not bufferstate)
-      (set bufferstate {:bufnr bufnr})
-      (tset state bufnr bufferstate)
-      (vim.fn.setbufvar bufnr "__buffer_state_ref_holder__"
-                        (fn [] bufferstate)))
+  "Ensure buffer state exists for current buffer."
+  (let [bufnr (tonumber (vim.fn.expand "<abuf>"))
+        bufferstate (get-buffer-state bufnr)]
     (when (and (= bufferstate.loaded nil)
                (vim.api.nvim_buf_is_loaded bufnr))
       (vim.api.nvim_buf_attach bufnr false {:on_detach on-unload})
@@ -79,8 +62,9 @@ autocmd VimEnter,BufNew,BufNewFile,BufReadPre * call v:lua._T('my.bufreg', 'new'
 augroup END")
 
 
-(defn get-state []
-  state)
+(defn state []
+  "Get global buffer registry state."
+  global-buffer-registry)
 
 
 (defn setup []
