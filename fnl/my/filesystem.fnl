@@ -146,12 +146,8 @@
 
 
 (defn mode [path]
-  (var kk 0)
   (let [{:mode m} (stat path)]
     (each [i n v e (dipairs allmode)]
-      (set kk (+ 1 kk))
-      (when (< 50 kk)
-        (error "LOOP"))
       (print n (bit.band v m)))))
     
 
