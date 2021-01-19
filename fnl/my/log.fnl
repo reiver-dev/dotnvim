@@ -4,6 +4,13 @@
 (defonce- state {})
 
 
+(def- inspect
+  (let [(ok view) (pcall (fn [] (require "aniseed.deps.fennelview")))]
+    (if ok 
+      view
+      vim.inspect)))
+
+
 (defn- format [bufnr message data]
   (let [now (os.date "%Y-%m-%d %H:%M:%S")]
    (if (and data (. data 1))
@@ -19,7 +26,7 @@
     (when key
       (table.insert
        t
-       (.. (tostring key) ": " (vim.inspect val))))
+       (.. (tostring key) ": " (inspect val))))
     (gather-data-1 t (- n 1) ...)))
 
 
