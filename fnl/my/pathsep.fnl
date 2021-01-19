@@ -7,8 +7,8 @@
   "Platform-dependent filesystem path separator")
 
 
-(def fslash (string.byte "/"))
-(def bslash (string.byte "\\"))
+(def fslash 47) ;; "/"
+(def bslash 92) ;; "\\"
 
 
 (defn winsep? [str i]
@@ -37,7 +37,7 @@
 
 (defn rtrim [str predicate]
   (var i (str:len))
-  (while (and (> i 0) (predicate str i))
+  (while (and (< 0 i) (predicate str i))
     (set i (- i 1)))
   (str:sub 1 i))
 
@@ -51,9 +51,9 @@
 
 (defn rcut [str predicate]
   (var i (str:len))
-  (while (and (> i 0) (predicate str i))
+  (while (and (< 0 i) (predicate str i))
     (set i (- i 1)))
-  (while (and (> i 0) (not (predicate str i)))
+  (while (and (< 0 i) (not (predicate str i)))
     (set i (- i 1)))
   (str:sub 1 i))
 
@@ -75,4 +75,3 @@
           (separator? tail 1))
     (.. head tail)
     (.. head separator tail)))
-
