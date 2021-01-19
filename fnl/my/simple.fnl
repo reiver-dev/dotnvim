@@ -201,19 +201,34 @@
    :local (vim.api.nvim_buf_get_commands 0 {})})
 
 
-(defn- flags [...]
+(defn- kmap-flags [...]
   (let [res {}]
     (for [i 1 (select :# ...)]
       (tset res (select i ...) true))
+    (if res.remap
+      (set res.remap nil)
+      (set res.noremap true))
     res))
 
 
-(defn kmap [mode key action ...]
-  (vim.api.nvim_buf_set_keymap 0 mode key action (flags ...)))
+(defn- chars-iter [str idx]
+  (let [nidx (+ idx 1)]
+    (when (<= nidx (str:len))
+      (values nidx (str:sub nidx nidx)))))
 
 
-(defn kmap-global [mode key action ...]
-  (vim.api.nvim_set_keymap mode key action (flags ...)))
+(defn- chars [str]
+  (values chars-iter str 0))
+
+
+(defn kmap [modes key action ...]
+  (each [_ mode (chars modes)]
+    (vim.api.nvim_buf_set_keymap 0 mode key action (kmap-flags ...))))
+
+
+(defn kmap-global [modes key action ...]
+  (each [_ mode (chars modes)]
+    (vim.api.nvim_set_keymap mode key action (kmap-flags ...))))
 
 
 (defn getpos [name]
