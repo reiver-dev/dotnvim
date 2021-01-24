@@ -38,6 +38,7 @@
   autocmd VimEnter,BufNew,BufNewFile,BufReadPre * lua _T('my.project', 'on-file-open')
   autocmd BufEnter * lua _T('my.project', 'on-file-enter')
   autocmd BufWritePost * lua _T('my.project', 'on-file-write')
+  autocmd FileType netrw lua _T('my.project', 'on-netrw-open')
   augroup END
   ")
 
@@ -176,6 +177,18 @@
 
 (defn on-file-write []
   (on-file-open))
+
+
+(defn on-netrw-open []
+  (let [bufnr (tonumber (vim.fn.expand "<abuf>"))]
+    (when (and (= "nofile" (vim.api.nvim_buf_get_option bufnr :buftype))
+               (= "netrw" (vim.api.nvim_buf_get_option bufnr :filetype))
+               (vim.api.nvim_buf_is_loaded bufnr))
+      (let [file (vim.fn.expand "<afile>:p")
+            oldfile (b.get-local bufnr :file)]
+        (when (or (= oldfile nil) (~= file oldfile))
+          (b.set-local bufnr :file file)
+          (apply-default-directory bufnr))))))
 
 
 (defn on-file-enter []
