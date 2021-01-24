@@ -10,7 +10,8 @@ local M = {}
 function M.eval(opts, env)
     local options = {
         env = setmetatable({ _A = opts }, {__index = env or _ENV or _G}),
-        filename = "EvalExpr.fnl"
+        filename = "EvalExpr.fnl",
+        useMetadata = true
     }
     return fennel.eval(opts.rawargs, options)
 end
