@@ -20,13 +20,28 @@ local function gather_files(root)
 end
 
 
+local function preload_wrap(name)
+    package.preload[name] = function(...)
+        require "fennel"
+        return package.preload["aniseed." .. name](...)
+    end
+end
+
+
 local function ensure_modules()
     package.preload["fennel"] = function()
         return require "aniseed.deps.fennel"
     end
-    package.preload["fennelview"] = function()
+    package.preload["fennel.view"] = function ()
         return require "aniseed.deps.fennelview"
     end
+    package.preload["fennelview"] = package.preload["fennel.view"]
+    preload_wrap("fennel.parser")
+    preload_wrap("fennel.compiler")
+    preload_wrap("fennel.specials")
+    preload_wrap("fennel.utils")
+    preload_wrap("fennel.friend")
+    preload_wrap("fennel.repl")
 end
 
 

@@ -3,17 +3,17 @@
 
 local M = {}
 
-local fennel = require"aniseed.fennel"
+local fennel = require "fennel"
 
 function M.compile_source(text, opts)
-    local code = "(require-macros \"aniseed.macros\")\n" .. text
+    local code = "(require-macros \"aniseed.macros\")" .. text
     return xpcall(function() return fennel.compileString(code, opts) end,
                   fennel.traceback)
 end
 
 
 function M.compile_source2(text, opts)
-    local code = "(import-macros [:module] \"aniseed.macros\")\n" .. text
+    local code = "(import-macros [:module] \"aniseed.macros\")" .. text
     return xpcall(function() return fennel.compileString(code, opts) end,
                   fennel.traceback)
 end
@@ -24,9 +24,9 @@ local function slurp(path)
     if fd == nil then
         return false, err
     end
-    local data = fd:read("*all")
+    local ok, data = pcall(function () return fd:read("*all") end)
     fd:close()
-    return true, data
+    return ok, data
 end
 
 
@@ -35,9 +35,9 @@ local function spew(path, text)
     if fd == nil then
         return false, err
     end
-    local res = fd:write(text)
+    local ok, res = pcall(function() return fd:write(text) end)
     fd:close()
-    return true, res
+    return ok, res
 end
 
 
@@ -59,8 +59,7 @@ end
 
 
 function M.compiler_init()
-    local macros = vim.api.nvim_get_runtime_file("fnl/aniseed/macros.fnl",
-                                                 false)[1]
+    local macros = vim.api.nvim_get_runtime_file("fnl/aniseed/macros.fnl", false)[1]
     local aniseed_root = vim.fn.fnamemodify(macros, ":h:h")
     fennel.path = ("%s/?.fnl;%s"):format(aniseed_root, fennel.path)
 end
