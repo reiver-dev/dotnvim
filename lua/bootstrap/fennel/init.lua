@@ -28,7 +28,7 @@ local function preload_wrap(name)
 end
 
 
-local function ensure_modules()
+function M.ensure_modules()
     package.preload["fennel"] = function()
         return require "aniseed.deps.fennel"
     end
@@ -75,7 +75,6 @@ end
 
 
 function M.init()
-    ensure_modules()
     require"my".setup()
     interop = require"bootstrap.interop"
 
@@ -94,6 +93,13 @@ function M.init()
         funcname = "compile"
     }
     vim.api.nvim_command(def)
+end
+
+
+function M.setup()
+    M.ensure_modules()
+    M.compile()
+    M.init()
 end
 
 return M

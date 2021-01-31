@@ -236,9 +236,7 @@ end
 
 function M.runlisp()
     if pkg.installed("aniseed") then
-        local fennel = require"bootstrap.fennel"
-        fennel.compile()
-        fennel.init()
+        require("bootstrap.fennel").setup()
     end
 end
 
@@ -249,7 +247,7 @@ function M.finalize()
     hook.on.source("netrw", function() vim.g.netrw_keepdir = 0 end)
     require"bootstrap.gui".setup()
     local ok, mod = pcall(function() return require"after" end)
-    if ok and mod and mod.setup then
+    if ok and type(mod) == "table" and vim.is_callable(mod.setup) == "function" then
         mod.setup()
     end
 end
