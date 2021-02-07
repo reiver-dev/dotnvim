@@ -130,37 +130,61 @@ local function packages()
             end)
         end
     }
+
+    -- pkg.def {
+    --     name = "completion-nvim",
+    --     url = "haorenW1025/completion-nvim" ,
+    --     init = function()
+    --         vim.lsp.handlers = vim.lsp.callbacks
+    --         vim.g.completion_enable_snippet = "vim-vsnip"
+    --         vim.g.completion_enable_auto_popup = 0
+    --         vim.g.completion_chain_complete_list = {
+    --             default = {
+    --                 comment = {},
+    --                 default = {
+    --                     { complete_items = {"lsp", "snippet", "ts"} },
+    --                     { mode = "<c-p>" },
+    --                     { mode = "<c-n>" }
+    --                 }
+    --             }
+    --         }
+    --         hook.on.bufenter(".*", function()
+    --             if vim.bo.buftype == "" then
+    --                 require'completion'.on_attach()
+    --                 vim.api.nvim_buf_set_keymap(0, 'i',
+    --                     '<C-x><C-x>', 'completion#trigger_completion()',
+    --                     { noremap = true, silent = true, expr = true }
+    --                 )
+    --             end
+    --         end)
+    --     end
+    -- }
+
     pkg.def {
-        name = "completion-nvim",
-        url = "haorenW1025/completion-nvim" ,
-        init = function()
-            vim.lsp.handlers = vim.lsp.callbacks
-            vim.g.completion_enable_snippet = "vim-vsnip"
-            vim.g.completion_enable_auto_popup = 0
-            vim.g.completion_chain_complete_list = {
-                default = {
-                    comment = {},
-                    default = {
-                        { complete_items = {"lsp", "snippet", "ts"} },
-                        { mode = "<c-p>" },
-                        { mode = "<c-n>" }
-                    }
+        name = "nvim-compe",
+        url = "hrsh7th/nvim-compe",
+        init = function ()
+            require("compe").setup {
+                enabled = true,
+                source = {
+                    path = true,
+                    buffer = true,
+                    calc = true,
+                    nvim_lsp = true
                 }
             }
-            hook.on.bufenter(".*", function()
-                if vim.bo.buftype == "" then
-                    require'completion'.on_attach()
-                    vim.api.nvim_buf_set_keymap(0, 'i',
-                        '<C-x><C-x>', 'completion#trigger_completion()',
-                        { noremap = true, silent = true, expr = true }
-                    )
-                end
-            end)
+            function map(key, action) 
+                local opt = { noremap = true, silent = true, expr = true}
+                vim.api.nvim_set_keymap("i", key, action, opt)
+            end
+            map("<C-x><C-x>", "compe#complete()")
+            map("<CR>", "compe#confirm('<CR>')")
+            map("<C-q>", "compe#close('<C-q>')")
         end
     }
 
     pkg.def { name = "vim-vsnip", url =  "hrsh7th/vim-vsnip" }
-    pkg.def { name = "vim-vsnip-integ", url = "hrsh7th/vim-vsnip-integ" }
+    -- pkg.def { name = "vim-vsnip-integ", url = "hrsh7th/vim-vsnip-integ" }
 
     pkg.def {
         name = "nvim-lspconfig",
@@ -174,7 +198,7 @@ local function packages()
 
     pkg.def { name = "nvim-treesitter", url = "nvim-treesitter/nvim-treesitter" }
     pkg.def { name = "nvim-treesitter-playground", url = "nvim-treesitter/playground" }
-    pkg.def { name = "nvim-treesitter-completion", url = "nvim-treesitter/completion-treesitter" }
+    -- pkg.def { name = "nvim-treesitter-completion", url = "nvim-treesitter/completion-treesitter" }
 end
 
 

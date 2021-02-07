@@ -34,7 +34,7 @@
   (seto :termguicolors true)
   (setw :colorcolumn "79")
 
-  (seto :completeopt "menuone,noinsert,noselect")
+  (seto :completeopt "menu,menuone,noselect")
 
   (seto :mouse "a")
   (seto :undofile true)
