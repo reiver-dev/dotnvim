@@ -12,6 +12,7 @@
    "my.terminal"
    "my.editing"
    "my.vcs"
+   "my.directory"
    "my.project"
    "my.lsp"
    "my.treesitter"
