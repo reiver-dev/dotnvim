@@ -247,7 +247,7 @@ function M.finalize()
     hook.on.source("netrw", function() vim.g.netrw_keepdir = 0 end)
     require"bootstrap.gui".setup()
     local ok, mod = pcall(function() return require"after" end)
-    if ok and type(mod) == "table" and vim.is_callable(mod.setup) == "function" then
+    if ok and type(mod) == "table" and vim.is_callable(mod.setup) then
         mod.setup()
     end
 end
