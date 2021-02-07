@@ -36,10 +36,8 @@ end
 
 
 local function error_handler(message)
-    return ("%s\nCaused by:\n\t%s\n"):format(
-        debug.traceback("ERROR EvalExpr", 2),
-        message:gsub("\n", "\n\t")
-    ):gsub("\t", "    ")
+    local t = debug.traceback(message, 2):gsub("\n", "\n\t")
+    return ("EvalExpr\n\t%s\n"):format(t):gsub("\t", "    ")
 end
 
 

@@ -14,10 +14,10 @@ end
 
 
 local function error_handler(modname, funcname)
-    return function (...)
-        local data = vim.inspect{...}
-        local msg = ("\n\tTrampoiline %s::%s\n\t%s"):format(modname, funcname, data)
-        return debug.traceback(msg)
+    return function (msg)
+        local t = debug.traceback(msg):gsub("\n", "\n")
+        local res = ("\nTrampoiline %s::%s\n%s\n"):format(modname, funcname, t)
+        return res:gsub("\t", "    ")
     end
 end
 
