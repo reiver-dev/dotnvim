@@ -45,6 +45,7 @@
   autocmd VimEnter,BufNew,BufNewFile,BufReadPre * lua _T('my.directory', 'on-file-open')
   autocmd BufEnter * lua _T('my.directory', 'on-file-enter')
   autocmd BufWritePost * lua _T('my.directory', 'on-file-write')
+  autocmd BufFilePost * lua _T('my.directory', 'on-file-rename')
   autocmd FileType netrw lua _T('my.directory', 'on-netrw-open')
   augroup END
   ")
@@ -102,6 +103,15 @@
             (fire-default-directory-updated bufnr dir)))))))
 
 
+(defn on-file-enter []
+  "Ensure local current directory is default-directory for current buffer."
+  (when (empty? vim.bo.buftype)
+    (let [bufnr (tonumber (vim.fn.expand "<abuf>"))
+          dd (default-directory bufnr)]
+      (when (directory? dd)
+        (vim.cmd (.. "lcd " dd))))))
+
+
 (defn on-file-open []
   "Update default-directory for current buffer.
   Happens when buffer is not special and is loaded
@@ -117,7 +127,13 @@
 
 
 (defn on-file-write []
-  (on-file-open))
+  (on-file-open)
+  (on-file-enter))
+
+
+(defn on-file-rename []
+  (on-file-open)
+  (on-file-enter))
 
 
 (defn on-netrw-open []
@@ -130,15 +146,6 @@
         (when (or (= oldfile nil) (~= file oldfile))
           (b.set-local bufnr :file file)
           (apply-default-directory bufnr))))))
-
-
-(defn on-file-enter []
-  "Ensure local current directory is default-directory for current buffer."
-  (when (empty? vim.bo.buftype)
-    (let [bufnr (tonumber (vim.fn.expand "<abuf>"))
-          dd (default-directory bufnr)]
-      (when (directory? dd)
-        (vim.cmd (.. "lcd " dd))))))
 
 
 (defn setup []
