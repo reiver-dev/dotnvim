@@ -120,6 +120,6 @@
                                           "%s(%s)" entry.value section))
                                    entry)))})
                   :previewer (man-previewer.new opts)
-                  :sorter (t-sorters.get_generic_fuzzy_sorter opts)
+                  :sorter (t-sorters.get_fzy_sorter opts)
                   :attach_mappings action-mapper})]
     (picker:find)))
