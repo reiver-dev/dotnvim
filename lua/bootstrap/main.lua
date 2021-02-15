@@ -131,6 +131,11 @@ local function packages()
         end
     }
 
+    pkg.def {
+        name = "vim-fish",
+        url = "dag/vim-fish"
+    }
+
     -- pkg.def {
     --     name = "completion-nvim",
     --     url = "haorenW1025/completion-nvim" ,
