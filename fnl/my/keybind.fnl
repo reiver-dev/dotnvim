@@ -19,6 +19,7 @@
 
   ;; Switch to related buffer
   (s.kmap-global :n :<leader><leader> :<C-^>)
+  (s.kmap-global :n :<C-x><C-w> :<C-w>)
 
   ;; Kill buffer
   (s.kmap-global :n :<C-x>k
