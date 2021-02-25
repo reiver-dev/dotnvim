@@ -1,7 +1,7 @@
 ;;; lsp.handlers
 
 (module my.lsp.handlers
-  {require {s my.simple}})
+  {require {p my.point}})
 
 
 (defn- modcall [mod name]
@@ -67,7 +67,7 @@
 
 
 (defn format-line []
-  (vim.lsp.buf.range_formatting {} (s.line-begin) (s.line-end)))
+  (vim.lsp.buf.range_formatting {} [(s.line-begin)] [(s.line-end)]))
   
 
 (defn format-region []
