@@ -18,8 +18,10 @@
    "my.treesitter"
    "my.keybind"
    "my.commands"
-   "my.lang.cpp"
-   "my.pack.fzf"])
+   "my.repl"
+   "my.lang"
+   "my.pack"
+   "my.checkers"])
 
 
 (defn setup [] 
