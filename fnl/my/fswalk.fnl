@@ -17,8 +17,8 @@
 
 
 (defn- directory? [path]
-  (let [(status stat) (vim.loop.fs_stat path)]
-    (and status (= (. stat :type) "directory"))))
+  (let [(res msg code) (vim.loop.fs_stat path)]
+    (and res (= (. res :type) "directory"))))
 
 
 (defn gather [path files directories]
