@@ -89,7 +89,7 @@
             (fire-project-updated bufnr)))))))
 
 
-(defn- defer-project-search [bufnr path]
+(defn defer-project-search [bufnr path]
   "Schedule search for project-related files.
   BUFNR is buffer number. PATH is intended directory within project."
   (p.new do-project-search bufnr path))
