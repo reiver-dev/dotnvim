@@ -47,7 +47,7 @@ local function packages()
         name = "fix-cursor-hold",
         url = "antoinemadec/FixCursorHold.nvim",
         init = function()
-            vim.g.cursorhold_updatetime = 100
+            vim.g.cursorhold_updatetime = 1000
         end
     }
 
