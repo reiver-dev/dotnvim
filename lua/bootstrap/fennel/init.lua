@@ -50,7 +50,7 @@ function M.compile()
     local sources = gather_files(cfg) 
     local afterfiles = gather_files(cfg .. "/after")
     local opts = {
-        useMetadata = true,
+        useMetadata = false,
         compilerEnv = _G,
         ["compiler-env"] = _G
     }
