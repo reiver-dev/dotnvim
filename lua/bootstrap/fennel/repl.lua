@@ -1,15 +1,16 @@
 --- Fennel lisp user routines
 --
 
-require"bootstrap.fennel.compiler".initialize()
-local fennel = require "aniseed.deps.fennel"
-local view = require "aniseed.deps.fennelview"
+require("bootstrap.fennel.compiler").initialize()
+local fennel = require "fennel"
+local view = require "fennelview"
 
 local M = {}
 
 function M.eval(opts, env)
+    local env = setmetatable({ _A = opts }, {__index = env or _G})
     local options = {
-        env = setmetatable({ _A = opts }, {__index = env or _ENV or _G}),
+        env = env,
         filename = "EvalExpr.fnl",
         useMetadata = true
     }
