@@ -5,7 +5,7 @@
 
 
 (def- inspect
-  (let [(ok view) (pcall (fn [] (require "aniseed.deps.fennelview")))]
+  (let [(ok view) (pcall (fn [] (require "fennelview")))]
     (if ok 
       view
       vim.inspect)))
