@@ -46,7 +46,6 @@
   autocmd BufEnter * lua _T('my.directory', 'on-file-enter')
   autocmd BufWritePost * lua _T('my.directory', 'on-file-write')
   autocmd BufFilePost * lua _T('my.directory', 'on-file-rename')
-  autocmd FileType netrw lua _T('my.directory', 'on-netrw-open')
   augroup END
   ")
 
@@ -117,7 +116,8 @@
   Happens when buffer is not special and is loaded
   and buffer's file has not changed."
   (let [bufnr (tonumber (vim.fn.expand "<abuf>"))]
-    (when (and (empty? (vim.api.nvim_buf_get_option bufnr :buftype))
+    (when (and (let [bt (vim.api.nvim_buf_get_option bufnr :buftype)]
+                 (= bt ""))
                (vim.api.nvim_buf_is_loaded bufnr))
       (let [file (vim.fn.expand "<afile>:p")
             oldfile (b.get-local bufnr :file)]
@@ -134,18 +134,6 @@
 (defn on-file-rename []
   (on-file-open)
   (on-file-enter))
-
-
-(defn on-netrw-open []
-  (let [bufnr (tonumber (vim.fn.expand "<abuf>"))]
-    (when (and (= "nofile" (vim.api.nvim_buf_get_option bufnr :buftype))
-               (= "netrw" (vim.api.nvim_buf_get_option bufnr :filetype))
-               (vim.api.nvim_buf_is_loaded bufnr))
-      (let [file (vim.fn.expand "<afile>:p")
-            oldfile (b.get-local bufnr :file)]
-        (when (or (= oldfile nil) (~= file oldfile))
-          (b.set-local bufnr :file file)
-          (apply-default-directory bufnr))))))
 
 
 (defn setup []
