@@ -85,7 +85,7 @@
       (nset-1 root (- n 1) nested ...))
     (do
       (tset map key ...)
-      root)))
+      ...)))
   
 
 (defn nset [map ...]
