@@ -248,6 +248,9 @@ end
 
 
 function M.setup()
+    -- vim.g.loaded_netrw = 1
+    -- vim.g.loaded_netrwPlugin = 1
+
     require"bootstrap.trampouline".setup()
     require"bootstrap.loaded".setup()
     require"bootstrap.indent".setup()
@@ -273,7 +276,6 @@ end
 function M.finalize()
     packages()
     plugin_commands()
-    hook.on.source("netrw", function() vim.g.netrw_keepdir = 0 end)
     require"bootstrap.gui".setup()
     local ok, mod = pcall(function() return require"after" end)
     if ok and type(mod) == "table" and vim.is_callable(mod.setup) then
