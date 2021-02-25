@@ -4,13 +4,18 @@
 (def clock vim.loop.hrtime)
 
 
-(defn nothing [])
+(defn nothing []
+  "Do nothing, return nothing."
+  nil)
 
 
-(defn identity [id] id)
+(defn identity [id]
+  "Return first argument."
+  id)
 
 
 (defn str-join [sep ...]
+  "Join VARARG of string with SEP."
   (table.concat [...] sep))
 
 
@@ -21,6 +26,7 @@
 
 
 (defn inspect [first ...]
+  "Inspect each of VARARG elements."
   (if (= (select :# ...) 0)
     (inspect-1 first)
     (values (inspect-1 first) (inspect ...))))
