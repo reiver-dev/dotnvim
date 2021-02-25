@@ -5,44 +5,47 @@
 
 
 (defn log [event]
-  (let [expand vim.fn.expand]
+  (let [expand vim.fn.expand
+        bufnr (vim.api.nvim_get_current_buf)]
     (l.log (.. "======= " event " ======="))
     (l.log "Data"
-         :file  (expand "<afile>")
-         :buffer (expand "<abuf>")
-         :buftype (vim.api.nvim_buf_get_option (tonumber (expand "<abuf>")) :buftype)
-         :loaded (vim.api.nvim_buf_is_loaded (tonumber (expand "<abuf>")))
-         :curbuffer (vim.fn.bufnr "%")
-         :curbufnr (vim.api.nvim_get_current_buf)
-         :curfile (vim.fn.expand "%:p")
-         :match (vim.fn.expand "<amatch>")
-         :event vim.v.event
-         :curbuftype vim.o.buftype
+         :expand-file  (expand "<afile>")
+         :expand-buffer (expand "<abuf>")
+         :expand-match (vim.fn.expand "<amatch>")
+         :fn-curbuf (vim.fn.bufnr "%")
+         :fn-curfile (vim.fn.expand "%:p")
+         :buf-number bufnr
+         :buf-type vim.o.buftype
+         :buf-loaded (vim.api.nvim_buf_is_loaded bufnr)
+         :v-errmsg vim.v.errmsg
+         :v-event vim.v.event
          :au event
          :dd (vim.fn.getbufvar (tonumber (expand "<abuf>")) "default_directory" "NIL")
          :reg (r.get-local (tonumber (expand "<abuf>"))))
-    (l.log "------- END -------")))
+    (l.log "------- END -------")
+    nil))
 
 
 (defn declare-event [event]
   (string.format
-    "autocmd %s * call v:lua._T('my.buflog', 'log', '%s')"
+    "autocmd %s * ++nested call v:lua._T('my.buflog', 'log', '%s')"
     event event))
 
 
 (defn declare-user-event [event]
   (string.format
-    "autocmd User %s call v:lua._T('my.buflog', 'log', '%s')"
+    "autocmd User %s ++nested call v:lua._T('my.buflog', 'log', '%s')"
     event event))
 
 
-(def events [:BufAdd :BufNew :BufCreate :BufNewFile
+(def events [:BufAdd :BufNew :BufNewFile
              :BufReadPre :BufRead :BufReadPost
              :BufHidden :BufUnload :BufDelete :BufWipeout
+             :VimEnter
              ;;; :BufEnter :BufLeave
              :TermOpen :TermClose
              :BufFilePre :BufFilePost
-             :FileType :VimEnter])
+             :FileType])
 
 
 (def command
