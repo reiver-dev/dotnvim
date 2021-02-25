@@ -107,4 +107,12 @@
   (nget-1 map (select :# ...) ...))
 
 
+(defn counter []
+  (var counter 0)
+  (fn []
+    (let [val (+ counter 1)]
+      (set counter val)
+      val)))
+
+
 ;;; util.fnl ends here
