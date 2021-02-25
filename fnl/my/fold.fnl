@@ -1,7 +1,7 @@
 (module my.fold)
 
 
-(defn try-fold-impl [fun acc iter state idx ...]
+(defn- try-fold-impl [fun acc iter state idx ...]
   (if (~= idx nil)
     (do
       (let [(ok acc) (fun acc ...)]
@@ -11,13 +11,35 @@
     acc))
 
 
+(defn- try-fold-idx-impl [fun acc iter state idx ...]
+  (if (~= idx nil)
+    (do
+      (let [(ok acc) (fun acc idx ...)]
+        (if ok
+          (try-fold-idx-impl fun acc iter state (iter state idx))
+          acc)))
+    acc))
+
 (defn try-fold [fun acc iter state idx]
   (try-fold-impl fun acc iter state (iter state idx)))
 
 
+(defn try-fold-idx [fun acc iter state idx]
+  (try-fold-idx-impl fun acc iter state (iter state idx)))
+
+
+(defn- set-first [new-arg0 arg0 ...]
+  (values new-arg0 ...))
+
+
 (defn always [fold]
   (fn [acc ...]
-    (values true (fold acc ...))))
+    (set-first true (fold acc ...))))
+
+
+(defn take1 [fold]
+  (fn [acc ...]
+    (set-first false (fold acc ...))))
 
 
 (defn fold-impl [fun acc iter state idx ...]
@@ -37,7 +59,7 @@
     (if (> i 0)
       (fold acc ...)
       (values false acc))))
-      
+
 
 (defn take-while [predicate fold]
   (fn [acc ...]
@@ -91,7 +113,7 @@
 
 (defn store [acc key item]
   (tset acc key item)
-  acc)
+  (values true acc))
 
 
 ;;; fold.fnl ends here
