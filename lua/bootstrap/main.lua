@@ -36,7 +36,8 @@ local function packages()
 
     pkg.def {
         name = "profiler",
-        url = "norcalli/profiler.nvim"
+        url = "norcalli/profiler.nvim",
+        opt = true,
     }
 
     pkg.def{ name = "popup", url = "nvim-lua/popup.nvim" }
@@ -52,39 +53,36 @@ local function packages()
     }
 
     pkg.def {
-        name = "onebuddy-theme",
-        url = "Th3Whit3Wolf/onebuddy",
-        opt = true,
+        name = "zephyr-theme",
+        url = "glepnir/zephyr-nvim",
         init = function()
-            vim.cmd "packadd colorbuddy.nvim"
-            vim.cmd "packadd onebuddy-theme"
-            require('colorbuddy').colorscheme('onebuddy')
+            require("zephyr")
         end
     }
 
+    -- pkg.def {
+    --     name = "vim-dirvish", 
+    --     url = "justinmk/vim-dirvish",
+    --     init = function()
+    --         vim.g.dirvish_mode = "sort ,^.*[\\/],"
+    --     end
+    -- }
+    
     pkg.def {
-        name = "vim-vinegar",
-        url = "tpope/vim-vinegar"
+        name = "devicons",
+        url = "kyazdani42/nvim-web-devicons",
+        opt = true
     }
 
     pkg.def {
-	name = "lightline.vim",
-	url = "itchyny/lightline.vim",
+        name = "galaxyline",
+        url = "glepnir/galaxyline.nvim",
+        branch = "main",
         init = function()
-            vim.g.lightline = {
-                active = {
-                    left = {{'mode', 'paste'},
-                            {'readonly', 'filename', 'modified'},
-                            {'directory'}},
-                    right = {{'lineinfo'},
-                             {'percent'},
-                             {'project', 'fileformat', 'fileencoding', 'filetype'}}
-                },
-                component = {
-                    directory = "%<D:%(%<%{fnamemodify(getbufvar('', 'default_directory', ''), ':~')}%)",
-                    project = "%<P:%(%<%{fnamemodify(getbufvar('', 'projectile', ''), ':~')}%)",
-                }
-            }
+            pkg.add("devicons")
+            pkg.add("galaxyline")
+            require("nvim-web-devicons").setup()
+            require("my.ui.galaxyline")
         end
     }
 
@@ -135,35 +133,6 @@ local function packages()
         name = "vim-fish",
         url = "dag/vim-fish"
     }
-
-    -- pkg.def {
-    --     name = "completion-nvim",
-    --     url = "haorenW1025/completion-nvim" ,
-    --     init = function()
-    --         vim.lsp.handlers = vim.lsp.callbacks
-    --         vim.g.completion_enable_snippet = "vim-vsnip"
-    --         vim.g.completion_enable_auto_popup = 0
-    --         vim.g.completion_chain_complete_list = {
-    --             default = {
-    --                 comment = {},
-    --                 default = {
-    --                     { complete_items = {"lsp", "snippet", "ts"} },
-    --                     { mode = "<c-p>" },
-    --                     { mode = "<c-n>" }
-    --                 }
-    --             }
-    --         }
-    --         hook.on.bufenter(".*", function()
-    --             if vim.bo.buftype == "" then
-    --                 require'completion'.on_attach()
-    --                 vim.api.nvim_buf_set_keymap(0, 'i',
-    --                     '<C-x><C-x>', 'completion#trigger_completion()',
-    --                     { noremap = true, silent = true, expr = true }
-    --                 )
-    --             end
-    --         end)
-    --     end
-    -- }
 
     pkg.def {
         name = "nvim-compe",
@@ -264,6 +233,11 @@ function M.setup()
     }
 
     pcall(pkg.add, "aniseed")
+    if pcall(pkg.add, "profiler") then
+        require "profiler"
+        M.runlisp = WRAP(M.runlisp)
+        M.finalize = WRAP(M.finalize)
+    end
 end
 
 function M.runlisp()
