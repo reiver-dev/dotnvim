@@ -67,12 +67,12 @@
 
 
 (defn format-line []
-  (vim.lsp.buf.range_formatting {} [(s.line-begin)] [(s.line-end)]))
+  (vim.lsp.buf.range_formatting {} [(p.line-begin)] [(p.line-end)]))
   
 
 (defn format-region []
-  (let [p (s.visual-point)]
-    (vim.lsp.buf.range_formatting {} p.min p.max)))
+  (let [pos (p.visual-point)]
+    (vim.lsp.buf.range_formatting {} pos.min pos.max)))
 
 
 (defn format-buffer []
