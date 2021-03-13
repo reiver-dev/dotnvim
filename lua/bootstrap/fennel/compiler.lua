@@ -61,7 +61,8 @@ end
 function M.compiler_init()
     local macros = vim.api.nvim_get_runtime_file("fnl/aniseed/macros.fnl", false)[1]
     local aniseed_root = vim.fn.fnamemodify(macros, ":h:h")
-    fennel.path = ("%s/?.fnl;%s"):format(aniseed_root, fennel.path)
+    local config_root = vim.fn.stdpath("config") .. "/fnl"
+    fennel.path = ("%s/?.fnl;%s/?.fnl;%s"):format(aniseed_root, config_root, fennel.path)
 end
 
 
