@@ -1,6 +1,7 @@
 (var gl (require "galaxyline"))
 (var colors (. (require "galaxyline.theme") :default))
 (var condition (require "galaxyline.condition"))
+(var icons (require "my.ui.icons"))
 
 (set gl.short_line_list [:NvimTree :vista :dbui])
 
@@ -27,6 +28,19 @@
 
 (fn get-local [bufnr ...]
   (_T :my.bufreg :get-local bufnr ...))
+
+
+(fn join-entries [tbl]
+  (let [res  []]
+    (each [k v (pairs tbl)]
+      (table.insert res (string.format "%s=%s" k v)))
+    res))
+
+
+(fn hi [name ...]
+  (vim.cmd (string.format "hi %s %s" name (-> (argpairs ...)
+                                              (join-entries)
+                                              (table.concat " ")))))
 
 
 (set gl.section.left [])
@@ -58,9 +72,17 @@
 (left :ViMode
       :provider (fn []
                   (let [mode (_T :my.ui.mode :resolve-current)]
-                    (vim.api.nvim_command (.. "hi GalaxyViMode guifg=" (. mode-colors mode)))
-                    (string.format "[%s] " mode)))
-      :highlight [colors.red colors.bg :bold])
+                    (hi :GalaxyViMode :guifg (. mode-colors mode))
+                    (string.format "%s  " (. icons.mode mode))))
+      :highlight [colors.black colors.bg :bold])
+
+
+;; (left :ViMode
+;;       :provider (fn []
+;;                   (let [mode (_T :my.ui.mode :resolve-current)]
+;;                     (vim.api.nvim_command 
+;;                       (string.format "hi GalaxyViMode guifg=%s" (. mode-colors mode)))
+;;                     (string.format "%s " icons.powerline.slant.ll))))
         
 
 ;; File information
@@ -86,8 +108,7 @@
 ;; File position
 
 (left :LineColumn
-      :provider #(string.format
-                   "%5s:%-3s" (vim.fn.line ".") (vim.fn.col ".")) 
+      :provider #(string.format "%5s:%-3s" (vim.fn.line ".") (vim.fn.col ".")) 
       :separator " "
       :separator_highlight [:NONE colors.bg]
       :highlight [colors.fg colors.bg])
@@ -96,13 +117,11 @@
 (left :PerCent
       :provider #(let [current (vim.fn.line ".")
                        total (vim.fn.line "$")]
-                   (if (= current 1)
-                     " Top "
-                     (if (= current total)
-                       " Bot "
-                       (string.format
-                         " %2.0f%% " (math.modf (* (/ current total) 100))))))
-      :separator " "
+                   (match current
+                     1 " Top "
+                     total " Bot "
+                     _ (string.format " %2.0f%% " (math.modf (* (/ current total) 100)))))
+      :separator "%<"
       :separator_highlight [:NONE colors.bg]
       :highlight [colors.fg colors.bg :bold])
 
@@ -122,17 +141,14 @@
         bufnr (vim.api.nvim_get_current_buf)
         clients (lsp.buf_get_clients bufnr)
         enabled (or (get-local 0 :enabled-checkers) [])]
-    (if (or (next clients) (next enabled))
-      (do
-        (var count 0)
-        (each [_ client (ipairs clients)]
-          (set count (+ count (lsp.diagnostic.get_count bufnr kind client.id))))
-        (each [_ client-id (pairs enabled)]
-          (set count (+ count (lsp.diagnostic.get_count bufnr kind client-id))))
-        (if (< 0 count)
-          (string.format "%d " count)
-          ""))
-      ""))) 
+    (when (or (next clients) (next enabled))
+      (var count 0)
+      (each [_ client (ipairs clients)]
+        (set count (+ count (lsp.diagnostic.get_count bufnr kind client.id))))
+      (each [_ client-id (pairs enabled)]
+        (set count (+ count (lsp.diagnostic.get_count bufnr kind client-id))))
+      (when (< 0 count)
+        (string.format "%d " count)))))
 
 
 (left :DiagnosticError
@@ -159,7 +175,7 @@
 
 (right :Project
       :provider #(let [dir (get-local 0 :project :root)]
-                   (if dir (vim.fn.fnamemodify dir ":~") ""))
+                   (and dir (vim.fn.fnamemodify dir ":~")))
       :separator " "
       :separator_highlight [:NONE colors.bg]
       :highlight [colors.fg colors.bg :bold])
@@ -182,24 +198,18 @@
 
 ;; VCS data
 
-(right :VcsIcon
-       :provider (fn [] "  ")
-       :condition #(_T :my.vcs :buffer-has-vcs 0)
-       :separator " "
-       :separator_highlight [:NONE colors.bg]
-       :highlight [colors.violet colors.bg :bold])
-
 (right :VcsHead
        :provider (fn [] (.. (_T :my.vcs :find-head 0) " "))
        :condition #(_T :my.vcs :buffer-has-vcs 0)
-       :separator " "
+       :icon " "
+       :separator "  "
        :separator_highlight [:NONE colors.bg]
        :highlight [colors.violet colors.bg :bold])
 
 (right :DiffAdd
        :provider "DiffAdd"
        :condtion condition.hide_in_width
-       :icon "   "
+       :icon "  "
        :highlight [colors.green colors.bg])
 
 (right :DiffModified
