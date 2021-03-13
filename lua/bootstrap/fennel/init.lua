@@ -9,11 +9,13 @@ local function gather_files(root)
     local sources = vim.fn.globpath(srcdir, "**/*.fnl", true, true)
     local getftime = vim.fn.getftime
     for _, srcpath in ipairs(sources) do
-        local srcpath = srcpath:gsub("\\", "/")
-        local suffix = srcpath:sub(prefixlen + 1)
-        local dstpath = dstdir .. suffix:sub(1, -4) .. "lua"
-        if getftime(srcpath) > getftime(dstpath) then
-            result[srcpath] = dstpath
+        if not srcpath:match(".*macros.fnl") then
+            local srcpath = srcpath:gsub("\\", "/")
+            local suffix = srcpath:sub(prefixlen + 1)
+            local dstpath = dstdir .. suffix:sub(1, -4) .. "lua"
+            if getftime(srcpath) > getftime(dstpath) then
+                result[srcpath] = dstpath
+            end
         end
     end
     return result
