@@ -2,41 +2,26 @@
   {require {v my.vararg
             u my.util}})
 
+(require-macros :my.validate-macros)
+(require-macros :my.coroutine-macros)
 
 (def- nothing u.nothing)
 (def- argpack v.pack)
 (def- argunpack v.unpack)
 (def- argunpack-tail v.unpack-tail)
 
+(def- callable? vim.is_callable)
 
 (defn- default-error [thread msg]
   (debug.traceback thread msg))
 
 
-(defn- coro-dead? [coro]
-  (= (coroutine.status coro) "dead"))
-
-
-(defn- coro-alive? [coro]
-  (not= (coroutine.status coro) "dead"))
-
-
-(def- coro-resume coroutine.resume)
-
-
-(def- coro-yield coroutine.yield)
-
-
-(defn- call-first [argument callback]
-  (callback argument))
-
-
-(defn- proceed [coro finally err continuation status ...]
+(defn- proceed [coro finally onerror continuation status ...]
   (if status
     (if (coro-dead? coro)
       (finally true ...)
-      (call-first continuation ...))
-    (finally false (err coro ...))))
+      (let [callback ...] (callback continuation)))
+    (finally false (onerror coro ...))))
 
 
 (defn- resume [coro finally err continuation ...]
@@ -44,9 +29,9 @@
 
 
 (defn- maybe-create [func]
-  (if (vim.is_callable func)
+  (if (callable? func)
     (coroutine.create func)
-    (if (= (type func) "thread")
+    (if (coro? func)
       (let [status (coroutine.status func)]
         (if (= status "suspended")
           func
@@ -56,27 +41,73 @@
       (error "Function or coroutine expected"))))
 
 
-(defn step [func callback err ...]
-  (vim.validate {:callback [callback :function true]
-                 :err [err :function true]})
+(defn step [func callback onerror ...]
+  (validate func callable? coro?)
+  (validate onerror nil? callable?)
   (let [coro (maybe-create func)
         finally (or callback nothing) 
-        onerror (or err default-error)]
-    (var tick nil)
-    (set tick (fn [...] (resume coro finally onerror tick ...)))
-    (resume coro finally onerror tick ...)))
+        err (or onerror default-error)]
+    (var continuation nil)
+    (set continuation (fn [...]
+                        (resume coro finally err continuation ...)))
+    (resume coro finally onerror continuation ...)))
 
 
-(defn wrap [func]
-  (vim.validate {:func [func :function]})
-  (fn [...]
-    (let [params (argpack ...)]
-      (fn [tick]
-        (func (argunpack-tail params tick))))))
+(defn- bind-but-last-argument [func ...]
+  (match (select :# ...)
+    0 func
+    1 (let [arg1 ...]
+        (fn [continuation] (func arg1 continuation)))
+    2 (let [(arg1 arg2) ...]
+        (fn [continuation] (func arg1 arg2 continuation)))
+    3 (let [(arg1 arg2 arg3) ...]
+        (fn [continuation] (func arg1 arg2 arg3 continuation)))
+    _ (let [args (argpack ...)]
+        (fn [continuation] (func (argunpack-tail args continuation))))))
+
+
+(defn from-callback [func]
+  (validate func callable?)
+  (fn [...] (bind-but-last-argument func ...)))
+
+
+(defn wrap-coro [func onerror ...]
+  (let [num (select :# ...)]
+    (match num
+      ;; No arg
+      0 (fn [continuation]
+          (step func continuation onerror))
+      ;; Single arg
+      1 (let [value ...]
+          (fn [continuation]
+            (step func continuation onerror value)))
+      ;; Two arg
+      2 (let [(value1 value2) ...]
+          (fn [continuation]
+            (step func continuation onerror value1 value2)))
+      ;; Varargs
+      _ (let [params (argpack ...)]
+          (fn [continuation]
+            (step func continuation onerror (argunpack params)))))))
+
+
+(defn wrap-vim [func]
+  (fn [continuation]
+    (vim.schedule
+      (fn [] (continuation (pcall func))))))
+
+
+(defn wait-callback [func ...]
+  (validate func callable?)
+  (coro-yield (bind-but-last-argument func ...)))
+
+
+(defn wait [...]
+  (coro-yield ...))
 
 
 (defn- gather-impl [coros callback]
-  (vim.validate {:gather-callback [callback :f]})
+  (validate callback callable?)
   (if (vim.tbl_isempty coros)
     (callback)
     (let [count (length coros)
@@ -94,10 +125,6 @@
 (defn gather [coros]
   (fn [callback]
     (gather-impl coros callback)))
-
-
-(defn wait [...]
-  (coro-yield ...))
 
 
 (defn- iter-wait-state-decrement [state idx]
@@ -118,36 +145,17 @@
     self))
 
 
-(defn iter [threads]
-  (let [state (iter-wait-state (length threads))]
-    (each [idx thread (ipairs threads)]
-      (thread (fn [...]
-                (state.resume idx ...))))
+(defn iter [coros]
+  (let [state (iter-wait-state (length coros))]
+    (each [idx coro (ipairs coros)]
+      (coro (fn [...] (state.resume idx ...))))
     (values iter-wait-impl state 0)))
 
 
-(defn sync [func err ...]
-  (let [num (select :# ...)]
-    (if (= num 0)
-      (fn [tick] (step func tick err))
-      (if (= num 1)
-        (let [value ...]
-          (fn [tick] (step func tick err value)))
-        (if (= num 2)
-          (let [(value1 value2) ...]
-            (fn [tick] (step func tick err value1 value2)))
-          (let [params (argpack ...)]
-            (fn [tick] (step func tick err (argunpack params)))))))))
-
-
-(defn main [func]
-  (vim.schedule func))
-
-
 (defn block [func timeout interval]
-  (vim.validate {:timeout [timeout :number true]
-                 :interval [interval :number true]
-                 :func [func :function]})
+  (validate func callable?)
+  (validate timeout nil? number?)
+  (validate interval nil? number?)
   (var context {:completed false})
   (step func (fn [...]
                (set context.result (argpack ...))

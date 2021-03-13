@@ -1,7 +1,7 @@
 (module my.fswalk
   {require {fs my.filesystem
             ps my.pathsep
-            a my.async}})
+            async my.async}})
 
 
 (defn dirup [path]
@@ -41,7 +41,7 @@
 
 
 (def- astat
-  (a.wrap
+  (async.from-callback
     (fn [path continuation]
       (vim.loop.fs_stat
         path (fn [err stat rest]
@@ -61,7 +61,7 @@
   (let [found-dirs {}
         found-files {}]
     (when (and path (or files directories)
-               (= (select 2 (a.wait (astat path))) "directory"))
+               (= (select 2 (async.wait (astat path))) "directory"))
       (let [paths []
             handles []]
         (each [base (dirup path)]
@@ -73,7 +73,7 @@
             (each [_ dirname (ipairs directories)]
               (table.insert paths ["directory" found-dirs dirname base])
               (table.insert handles (astat (ps.join base dirname))))))
-        (let [stats (a.wait (a.gather handles))]
+        (let [stats (async.wait (async.gather handles))]
           (when stats
             (each [i [oldpath filetype] (pairs stats)]
               (when filetype
@@ -86,7 +86,7 @@
   (let [found-dirs {}
         found-files {}]
     (when (and path (or files directories)
-               (= (select 2 (a.wait (astat path))) "directory"))
+               (= (select 2 (async.wait (astat path))) "directory"))
       (let [paths []
             handles []]
         (each [base (dirup path)]
@@ -98,7 +98,7 @@
             (each [_ dirname (ipairs directories)]
               (table.insert paths ["directory" found-dirs dirname base])
               (table.insert handles (astat (ps.join base dirname))))))
-        (each [i oldpath filetype (a.iter handles)]
+        (each [i oldpath filetype (async.iter handles)]
           (when filetype
             (let [[kind collection base path] (. paths i)]
               (assign collection base path))))))
