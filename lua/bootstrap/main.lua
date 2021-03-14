@@ -169,10 +169,6 @@ local function packages()
     }
 
     pkg.def { name = "vista", url = "liuchengxu/vista.vim" }
-
-    pkg.def { name = "nvim-treesitter", url = "nvim-treesitter/nvim-treesitter" }
-    pkg.def { name = "nvim-treesitter-playground", url = "nvim-treesitter/playground" }
-    -- pkg.def { name = "nvim-treesitter-completion", url = "nvim-treesitter/completion-treesitter" }
 end
 
 
