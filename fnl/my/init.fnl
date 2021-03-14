@@ -19,6 +19,7 @@
    "my.keybind"
    "my.commands"
    "my.telescope"
+   "my.filetree"
    "my.repl"
    "my.lang"
    "my.pack"
