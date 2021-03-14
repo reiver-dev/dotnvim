@@ -12,6 +12,7 @@
    "my.terminal"
    "my.editing"
    "my.vcs"
+   "my.theme"
    "my.directory"
    "my.project"
    "my.lsp"
@@ -23,7 +24,8 @@
    "my.repl"
    "my.lang"
    "my.pack"
-   "my.checkers"])
+   "my.checkers"
+   "my.ui"])
 
 
 (defn setup [] 

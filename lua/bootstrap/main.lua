@@ -15,23 +15,30 @@ local function packages()
         opt = true,
         init = function()
             hook.after.filetype("fennel", function()
-                require("bootstrap.fennel.compiler").initialize()
                 local var = "conjure#client#fennel#aniseed#aniseed_module_prefix"
                 vim.g[var] = "aniseed."
+                require("bootstrap.fennel.compiler").initialize()
                 pkg.add("conjure")
+                if pkg.installed("compe") and pkg.installed("compe-conjure") then
+                    pkg.add("compe-conjure")
+                    require'compe'.register_source('conjure', require'compe_conjure')
+                end
             end)
         end
-    }
+    } 
 
     pkg.def {
-        name = "colorbuddy.nvim",
-        url = "tjdevries/colorbuddy.vim",
-        opt = true
+        name = "compe-conjure",
+        url = "tami5/compe-conjure",
+        opt = true,
     }
 
     pkg.def {
         name = "colorizer",
-        url = "norcalli/nvim-colorizer.lua"
+        url = "norcalli/nvim-colorizer.lua",
+        init = function()
+            require("colorizer").setup()
+        end
     }
 
     pkg.def {
@@ -51,47 +58,13 @@ local function packages()
         end
     }
 
-    pkg.def {
-        name = "zephyr-theme",
-        url = "glepnir/zephyr-nvim",
-        init = function()
-            require("zephyr")
-        end
-    }
-
-    -- pkg.def {
-    --     name = "vim-dirvish", 
-    --     url = "justinmk/vim-dirvish",
-    --     init = function()
-    --         vim.g.dirvish_mode = "sort ,^.*[\\/],"
-    --     end
-    -- }
-    
-    pkg.def {
-        name = "devicons",
-        url = "kyazdani42/nvim-web-devicons",
-        opt = true
-    }
-
-    pkg.def {
-        name = "galaxyline",
-        url = "glepnir/galaxyline.nvim",
-        branch = "main",
-        init = function()
-            pkg.add("devicons")
-            pkg.add("galaxyline")
-            require("nvim-web-devicons").setup()
-            require("my.ui.galaxyline")
-        end
-    }
-
-    pkg.def {
-        name = "parinfer-rust",
-        url = "eraserhd/parinfer-rust",
-        on_update = function()
-            vim.cmd("!cargo build --release")
-        end
-    }
+    if vim.fn.exepath("cargo") ~= "" then
+        pkg.def {
+            name = "parinfer-rust",
+            url = "eraserhd/parinfer-rust",
+            on_update = "cargo build --release"
+        }
+    end
 
     pkg.def {
         name = "fzf",
@@ -107,7 +80,7 @@ local function packages()
         url = "junegunn/fzf.vim",
         init = function ()
             vim.api.nvim_set_keymap('n', '<C-x>f', ':Files<CR>', {})
-            vim.api.nvim_set_keymap('n', '<C-x>b', ':Buffers<CR>', {})
+            -- vim.api.nvim_set_keymap('n', '<C-x>b', ':Buffers<CR>', {})
         end
     }
 
@@ -117,24 +90,12 @@ local function packages()
     pkg.def { name = "which-key", url = "liuchengxu/vim-which-key" }
 
     pkg.def {
-        name = "vim-clap",
-        url = "liuchengxu/vim-clap",
-        opt = true,
-        init = function()
-            hook.after.command("Clap", function()
-                pkg.add("vim-clap")
-                _trampouline("my.pack.clap", "setup")
-            end)
-        end
-    }
-
-    pkg.def {
         name = "vim-fish",
         url = "dag/vim-fish"
     }
 
     pkg.def {
-        name = "nvim-compe",
+        name = "compe",
         url = "hrsh7th/nvim-compe",
         init = function ()
             require("compe").setup {
@@ -143,7 +104,11 @@ local function packages()
                     path = true,
                     buffer = true,
                     calc = true,
-                    nvim_lsp = true
+                    nvim_lsp = true,
+                    nvim_lua = true,
+                    snippets_nvim = true,
+                    treesitter = true,
+                    conjure = true,
                 }
             }
             function map(key, action) 
@@ -156,8 +121,7 @@ local function packages()
         end
     }
 
-    pkg.def { name = "vim-vsnip", url =  "hrsh7th/vim-vsnip" }
-    -- pkg.def { name = "vim-vsnip-integ", url = "hrsh7th/vim-vsnip-integ" }
+    pkg.def { name = "snippets.nvim", url = "norcalli/snippets.nvim" }
 
     pkg.def {
         name = "nvim-lspconfig",
