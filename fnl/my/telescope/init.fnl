@@ -1,19 +1,16 @@
-(module my.telescope)
+(module my.telescope
+  {require {pkg bootstrap.pkgmanager}})
 
-(def make_entry (require "telescope.make_entry"))
 
-(def entry_display (require "telescope.pickers.entry_display"))
+(defn setup []
+  (pkg.def
+    {:name "telescope"
+     :url "nvim-lua/telescope.nvim"
+     :init (fn []
+             ;; (vim.api.nvim_set_keymap
+             ;;   :n "<C-x>f" "<cmd>Telescope file_browser<CR>" {:noremap true})
+             (vim.api.nvim_set_keymap
+               :n "<C-x>b" "<cmd>Telescope buffers<CR>" {:noremap true}))}))
+             
 
-(def finders (require "telescope.finders"))
-
-(def pickers (require "telescope.pickers"))
-
-(def sorters (require "telescope.sorters"))
-
-(def previewers (require "telescope.previewers"))
-
-(def actions (require "telescope.actions"))
-
-(def utils (require "telescope.utils"))
-
-(def putils (require "telescope.previewers.utils"))
+            

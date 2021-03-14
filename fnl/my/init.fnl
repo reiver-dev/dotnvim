@@ -18,6 +18,7 @@
    "my.treesitter"
    "my.keybind"
    "my.commands"
+   "my.telescope"
    "my.repl"
    "my.lang"
    "my.pack"

@@ -42,7 +42,6 @@ local function packages()
 
     pkg.def{ name = "popup", url = "nvim-lua/popup.nvim" }
     pkg.def{ name = "plenary", url = "nvim-lua/plenary.nvim" }
-    pkg.def{ name = "telescope", url = "nvim-lua/telescope.nvim" }
 
     pkg.def {
         name = "fix-cursor-hold",
