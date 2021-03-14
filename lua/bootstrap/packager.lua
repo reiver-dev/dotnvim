@@ -71,19 +71,19 @@ end
 
 function M.add(url, opts)
     local arg = { url, gather(opts, ADD_FIELDS) }
-    return apply("packager#add", arg, {[1] = 'do'})
+    return apply("packager#add", arg)
 end
 
 
 function M.localpkg(path, opts)
     local arg = { path, gather(opts, LOCAL_FIELDS) }
-    return apply("packager#local", arg, {[1] = 'do'})
+    return apply("packager#local", arg)
 end
 
 
 function M.install(opts)
     local arg = { gather(opts, INSTALL_FIELDS) }
-    return apply("packager#install", arg, {[0] = "do"})
+    return apply("packager#install", arg)
 end
 
 

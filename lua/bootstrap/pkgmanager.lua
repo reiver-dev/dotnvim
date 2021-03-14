@@ -88,7 +88,9 @@ local function schedule_install(name, url, dir, kind)
         if dt == "string" then
             opts["do"] = pkg.on_update
         elseif dt == "function" then
-            opts["do"] = FUNCREF:format(name)
+            opts["do"] = function() 
+                _T("bootstrap.pkgmanager", "_hook_on_add", name)
+            end
         end
     end
 
