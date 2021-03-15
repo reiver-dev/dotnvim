@@ -4,5 +4,7 @@
 
 (defn setup []
   (each [_ name (ipairs [:flake8 :mypy])]
-    (let [mod (require (.. "my.checkers." name))]
-      (chk.register name mod.run mod.cancel))))
+    (let [mod (.. "my.checkers." name)]
+      (chk.register name
+                    (fn [...] (_T mod :run ...))
+                    (fn [...] (_T mod :cancel ...))))))

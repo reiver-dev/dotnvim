@@ -13,10 +13,13 @@
   (b.get-local bufnr :python :environment))
 
 
+(def- iswin (vim.startswith (. (vim.loop.os_uname) :version) "Windows"))
+
+
 (defn executable [bufnr]
-  (or (b.get-local bufnr :python :exec)
+  (or (b.get-local bufnr :python :executable)
       (let [venv (environment bufnr)]
-        (when venv (p.join venv "bin/python")))
+        (when venv (p.join venv (when iswin "python" "bin/python"))))
       "python"))
 
 
@@ -42,22 +45,48 @@
   (join (executable bufnr) "-c" (runmodule-template:format modname) ...))
 
 
-(defn maybe-slurp [path]
-  (when path (fs.slurp path)))
+(defn- strip [path]
+  (when path
+    (let [result (path:gsub "^%s*(.-)%s*$" "%1")] 
+      result)))
 
 
-(defn python-env [path]
-  (let [(f d) (w.gather path [".virtual_env" ".conda_prefix"] [".venv"])]
-    {:VIRTUAL_ENV (or (maybe-slurp (. f :.virtual_env))
-                      (. d :.venv))
-     :CONDA_PREFIX (maybe-slurp (. f :.conda_prefix))}))
+(defn- maybe-slurp [path]
+  (-?> path
+       (fs.slurp)
+       (strip)))
+
+
+(defn discover-markers [path]
+  (let [(files dirs) (w.gather path
+                               ["setup.cfg" "pyproject.toml" "mypy.ini"
+                                ".virtual_env" ".conda_prefix"]
+                               [".venv"])]
+    {: files : dirs}))
+
+
+(defn ensure-markers [bufnr force]
+  (var markers (b.get-local bufnr :python :markers))
+  (when (not markers)
+    (set markers (discover-markers (b.get-local bufnr :directory)))
+    (b.set-local bufnr :python :markers markers))
+  markers)
 
 
 (defn initialize []
   (let [dir (vim.fn.expand "<afile>:p:h")
-        bufnr (tonumber (vim.fn.expand "<abuf>"))]
-    (let [{:VIRTUAL_ENV env} (python-env dir)]
-      (when env
+        bufnr (tonumber (vim.fn.expand "<abuf>"))
+        markers (ensure-markers bufnr)]
+    (when (not (b.get-local bufnr :python :environment))
+      (let [env (or (-?> markers
+                        (. :files)
+                        (. :.virtual_env)
+                        (. 1)
+                        (maybe-slurp))
+                    (-?> markers
+                        (. :dirs)
+                        (. :.venv)
+                        (. 1)))]
         (b.set-local bufnr :python :environment env)))))
 
 

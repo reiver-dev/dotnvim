@@ -32,7 +32,7 @@
     (var i 1)
     (while (and (<= i len) (predicate str i))
       (set i (+ i 1)))
-    (str:sub 1 i)))
+    (str:sub i)))
 
 
 (defn rtrim [str predicate]
@@ -40,6 +40,16 @@
   (while (and (< 0 i) (predicate str i))
     (set i (- i 1)))
   (str:sub 1 i))
+
+
+(defn trim [str predicate]
+  (var begin 1)
+  (var end (str:len))
+  (while (and (<= begin end) (predicate str begin))
+    (set begin (+ begin 1)))
+  (while (and (< begin end) (predicate str end))
+    (set end (- end 1)))
+  (str:sub begin end))
 
 
 (defn rkeepone [str predicate]

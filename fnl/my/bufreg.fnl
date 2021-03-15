@@ -97,9 +97,12 @@ augroup END")
 
 (defn set-local [bufnr ...]
   "Associate value with BUFNR buffer state."
-  (let [id (or (buffer-id bufnr) (ensure-state bufnr))]
+  (let [id (or (buffer-id bufnr) (ensure-state bufnr))
+        initial ...]
     (when id
-      (u.nset global-buffer-state id ...))))
+      (u.nset global-buffer-state id ...)
+      (when (= initial nil)
+        (vim.api.nvim_buf_del_var bufnr "__buffer_state_ref_holder__")))))
 
 
 (defn get-local [bufnr ...]
@@ -107,6 +110,14 @@ augroup END")
   (let [id (buffer-id bufnr)]
     (when id
       (u.nget global-buffer-state id ...))))
+
+
+(defn update-local [bufnr ...]
+  (let [id (or (buffer-id bufnr) (ensure-state bufnr))
+        initial ...]
+    (assert (not= nil initial) "First key must not be nil")
+    (when id
+      (u.nupd global-buffer-state id ...))))
 
 
 (defn state []

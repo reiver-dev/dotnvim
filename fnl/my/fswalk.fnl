@@ -21,6 +21,13 @@
     (and res (= (. res :type) "directory"))))
 
 
+(defn- assign [collection name value]
+  (let [arr (. collection name)]
+    (if arr
+      (table.insert arr value)
+      (tset collection name [value]))))
+
+
 (defn gather [path files directories]
   (let [fe {}
         de {}]
@@ -30,14 +37,13 @@
           (each [i f (ipairs files)]
             (let [loc (ps.join path f)]
               (when (fs.file? loc)
-                (tset fe f loc)))))
+                (assign fe f loc)))))
         (when directories
           (each [i d (ipairs directories)]
             (let [loc (ps.join path d)]
               (when (fs.directory? loc)
-                (tset de d loc)))))))
+                (assign de d loc)))))))
     (values fe de)))
-
 
 
 (def- astat
@@ -48,13 +54,6 @@
                (if (not err)
                  (continuation path stat.type)
                  (continuation)))))))
-
-
-(defn- assign [collection name value]
-  (let [arr (. collection name)]
-    (if arr
-      (table.insert arr value)
-      (tset collection name [value]))))
 
 
 (defn- async-gather-1 [path files directories]

@@ -74,7 +74,7 @@
       (cycle-apply-impl func begin end (+ 1 (% idx end))))))
 
 
-(defn- nset-1 [root n map key ...]
+(defn- nset-1 [map n key ...]
   (if (< 2 n)
     (do
       (var nested (. map key))
@@ -82,7 +82,7 @@
         (let [new {}]
           (tset map key new)
           (set nested new)))
-      (nset-1 root (- n 1) nested ...))
+      (nset-1 nested (- n 1) ...))
     (do
       (tset map key ...)
       ...)))
@@ -91,7 +91,7 @@
 (defn nset [map ...]
   "Set MAP value by key. VARARG is sequence of keys and last value.
   If multiple keys supplied, they are used to traverse or create nested maps."
-  (nset-1 map (select :# ...) map ...))
+  (nset-1 map (select :# ...) ...))
 
 
 (defn- nget-1 [map n key ...]
@@ -99,12 +99,32 @@
     (if (and (< 1 n) nested)
       (nget-1 nested (- n 1) ...)
       nested)))
-    
+
 
 (defn nget [map ...]
   "Get value from MAP by key. VARARG is sequence of keys.
   If multiple keys supplied, they are used to traverse nested maps."
   (nget-1 map (select :# ...) ...))
+
+
+(defn- nupdate-1 [map n key ...]
+  (if (< 2 n)
+    (do
+      (var nested (. map key))
+      (when (not nested)
+        (let [new {}]
+          (tset map key new)
+          (set nested new)))
+      (nupdate-1 nested (- n 1) ...))
+    (do
+      (let [func ...
+            result (func (. map key))]
+        (tset map key result)
+        result))))
+
+
+(defn nupd [map ...]
+  (nupdate-1 map (select :# ...) ...))
 
 
 (defn counter []
