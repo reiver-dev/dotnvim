@@ -38,6 +38,9 @@ end
 
 
 local function error_handler(message)
+    if type(message) ~= "string" then
+        message = ("Error Value: %s"):format(view(message))
+    end
     local t = debug.traceback(message, 2):gsub("\n", "\n\t")
     return ("EvalExpr\n\t%s\n"):format(t):gsub("\t", "    ")
 end
