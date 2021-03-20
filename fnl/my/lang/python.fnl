@@ -14,12 +14,13 @@
 
 
 (def- iswin (vim.startswith (. (vim.loop.os_uname) :version) "Windows"))
+(def- exetail (if iswin "python" "bin/python"))
 
 
 (defn executable [bufnr]
   (or (b.get-local bufnr :python :executable)
       (let [venv (environment bufnr)]
-        (when venv (p.join venv (when iswin "python" "bin/python"))))
+        (when venv (p.join venv exetail)))
       "python"))
 
 
