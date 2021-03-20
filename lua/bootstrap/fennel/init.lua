@@ -22,28 +22,22 @@ local function gather_files(root)
 end
 
 
-local function preload_wrap(name)
-    package.preload[name] = function(...)
-        require "fennel"
-        return package.preload["aniseed." .. name](...)
-    end
-end
-
-
 function M.ensure_modules()
-    package.preload["fennel"] = function()
-        return require "aniseed.deps.fennel"
+    local fennel = function()
+        return require "fennel"
     end
-    package.preload["fennel.view"] = function ()
-        return require "aniseed.deps.fennelview"
+
+    local fennelview = function()
+        return require "fennel.view"
     end
-    package.preload["fennelview"] = package.preload["fennel.view"]
-    preload_wrap("fennel.parser")
-    preload_wrap("fennel.compiler")
-    preload_wrap("fennel.specials")
-    preload_wrap("fennel.utils")
-    preload_wrap("fennel.friend")
-    preload_wrap("fennel.repl")
+
+    package.preload["fennelview"] = fennelview
+
+    package.preload["aniseed.deps.fennel"] = fennel
+    package.preload["aniseed.deps.fennelview"] = fennelview 
+
+    package.preload["conjure.aniseed.deps.fennel"] = fennel
+    package.preload["conjure.aniseed.deps.fennelview"] = fennelview 
 end
 
 
@@ -51,18 +45,19 @@ function M.compile()
     local cfg = vim.fn.stdpath('config'):gsub('\\', '/')
     local sources = gather_files(cfg) 
     local afterfiles = gather_files(cfg .. "/after")
-    local opts = {
-        useMetadata = false,
-        compilerEnv = _G,
-        ["compiler-env"] = _G
-    }
 
     if vim.tbl_isempty(sources) and vim.tbl_isempty(afterfiles) then
         return
     end
 
-    local fennel = require"bootstrap.fennel.compiler"
+    local fennel = require("bootstrap.fennel.compiler")
     fennel.initialize()
+
+    local opts = {
+        useMetadata = false,
+        compilerEnv = _G,
+        ["compiler-env"] = _G
+    }
 
     for src, dst in pairs(sources) do
         opts.filename = src
@@ -77,7 +72,6 @@ end
 
 
 function M.init()
-    require"my".setup()
     interop = require"bootstrap.interop"
 
     local def = interop.command{

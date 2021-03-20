@@ -68,8 +68,17 @@
   (vim.api.nvim_buf_set_var bufnr :default_directory directory)
   (vim.api.nvim_buf_call
     bufnr (fn [] (vim.cmd (.. "lcd " (vim.fn.fnameescape directory))))))
-  
+
+
+(def- autocmd
+  "augroup boostrap_terminal
+  autocmd!
+  autocmd TermOpen * setlocal nonumber norelativenumber
+  augroup end
+  ")
+
 
 (defn setup []
-  (setup-bindings))
+  (setup-bindings)
+  (vim.api.nvim_exec autocmd false))
   

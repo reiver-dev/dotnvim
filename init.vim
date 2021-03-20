@@ -74,8 +74,9 @@ function! ProjectRoot()
 endfunction
 
 
-lua require("bootstrap.main").setup()
-lua require("bootstrap.main").runlisp()
-lua require("bootstrap.main").finalize()
+" lua require("bootstrap.main").setup()
+" lua require("bootstrap.main").runlisp()
+" lua require("bootstrap.main").finalize()
+lua require("bootstrap").setup()
 
 """ init.vim ends here

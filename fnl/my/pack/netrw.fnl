@@ -1,13 +1,6 @@
 (module my.pack.netrw
-  {require {pkg bootstrap.pkgmanager
-            b my.bufreg
+  {require {b my.bufreg
             p my.project}})
-
-
-(defn- packages []
-  (pkg.def
-    {:name "vinegar"
-     :url "tpope/vim-vinegar"}))
 
 
 (def- autocmd-init
@@ -61,6 +54,5 @@
   
 
 (defn setup []
-  (packages)
   (vim.api.nvim_exec autocmd-init false)
   (set vim.g.netrw_keepdir 0))

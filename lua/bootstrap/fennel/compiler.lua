@@ -12,13 +12,6 @@ function M.compile_source(text, opts)
 end
 
 
-function M.compile_source2(text, opts)
-    local code = "(import-macros [:module] \"aniseed.macros\")" .. text
-    return xpcall(function() return fennel.compileString(code, opts) end,
-                  fennel.traceback)
-end
-
-
 local function slurp(path)
     local fd, err = io.open(path, "r")
     if fd == nil then
@@ -59,10 +52,11 @@ end
 
 
 function M.compiler_init()
-    local macros = vim.api.nvim_get_runtime_file("fnl/aniseed/macros.fnl", false)[1]
+    LOAD_PACKAGE("conjure")
+    local macros = vim.api.nvim_get_runtime_file("lua/conjure/aniseed/macros.fnl", false)[1]
     local aniseed_root = vim.fn.fnamemodify(macros, ":h:h")
-    local config_root = vim.fn.stdpath("config") .. "/fnl"
-    fennel.path = ("%s/?.fnl;%s/?.fnl;%s"):format(aniseed_root, config_root, fennel.path)
+    local fnl_root = vim.fn.stdpath("config") .. "/fnl"
+    fennel.path = ("%s/?.fnl;%s/?.fnl;%s"):format(aniseed_root, fnl_root, fennel.path)
 end
 
 

@@ -1,31 +1,20 @@
 (module my.treesitter
-  {require {pkg bootstrap.pkgmanager}})
-
-
-(defn- treesitter-setup [opts]
-  (let [ts (require "nvim-treesitter.configs")]
-    (ts.setup opts)))
+  {require {ts nvim-treesitter.configs}})
 
 
 (defn- configure []
-  (treesitter-setup
+  (ts.setup
     {:highlight {:enable true
                  :disable [:css]}
-     :rainbow {:enable true}}))
-
-
-(defn- packages []
-  (pkg.def
-    {:name "nvim-treesitter"
-     :url "nvim-treesitter/nvim-treesitter"
-     :init configure})
-  (pkg.def
-    {:name "nvim-treesitter-playground"
-     :url "nvim-treesitter/playground"})
-  (pkg.def
-    {:name "nvim-treesitter-rainbow"
-     :url "p00f/nvim-ts-rainbow"}))
+     :rainbow {:enable true}
+     :playground {:enable true
+                  :disable {}
+                  :updatetime 25
+                  :persist_queries false}
+     :query_linter {:enable true
+                    :use_virtual_text true
+                    :lint_events [:BufWrite :CursorHold]}}))
 
 
 (defn setup []
-  (packages))
+  (configure))

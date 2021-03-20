@@ -37,8 +37,8 @@
   "Execute fennel SCRIPT-FILE with OPTIONS table as `_A` global variable."
   (match (pcall slurp script-file)
     (true text)
-    (let [eval (. (require "aniseed.fennel") :eval)
-          view (. (require "aniseed.view") :serialise)]
+    (let [eval (. (require "fennel") :eval)
+          view (require "fennel.view")]
       (match
         (pcall eval text {:env (setmetatable {:_A  options :view view}
                                              {:__index _G})})

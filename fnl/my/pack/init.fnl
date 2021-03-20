@@ -1,7 +1,7 @@
 (module my.pack)
 
 (defn setup []
-  (each [_ name (ipairs [:fzf :netrw])]
+  (each [_ name (ipairs [:netrw])]
     (let [modname (.. "my.pack." name)
           mod (require modname)
           setup-fn (. mod "setup")]

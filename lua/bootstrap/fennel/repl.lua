@@ -2,8 +2,9 @@
 --
 
 require("bootstrap.fennel.compiler").initialize()
+
 local fennel = require "fennel"
-local view = require "fennelview"
+local view = require "fennel.view"
 
 local M = {}
 

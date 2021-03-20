@@ -1,6 +1,5 @@
 (module my.vcs
-  {require {pkg bootstrap.pkgmanager
-            path my.pathsep
+  {require {path my.pathsep
             fs my.filesystem
             b my.bufreg}})
 
@@ -13,11 +12,6 @@
     bufnr
     (vim.api.nvim_get_current_buf)))
 
-
-(defn- packages []
-  (pkg.def
-    {:name :signify
-     :url "mhinz/vim-signify"}))
 
 
 (def- trigger-list [:git :hg])
@@ -113,6 +107,5 @@
 
 
 
-(defn setup []
-  (packages))
+(defn setup [])
 

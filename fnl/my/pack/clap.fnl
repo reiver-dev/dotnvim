@@ -25,9 +25,9 @@
   ((. vim.fn "lightline#update")))
 
 
-(defn setup []
-  (tset vim.g :clap_layout {:relative :editor})
-  (tset vim.g :clap_theme "dogrun")
-  (hook.on.user :ClapOnEnter keybind)
-  (hook.on.user :ClapOnExit refresh-lightline))
+(defn setup [])
+  ;; (tset vim.g :clap_layout {:relative :editor})
+  ;; (tset vim.g :clap_theme "dogrun")
+  ;; (hook.on.user :ClapOnEnter keybind)
+  ;; (hook.on.user :ClapOnExit refresh-lightline))
 

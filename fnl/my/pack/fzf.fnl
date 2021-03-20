@@ -48,6 +48,12 @@
   ")
 
 
+(defn- bindings []
+  (vim.api.nvim_set_keymap
+    :n "<C-x>f" "<cmd>Files<CR>" {:noremap true}))
+
+
 (defn setup []
+  (bindings)
   (vim.api.nvim_exec commands false))
 

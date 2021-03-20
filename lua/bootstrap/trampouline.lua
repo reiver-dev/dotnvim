@@ -15,8 +15,8 @@ end
 
 local function error_handler(modname, funcname)
     return function (msg)
-        local t = debug.traceback(msg):gsub("\n", "\n")
-        local res = ("\nTrampoiline %s::%s\n%s\n"):format(modname, funcname, t)
+        local t = debug.traceback(msg) --:gsub("\n", "\n")
+        local res = ("\nTrampoiline %s::%s => %s\n"):format(modname, funcname, t)
         return res:gsub("\t", "    ")
     end
 end
@@ -24,6 +24,7 @@ end
 
 local function find(modname, funcname)
     local mod
+
     if modname ~= nil and #modname > 0 then
         mod = package.loaded[modname]
         if mod == nil then
@@ -32,10 +33,15 @@ local function find(modname, funcname)
     else
         mod = _G
     end
-    local func = mod[funcname]
+
+    local ok, func = pcall(function() return mod[funcname] end)
+    if not ok then
+        error(("Failed to index module %s:%s ()"):format(modname, funcname, func))
+    end
     if func == nil then
         error(("Failed to find function %s:%s"):format(modname, funcname))
     end
+
     return func
 end
 

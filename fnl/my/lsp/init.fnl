@@ -1,6 +1,5 @@
 (module my.lsp
-  {require {s my.simple
-            pkg bootstrap.pkgmanager}})
+  {require {s my.simple}})
 
 
 (def- kmap vim.api.nvim_buf_set_keymap)
@@ -84,10 +83,6 @@
                        :update_in_insert false})))
 
 
-(defn- initialize-lspsaga []
-  ((. (require "lspsaga") :init_lsp_saga)))
-
-
 (defn- autocmd [bufnr event fun]
   (if (> bufnr 0)
     (string.format
@@ -131,10 +126,6 @@
 (defn setup []
   (each [mode keys (pairs keymap-extra)]
     (each [key action (pairs keys)]
-      (vim.api.nvim_set_keymap mode key action {:noremap true})))
-  (pkg.def
-    {:name :lspsaga
-     :init initialize-lspsaga
-     :url "glepnir/lspsaga.nvim"}))
+      (vim.api.nvim_set_keymap mode key action {:noremap true}))))
 
 ;;; lsp ends here

@@ -1,6 +1,5 @@
 (module my.editing
-  {require {pkg bootstrap.pkgmanager
-            s my.simple}})
+  {require {s my.simple}})
 
 
 (defn macro-every-line []
@@ -16,19 +15,4 @@
 
 
 (defn setup []
-  (define-command)
-  (pkg.def 
-    {:name :table-mode
-     :url "dhruvasagar/vim-table-mode"})
-  (pkg.def
-    {:name :tabular
-     :url "godlygeek/tabular"})
-  (pkg.def
-    {:name :easy-align
-     :url "junegunn/vim-easy-align"})
-  (pkg.def
-    {:name :surround
-     :url "tpope/vim-surround"})
-  (pkg.def
-    {:name :visual-multi
-     :url "mg979/vim-visual-multi"}))
+  (define-command))
