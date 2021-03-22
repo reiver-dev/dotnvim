@@ -54,11 +54,6 @@
 (local right-inactive (pt section gl.section.short_line_right))
 
 
-(left :RainbowRed
-      :provider (fn [] "▊ ")
-      :highlight [colors.blue colors.bg])
-
-
 (local mode-colors {:N colors.red
                     :V colors.blue
                     :I colors.green
@@ -69,21 +64,23 @@
                     :T colors.blue
                     :$ colors.red})
 
+
+;; (left :RainbowRed
+;;       :provider (fn [] "▊")
+;;       :highlight [colors.blue colors.bg])
+
+
 (left :ViMode
       :provider (fn []
                   (let [mode (_T :my.ui.mode :resolve-current)]
-                    (hi :GalaxyViMode :guifg (. mode-colors mode))
-                    (string.format "%s  " (. icons.mode mode))))
-      :highlight [colors.black colors.bg :bold])
+                    (hi :GalaxyViMode
+                        :guifg colors.bg
+                        :guibg (. mode-colors mode)
+                        :gui "bold,italic")
+                    (string.format "  %s " (. icons.mode mode))))
+      :separator " "
+      :separator_highlight [:NONE colors.bg])
 
-
-;; (left :ViMode
-;;       :provider (fn []
-;;                   (let [mode (_T :my.ui.mode :resolve-current)]
-;;                     (vim.api.nvim_command 
-;;                       (string.format "hi GalaxyViMode guifg=%s" (. mode-colors mode)))
-;;                     (string.format "%s " icons.powerline.slant.ll))))
-        
 
 ;; File information
 
@@ -97,7 +94,7 @@
       :provider "FileIcon"
       :condition condition.buffer_not_empty
       :highlight [(. (require "galaxyline.provider_fileinfo") :get_file_icon_color)
-                  colors.bg])
+                  colors.bg :NONE])
 
 (left :FileName
       :provider "FileName"
@@ -121,9 +118,9 @@
                      1 " Top "
                      total " Bot "
                      _ (string.format " %2.0f%% " (math.modf (* (/ current total) 100)))))
-      :separator "%<"
+      :separator " "
       :separator_highlight [:NONE colors.bg]
-      :highlight [colors.fg colors.bg :bold])
+      :highlight [colors.fg colors.bg :NONE])
 
 
 (left :Directory
@@ -131,7 +128,7 @@
                    (if dir (vim.fn.fnamemodify dir ":~") ""))
       :separator " "
       :separator_highlight [:NONE colors.bg]
-      :highlight [colors.fg colors.bg :bold])
+      :highlight [colors.fg colors.bg])
 
 
 ;; Diagnostics
@@ -153,24 +150,27 @@
 
 (left :DiagnosticError
       :provider (pt extract-diagnostics "Error")
-      :icon "  "
+      :condition condition.hide_in_width
+      :icon " "
       :highlight [colors.red colors.bg])
 
 (left :DiagnosticWarning
       :provider (pt extract-diagnostics "Warning")
-      :icon "   "
+      :condition condition.hide_in_width
+      :icon " "
       :highlight [colors.yellow colors.bg])
 
 (left :DiagnosticHint
       :provider (pt extract-diagnostics "Hint")
-      :icon "  "
+      :condition condition.hide_in_width
+      :icon " "
       :highlight [colors.cyan colors.bg])
 
 (left :DiagnosticInformation
       :provider (pt extract-diagnostics "Information")
-      :icon "  "
+      :condition condition.hide_in_width
+      :icon " "
       :highlight [colors.blue colors.bg])
-
 
 
 (right :Project
@@ -178,19 +178,21 @@
                    (and dir (vim.fn.fnamemodify dir ":~")))
       :separator " "
       :separator_highlight [:NONE colors.bg]
-      :highlight [colors.fg colors.bg :bold])
+      :highlight [colors.fg colors.bg])
 
 
 ;; File text info
 
 (right :FileEncode
        :provider "FileEncode"
+       :condition condition.hide_in_width
        :separator " "
        :separator_highlight [:NONE colors.bg]
        :highlight [colors.green colors.bg :bold])
 
 (right :FileFormat
        :provider "FileFormat"
+       :condition condition.hide_in_width
        :separator " "
        :separator_highlight [:NONE colors.bg]
        :highlight [colors.green colors.bg :bold])
@@ -208,25 +210,25 @@
 
 (right :DiffAdd
        :provider "DiffAdd"
-       :condtion condition.hide_in_width
-       :icon "  "
+       :condition condition.hide_in_width
+       :icon " "
        :highlight [colors.green colors.bg])
 
 (right :DiffModified
        :provider "DiffModified"
-       :condtion condition.hide_in_width
-       :icon " 柳"
+       :condition condition.hide_in_width
+       :icon " "
        :highlight [colors.orange colors.bg])
        
 (right :DiffRemove
        :provider "DiffRemove"
-       :condtion condition.hide_in_width
-       :icon "  "
+       :condition condition.hide_in_width
+       :icon " "
        :highlight [colors.red colors.bg])
 
-(right :RainbowBlue
-       :provider (fn [] "  ▊")
-       :highlight [colors.blue colors.bg])
+;; (right :RainbowBlue
+;;        :provider (fn [] "▊")
+;;        :highlight [colors.blue colors.bg])
 
 
 (left-inactive :BufferType
@@ -244,3 +246,5 @@
                 :provider "BufferIcon"
                 :highlight [colors.fg colors.bg])
                
+
+;;; galaxyline.fnl ends here

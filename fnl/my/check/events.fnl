@@ -73,16 +73,21 @@
     (not state.enabled)))
 
 
+(defn- on-changedtick [event bufnr tick]
+  (let [state (. buffer-state bufnr)]
+    (set state.has-edits true)
+    (not state.enabled)))
+
+
 (defn enable [bufnr callback]
   (let [state (. buffer-state bufnr)]
     (if state
       (do
-        (log "Update callback" :bufnr bufnr)
         (tset state :callback callback))
       (do
-        (log "Create new state" :bufnr bufnr)
         (vim.api.nvim_buf_attach bufnr false
                                  {:on_bytes on-bytes
+                                  :on_changedtick on-changedtick
                                   :on_reload on-reload
                                   :on_detach on-detach})
         (tset buffer-state bufnr {:callback callback
@@ -99,9 +104,5 @@
 (defn trigger [event]
   (let [bufnr (tonumber (vim.fn.expand "<abuf>"))
         state (. buffer-state bufnr)]
-    (log "Trigger" 
-         :bufnr bufnr
-         :state state
-         :event event)
     (when (and state state.has-edits)
       (run-change-hook bufnr))))

@@ -7,9 +7,12 @@ local M = {}
 
 local fn = vim.fn
 
-local data = fn.stdpath("data"):gsub("\\", "/")
-local config = fn.stdpath("config"):gsub("\\", "/")
-local packages = data .. "/site/pack/packer"
+local packages
+if fn.has("win32") then
+    packages = fn.stdpath("config"):gsub("\\", "/") .. "/pack/packer"
+else
+    packages = fn.stdpath("data"):gsub("\\", "/") .. "/site/pack/packer"
+end
 
 local packer_root = packages .. "/opt/packer.nvim"
 local fennel_root = packages .. "/opt/fennel"
@@ -35,6 +38,9 @@ end
 
 
 local function load_module(module_name)
+    if module_name == nil then
+         error("Module name is nil")
+    end
     local errors = {}
     local loaders = package.loaders
     for i = 1,#loaders do

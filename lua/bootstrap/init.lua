@@ -6,10 +6,10 @@ function M.setup()
     -- Download package manager and friends
     require("bootstrap.basedeps").setup()
     require("bootstrap.trampouline").setup() 
-    require("bootstrap.fennel").setup() 
+    require("bootstrap.fennel").setup()
     require("bootstrap.gui").setup()
     require("my").setup()
-    
+
     -- Execute after module
     local ok, mod = pcall(function() return require("after") end)
     if ok and type(mod) == "table" and vim.is_callable(mod.setup) then

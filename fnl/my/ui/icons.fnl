@@ -1,41 +1,37 @@
-(fn t [str] (str:gsub " *([^ ]+) *" "%1"))
+;; Icons
 
-{:powerline
+{:powerline {:slant
+             {:ul " "
+              :ur " "
+              :ll " "
+              :lr " "}
+             :narrow "▊"}
 
- {:slant
-  {:ul (t "   ") :ur (t "   ") :ll (t "   ") :lr (t "   ")}
-  :narrow "▊"}
+ :diagnostic {:error " " :warn  " " :info  " "}
 
- :diagnostic
- {:error "" :warn  "" :info  ""}
+ :diff {:add " " :modify " " :remove " "}
 
- :diff
- {:add "" :modify "" :remove ""}
+ :diff-filled {:add " " :modify " " :remove " "}
 
- :diff-filled
- {:add "" :modify "柳" :remove " "}
-
- :vcs
- {:any "" :git ""}
-
+ :vcs {:any " " :git " "}
 
  :mode
- {:c "🅒"
-  :i "🅘"
-  :n "🅝"
-  :r "🅡"
-  :s "🅢"
-  :t "🅣"
-  :v "🅥"
-  :! ""
+ {:c "C"
+  :i "I"
+  :n "N"
+  :r "R"
+  :s "S"
+  :t "T"
+  :v "V"
+  :! "!"
   ;; upper
-  :C "🅒"
-  :I "🅘"
-  :N "🅝"
-  :R "🅡"
-  :S "🅢"
-  :T "🅣"
-  :V "🅥"
-  :$ ""}
+  :C "C"
+  :I "I"
+  :N "N"
+  :R "R"
+  :S "S"
+  :T "T"
+  :V "V"
+  :$ "!"}
 
  :bullet "•"}

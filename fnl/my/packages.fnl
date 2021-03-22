@@ -33,7 +33,7 @@
     res))
 
 
-(defn setup []
+(defn- configure-packages []
   (pkg :name :packer.nvim
        :url "wbthomason/packer.nvim"
        :opt true)
@@ -46,7 +46,7 @@
        :url "Olical/conjure"
        :opt true
        :ft "fennel"
-       :config (fn []
+       :config (fn [...]
                  (_T :compe :register_source
                      "conjure" (require "compe_conjure"))))
   
@@ -72,7 +72,7 @@
   
   (pkg :name :parinfer
        :url "eraserhd/parinfer-rust"
-       :run "cargo build --release"
+       :run ["cargo" "build" "--release"]
        :disable (= "" (vim.fn.exepath "cargo")))
   
   (pkg :name :fzf
@@ -116,7 +116,7 @@
 
   ;; Treesitter
   (pkg :name "nvim-treesitter"
-       :url "nvim-treesitter/nvim-treesitter"
+       :url "nvim-tregsitter/nvim-treesitter"
        :config #(_T :my.treesitter :setup))
 
   (pkg :name "nvim-treesitter-playground"
@@ -138,6 +138,11 @@
 
   (pkg :name :easy-align
        :url "junegunn/vim-easy-align")
+
+  (pkg :name "matchup"
+       :url "andymass/vim-matchup"
+       :config (fn []
+                 (set vim.g.matchup_matchparen_offscreen {:method :popup})))
 
   (pkg :name :surround
        :url "tpope/vim-surround")
@@ -196,6 +201,9 @@
   (pkg :name "nvcode-theme"
        :url "ChristianChiarulli/nvcode-color-schemes.vim"
        :config #(vim.cmd "colorscheme nvcode")))
- 
-  
+
+
+(defn setup []
+  (configure-packages))
+
 ;;; packages.fnl ends here

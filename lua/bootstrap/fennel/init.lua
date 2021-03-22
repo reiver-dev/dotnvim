@@ -59,14 +59,26 @@ function M.compile()
         ["compiler-env"] = _G
     }
 
+    local errors = {}
+
     for src, dst in pairs(sources) do
         opts.filename = src
-        fennel.compile_file(src, dst, opts, true)
+        local ok, result = pcall(fennel.compile_file, src, dst, opts, true)
+        if not ok then
+            errors[#errors + 1] = ("Failed to compile %s: %s"):format(src, result)
+        end
     end
 
     for src, dst in pairs(afterfiles) do
         opts.filename = src
-        fennel.compile_file(src, dst, opts, true)
+        local ok, result = pcall(fennel.compile_file, src, dst, opts, true)
+        if not ok then
+            errors[#errors + 1] = ("Failed to compile %s: %s"):format(src, result)
+        end
+    end
+
+    if next(errors) then
+        error(table.concat(errors, "\n"))
     end
 end
 

@@ -9,6 +9,9 @@
     (each [_ key (ipairs keys)]
       (s.kmap-global :ni key :<Nop>)))
 
+  (when (vim.fn.has "win32")
+    (s.kmap-global :n :<C-z> :<Nop>))
+
   ;; Disable highlight
   (s.kmap-global :nv :<C-h> :<cmd>nohlsearch<cr>)
 
