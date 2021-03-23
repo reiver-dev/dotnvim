@@ -9,7 +9,7 @@
     (each [_ key (ipairs keys)]
       (s.kmap-global :ni key :<Nop>)))
 
-  (when (vim.fn.has "win32")
+  (when (= (vim.fn.has "win32") 1)
     (s.kmap-global :n :<C-z> :<Nop>))
 
   ;; Disable highlight

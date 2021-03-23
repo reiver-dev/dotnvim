@@ -8,7 +8,7 @@ local M = {}
 local fn = vim.fn
 
 local packages
-if fn.has("win32") then
+if fn.has("win32") == 1 then
     packages = fn.stdpath("config"):gsub("\\", "/") .. "/pack/packer"
 else
     packages = fn.stdpath("data"):gsub("\\", "/") .. "/site/pack/packer"
