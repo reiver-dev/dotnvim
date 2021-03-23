@@ -7,6 +7,7 @@
   ["my.log"
    "my.bufreg"
    "my.options"
+   "my.packer"
    "my.dirlocal"
    "my.terminal"
    "my.indent"
@@ -24,25 +25,9 @@
    "my.checkers"])
 
 
-(defn- packer-config []
-  (let [join (. (require "packer.util") :join_paths)
-        iswin (= (. (vim.loop.os_uname) :sysname) "Windows_NT")
-        root (if iswin
-               (join (vim.fn.stdpath "config") "pack")
-               (join (vim.fn.stdpath "data") "site" "pack"))]
-	{:package_root root}))
-
-
-(defn- init-packages []
-  (let [packer (require "packer")
-	spec {}]
-    (tset spec 1 (fn [...] (_T :my.packages :setup ...)))
-    (tset spec :config (packer-config))
-    (packer.startup spec)))
-
-
 (defn setup []
-  (init-packages)
+  (set vim.g.loaded_matchit 1)
+  (set vim.g.loaded_matchparen 1) 
   (each [_ mod (ipairs modules)]
     (_T mod "setup")))
 
