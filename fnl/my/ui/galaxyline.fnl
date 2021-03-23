@@ -118,7 +118,7 @@
                      1 " Top "
                      total " Bot "
                      _ (string.format " %2.0f%% " (math.modf (* (/ current total) 100)))))
-      :separator " "
+      :separator "%<"
       :separator_highlight [:NONE colors.bg]
       :highlight [colors.fg colors.bg :NONE])
 
