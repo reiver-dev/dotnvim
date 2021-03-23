@@ -20,7 +20,7 @@
 
 
 (def- inspect-1
-  (match (pcall (fn [] (require "aniseed.deps.fennelview")))
+  (match (pcall (fn [] (require "fennel.view")))
     (true view) view
     _ vim.inspect))
 
