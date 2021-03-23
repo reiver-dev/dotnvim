@@ -53,6 +53,7 @@
   (pkg :name :compe-conjure
        :url "tami5/compe-conjure"
        :module "compe_conjure"
+       :after ["conjure"]
        :opt true)
   
   (pkg :name :colorizer
@@ -88,10 +89,8 @@
        :url "bakpakin/fennel.vim")
   
   (pkg :name "readline.vim"
-       :url "ryvnf/readline.vim")
-
-  (pkg :name "which-key"
-       :url "liuchengxu/vim-which-key")
+       :url "ryvnf/readline.vim"
+       :event "CmdlineEnter")
 
   (pkg :name "vim-fish"
        :url "dag/vim-fish")
@@ -101,7 +100,8 @@
        :config (fn [] (_T :my.pack.compe :setup)))
 
   (pkg :name "snippets.nvim"
-       :url "norcalli/snippets.nvim")
+       :url "norcalli/snippets.nvim"
+       :event "InsertCharPre")
   
   ;; LSP
   (pkg :name :lspconfig
@@ -109,10 +109,13 @@
 
   (pkg :name :lspsaga
        :url "glepnir/lspsaga.nvim"
+       :cmd "Lspsaga"
+       :module "lspsaga"
        :config #(_T :my.pack.lspsaga :setup))
   
   (pkg :name :vista
-       :url "liuchengxu/vista.vim")
+       :url "liuchengxu/vista.vim"
+       :cmd ["Vista"])
 
   ;; Treesitter
   (pkg :name "nvim-treesitter"
@@ -127,17 +130,21 @@
 
   ;; File-specific
   (pkg :name "python-pep8-indent"
-       :url "Vimjas/vim-python-pep8-indent")
+       :url "Vimjas/vim-python-pep8-indent"
+       :ft ["python" "cython"])
   
   ;; Editing
   (pkg :name :table-mode
-       :url "dhruvasagar/vim-table-mode")
+       :url "dhruvasagar/vim-table-mode"
+       :cmd ["Tableize" "TableModeEnable" "TableModeToggle"])
 
   (pkg :name :tabular
-       :url "godlygeek/tabular")
+       :url "godlygeek/tabular"
+       :cmd ["Tabularize"])
 
   (pkg :name :easy-align
-       :url "junegunn/vim-easy-align")
+       :url "junegunn/vim-easy-align"
+       :cmd ["EasyAlign"])
 
   (pkg :name "matchup"
        :url "andymass/vim-matchup"
@@ -169,14 +176,19 @@
 
   (pkg :name "tree"
        :url "kyazdani42/nvim-tree.lua"
+       :cmd [:NvimTreeOpen :NvimTreeToggle]
        :config (_T :my.pack.tree :setup))
 
   (pkg :name :asyncrun
        :url "skywind3000/asyncrun.vim"
+       :cmd ["Make" "AsyncRun" "AsyncStop"]
        :config (fn [] (_T :my.pack.asyncrun :setup)))
 
   (pkg :name :asynctasks
-       :url "skywind3000/asynctasks.vim")
+       :url "skywind3000/asynctasks.vim"
+       :cmd ["AsyncTask" "AsyncTaskList" "AsyncTaskMacro" "AsyncTaskProfile"]
+       :config #(when (not (?. packer_plugins :asyncrun :loaded))
+                  ((require "packer.load") ["asyncrun"] {} packer_plugins)))
  
   ;; UI
   (pkg :name :devicons

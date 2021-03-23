@@ -3,6 +3,11 @@ local M = {}
 
 
 function M.setup()
+    if os.getenv("AK_PROFILER") then
+        vim.cmd "packadd profiler"
+        require("profiler")
+    end
+
     -- Download package manager and friends
     require("bootstrap.basedeps").setup()
     require("bootstrap.trampouline").setup() 
