@@ -4,11 +4,7 @@
 (defonce- state {})
 
 
-(def- inspect
-  (let [(ok view) (pcall (fn [] (require "fennelview")))]
-    (if ok 
-      view
-      vim.inspect)))
+(def- inspect vim.inspect)
 
 
 (defn- format [bufnr message data]

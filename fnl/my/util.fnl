@@ -19,10 +19,7 @@
   (table.concat [...] sep))
 
 
-(def- inspect-1
-  (match (pcall (fn [] (require "fennel.view")))
-    (true view) view
-    _ vim.inspect))
+(def- inspect-1 vim.inspect)
 
 
 (defn inspect [first ...]

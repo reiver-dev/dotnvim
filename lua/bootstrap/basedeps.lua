@@ -98,8 +98,8 @@ function M.setup()
     
     ensure_plugin_loaders("packer.nvim", "packer")
     ensure_plugin_loaders("fennel", "fennel")
-
-    _G.LOAD_PACKAGE = load_package
+    ensure_plugin_loaders("fennel", "fennel.view")
+    ensure_plugin_loaders("fennel", "fennel.metadata")
 end
 
 
