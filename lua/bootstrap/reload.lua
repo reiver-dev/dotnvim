@@ -89,10 +89,9 @@ local function reload_self()
 end
 
 
-local function reload_modules(opts)
-    local names = opts.args
+local function reload_modules(...)
     local errors = {}
-    for _, n in ipairs(names) do
+    for _, n in ipairs({...}) do
         local _, err = hotswap(n)
         table.insert(errors, err)
     end
@@ -102,7 +101,25 @@ local function reload_modules(opts)
 end
 
 
+local function complete_module()
+    return table.concat(vim.tbl_keys(package.loaded), "\n")
+end
+
+
+local COMMAND = [[
+command! -nargs=+ -complete=custom,v:lua.__complete_module ReloadModule lua RELOAD(<f-args>)
+]]
+
+
+local function setup()
+    _G.RELOAD = reload_modules
+    _G.__complete_module = complete_module
+    vim.api.nvim_exec(COMMAND, false)
+end
+
+
 return {
+    setup = setup,
     reload = reload_modules,
     selfreload = reload_self
 }

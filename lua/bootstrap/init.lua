@@ -11,6 +11,7 @@ function M.setup()
     -- Download package manager and friends
     require("bootstrap.basedeps").setup()
     require("bootstrap.trampouline").setup() 
+    require("bootstrap.reload").setup()
     require("bootstrap.fennel").setup()
     require("bootstrap.gui").setup()
     require("my").setup()
