@@ -18,10 +18,7 @@ function M.setup()
     require("my").setup()
 
     -- Execute after module
-    local ok, mod = pcall(function() return require("after") end)
-    if ok and type(mod) == "table" and vim.is_callable(mod.setup) then
-        mod.setup()
-    end
+    vim.cmd "autocmd VimEnter * ++once lua pcall(_T, 'after', 'setup')"
 end
 
 return M
