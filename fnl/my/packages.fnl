@@ -33,7 +33,7 @@
     res))
 
 
-(defn- configure-packages []
+(defn configure-packages []
   (pkg :name :packer.nvim
        :url "wbthomason/packer.nvim"
        :opt true)
@@ -44,21 +44,22 @@
 
   (pkg :name :conjure
        :url "Olical/conjure"
+       :ft ["fennel"]
+       :opt true)
+
+  (pkg :name "compe"
+       :url "hrsh7th/nvim-compe"
        :opt true
-       :ft "fennel"
-       :config (fn [...]
-                 (_T :compe :register_source
-                     "conjure" (require "compe_conjure"))))
+       :event ["InsertEnter"]
+       :config #(_T :my.pack.compe :setup))
   
   (pkg :name :compe-conjure
        :url "tami5/compe-conjure"
-       :module "compe_conjure"
-       :after ["conjure"]
-       :opt true)
+       :after ["conjure" "compe"])
   
   (pkg :name :colorizer
        :url "norcalli/nvim-colorizer.lua"
-       :config (fn [] (_T :colorizer :setup)))
+       :config #(_T :colorizer :setup))
   
   (pkg :name :profiler
        :url "norcalli/profiler.nvim"
@@ -73,8 +74,9 @@
   
   (pkg :name :parinfer
        :url "eraserhd/parinfer-rust"
-       :run ["cargo" "build" "--release"]
-       :disable (= "" (vim.fn.exepath "cargo")))
+       :ft (_T :my.pack.parinfer :filetypes)
+       :run #(_T :my.pack.parinfer :compile-library)
+       :config #(_T :my.pack.parinfer :setup)) 
   
   (pkg :name :fzf
        :url "junegunn/fzf"
@@ -94,10 +96,6 @@
 
   (pkg :name "vim-fish"
        :url "dag/vim-fish")
-  
-  (pkg :name "compe"
-       :url "hrsh7th/nvim-compe"
-       :config (fn [] (_T :my.pack.compe :setup)))
 
   (pkg :name "snippets.nvim"
        :url "norcalli/snippets.nvim"
@@ -105,6 +103,7 @@
   
   ;; LSP
   (pkg :name :lspconfig
+       :module ["lspconfig"]
        :url "neovim/nvim-lspconfig")
 
   (pkg :name :lspsaga
@@ -119,7 +118,7 @@
 
   ;; Treesitter
   (pkg :name "nvim-treesitter"
-       :url "nvim-tregsitter/nvim-treesitter"
+       :url "nvim-treesitter/nvim-treesitter"
        :config #(_T :my.treesitter :setup))
 
   (pkg :name "nvim-treesitter-playground"
@@ -156,6 +155,11 @@
 
   (pkg :name :visual-multi
        :url "mg979/vim-visual-multi")
+
+  (pkg :name "far.vim"
+       :url "brooth/far.vim"
+       :cmd ["Farr" "Farf"]
+       :config #(tset vim.g "far#source" "rg"))
   
   ;; VCS
   (pkg :name :signify
@@ -187,9 +191,8 @@
   (pkg :name :asynctasks
        :url "skywind3000/asynctasks.vim"
        :cmd ["AsyncTask" "AsyncTaskList" "AsyncTaskMacro" "AsyncTaskProfile"]
-       :config #(when (not (?. packer_plugins :asyncrun :loaded))
-                  ((require "packer.load") ["asyncrun"] {} packer_plugins)))
- 
+       :config #(LOAD_PACKAGE "asyncrun")) 
+
   ;; UI
   (pkg :name :devicons
        :url "kyazdani42/nvim-web-devicons"
@@ -214,8 +217,5 @@
        :url "ChristianChiarulli/nvcode-color-schemes.vim"
        :config #(vim.cmd "colorscheme nvcode")))
 
-
-(defn setup []
-  (configure-packages))
 
 ;;; packages.fnl ends here
