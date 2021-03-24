@@ -100,11 +100,12 @@
 (defn find-head [bufnr]
   (var bufnr (buffer bufnr))
   (let [(vcs dir) (get-marker bufnr)]
-    (when vcs
+    (if vcs
       (match vcs
         :git (.. "git:" (git-head bufnr dir))
-        :hg (.. "hg:"  (hg-head bufnr dir))))))
-
+        :hg (.. "hg:"  (hg-head bufnr dir))
+        _ "unknown")
+      "")))
 
 
 (defn setup [])
