@@ -11,78 +11,47 @@
 
 
 (defn init-packages []
-  (let [packer (require "packer")
-        spec {}]
-    (tset spec 1 (fn [...] (_T :my.packages :setup ...)))
-    (tset spec :config (packer-config))
-    (packer.startup spec)))
+  (let [packer (require "packer")]
+    (packer.init (packer-config))
+    (packer.reset)
+    (_T :my.packages :configure-packages)))
 
 
-(defn- gather-managed-plugins [plugins ...]
-  (let [managed []
-        direct []]
-    (for [n 1 (select :# ...)]
-      (let [name (select n ...)
-            plugin (. plugins name)]
-        (if plugin
-          (when (not plugin.loaded)
-            (table.insert managed name))
-          (table.insert direct name))))
-    (values managed direct)))
+(defn- exec [name]
+  (_T :bootstrap.fennel :compile)
+  (RELOAD "my.packages")
+  (init-packages)
+  (_T :packer name))
+  
+
+(defn install []
+  (exec :install))
 
 
-(defn- load-packages-direct [names]
-  (when (and names (next names))
-    (let [loaded (loaded-packages)]
-      (each [_ name (ipairs names)]
-        (when (not (. name loaded))
-          (vim.cmd (.. "packadd " name)))))))
+(defn update []
+  (exec :update))
 
 
-(defn- loaded-packages []
-  (let [rtp vim.o.runtimepath
-        pattern "/pack/[^/]+/opt/([^/,]+)"
-        loaded {}]
-    (each [name (rtp:gmatch pattern)]
-      (tset loaded name true))
-    loaded))
+(defn sync []
+  (exec :sync))
 
 
-(defn load-package [...]
-  (when (< 0 (select :# ...))
-    (var plugins _G.packer_plugins)
-    (if (and plugins (next plugins))
-      (let [(managed direct) (gather-managed-plugins plugins ...)]
-        ;; Directly load unmanaged
-        (load-packages-direct direct)
-        ;; Load managed plugins
-        ((require "packer.load") managed {} plugins))
-      ;; No packer, directly load everything
-      (load-packages-direct [...]))))
+(defn compile []
+  (exec :compile))
 
 
-(defn package-complete [args line pos]
-  (let [result []
-        packer-plugins _G.packer_plugins]
-    (when packer-plugins
-      (each [name plugin (pairs packer-plugins)]
-        (when (not plugin.loaded)
-          (table.insert result name))))
-    (table.concat result "\n")))
+(defn clean []
+  (exec :clean))
 
 
 (def- commands
   "
-  function! PackageToLoadComplete(arg, line, pos)
-    return v:lua._T('my.packer', 'package-complete', a:arg, a:line, a:pos)
-  endfunction
   command! PackerInit     lua _T('my.packer', 'init-packages')
-  command! PackerInstall  lua require('packer').install()
-  command! PackerUpdate   lua require('packer').update()
-  command! PackerSync     lua require('packer').sync()
-  command! PackerClean    lua require('packer').clean()
-  command! PackerCompile  lua require('packer').compile()
-  command! -nargs=+ -complete=custom,PackageToLoadComplete PackerLoad lua _T('my.packer', 'load-package', <f-args>)
+  command! PackerInstall  lua _T('my.packer', 'install')
+  command! PackerUpdate   lua _T('my.packer', 'update')
+  command! PackerSync     lua _T('my.packer', 'sync')
+  command! PackerClean    lua _T('my.packer', 'clean')
+  command! PackerCompile  lua _T('my.packer', 'compile')
   ")
   
 
