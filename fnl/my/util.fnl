@@ -86,7 +86,7 @@
   
 
 (defn nset [map ...]
-  "Set MAP value by key. VARARG is sequence of keys and last value.
+  "Set MAP value by key. VARARG is (key1, key2, .., keyn, value).
   If multiple keys supplied, they are used to traverse or create nested maps."
   (nset-1 map (select :# ...) ...))
 
@@ -121,10 +121,15 @@
 
 
 (defn nupd [map ...]
+  "Update value from MAP by key. VARARG is (key1, key2, ..., keyn, function).
+  The function receives previous value as argument and returns new one.
+  If multiple keys supplied, they are used to traverse nested maps."
   (nupdate-1 map (select :# ...) ...))
 
 
 (defn counter []
+  "Create incrementing counter.
+  The result is a function that returns new number each time it is called."
   (var counter 0)
   (fn []
     (let [val (+ counter 1)]

@@ -31,5 +31,4 @@
   (map "<C-x><C-x>" "compe#complete()")
   (map "<CR>" "compe#confirm('<CR>')")
   (map "<C-q>" "compe#close('<C-q>')"))
-    
-  
+
