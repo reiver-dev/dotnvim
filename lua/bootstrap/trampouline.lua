@@ -1,10 +1,6 @@
 --- Global trampouline function
 --
 
-
-local M = {}
-
-
 local function accept(status, ...)
     if status then
         return ...
@@ -22,10 +18,15 @@ local function error_handler(modname, funcname)
 end
 
 
+local function tget(tbl, key)
+    return tbl[key]
+end
+
+
 local function find(modname, funcname)
     local mod
 
-    if modname ~= nil and #modname > 0 then
+    if modname ~= nil and modname ~= "" then
         mod = package.loaded[modname]
         if mod == nil then
             mod = require(modname)
@@ -34,31 +35,45 @@ local function find(modname, funcname)
         mod = _G
     end
 
-    local ok, func = pcall(function() return mod[funcname] end)
+    if funcname == nil or funcname == "" then
+        if not vim.is_callable(mod) then
+            error(("Module is not callable: %s"):format(modname))
+        end
+        return mod
+    end
+
+    local ok, func = pcall(tget, mod, funcname)
     if not ok then
-        error(("Failed to index module %s:%s ()"):format(modname, funcname, func))
+        error(("Failed to index module %s:%s"):format(modname, funcname))
     end
     if func == nil then
         error(("Failed to find function %s:%s"):format(modname, funcname))
+    end
+    if not vim.is_callable(func) then
+        error(("Function is not callable %s:%s"):format(modname, funcname))
     end
 
     return func
 end
 
 
-function M.trampouline(modname, funcname, ...)
-    return accept(xpcall(find(modname, funcname),
-                         error_handler(modname, funcname),
-                         ...))
+local function trampouline(modname, funcname, ...)
+    -- return accept(xpcall(find(modname, funcname),
+    --                      error_handler(modname, funcname),
+    --                      ...))
+    return find(modname, funcname)(...)
 end
 
 
-function M.setup()
-    _trampouline = M.trampouline
-    _T = M.trampouline
+local function setup()
+    _trampouline = trampouline
+    _T = trampouline
 end
 
 
-return M
+return {
+    setup = setup,
+    trampouline = trampouline,
+}
 
 --- trampouline.lua ends here
