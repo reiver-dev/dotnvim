@@ -76,7 +76,7 @@
                     (hi :GalaxyViMode
                         :guifg colors.bg
                         :guibg (. mode-colors mode)
-                        :gui "bold,italic")
+                        :gui "bold")
                     (string.format "  %s " (. icons.mode mode))))
       :separator " "
       :separator_highlight [:NONE colors.bg])
