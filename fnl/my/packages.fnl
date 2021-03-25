@@ -103,8 +103,9 @@
   
   ;; LSP
   (pkg :name :lspconfig
+       :url "neovim/nvim-lspconfig"
        :module ["lspconfig"]
-       :url "neovim/nvim-lspconfig")
+       :opt true)
 
   (pkg :name :lspsaga
        :url "glepnir/lspsaga.nvim"
