@@ -18,7 +18,28 @@ function M.setup()
     require("my").setup()
 
     -- Execute after module
-    vim.cmd "autocmd VimEnter * ++once lua pcall(_T, 'after', 'setup')"
+    local function init_package(package_name, ...)
+        local ok, res = xpcall(function()
+            return require(package_name)
+        end, debug.traceback)
+
+        if ok then
+            if res then
+                if vim.is_callable(res) then
+                    return res(...)
+                elseif vim.is_callable(res.setup) then
+                    return res.setup(...)
+                end
+            end
+        else
+            local errmsg = string.format("module '%s' not found", package_name)
+            if not vim.startswith(res, errmsg) then
+                vim.notify(res:gsub("\t", "    "), vim.log.levels.ERROR)
+            end
+        end
+    end
+
+    init_package("after")
 end
 
 return M
