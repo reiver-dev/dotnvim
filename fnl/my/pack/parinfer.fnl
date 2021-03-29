@@ -38,7 +38,7 @@
         opts {:cwd cwd
               :on_exit (fn [jobid data event]
                          (vim.notify (string.format "Parinfer build exited: %d" data)))}]
-    (vim.cmd (string.format ":vsplit #<%d>" bufnr))
+    (vim.cmd (string.format ":vertical botright sbuffer %d" bufnr))
     (vim.fn.termopen command opts)))
   
 
