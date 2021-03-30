@@ -83,15 +83,22 @@ function M.compile()
 end
 
 
+local function complete_fennel(arg, line, pos)
+    return require("bootstrap.fennel.repl").complete(arg, pos)
+end
+
+
 function M.init()
     interop = require"bootstrap.interop"
 
     local def = interop.command{
         name = "EvalExpr",
         nargs = 1,
+        complete = "customlist,v:lua.__complete_fennel",
         modname = "bootstrap.fennel.repl",
         funcname = "eval_print"
     }
+    _G.__complete_fennel = complete_fennel
     vim.api.nvim_command(def)
 
     def = interop.command{

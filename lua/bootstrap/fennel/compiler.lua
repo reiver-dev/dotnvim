@@ -5,9 +5,15 @@ local M = {}
 
 local fennel = require "fennel"
 
-function M.compile_source(text, opts)
+function M.compile_module_source(text, opts)
     local code = "(require-macros \"aniseed.macros\")" .. text
     return xpcall(function() return fennel.compileString(code, opts) end,
+                  fennel.traceback)
+end
+
+
+function M.compile_source(text, opts)
+    return xpcall(function() return fennel.compileString(text, opts) end,
                   fennel.traceback)
 end
 
@@ -38,7 +44,7 @@ function M.compile_file(src, dst, opts, force)
     if force ~= nil or vim.fn.getftime(src) > vim.fn.getftime(dst) then
         local ok, text = slurp(src)
         if ok then
-            local compiled, code = M.compile_source(text, opts)
+            local compiled, code = M.compile_module_source(text, opts)
             if compiled then
                 vim.fn.mkdir(vim.fn.fnamemodify(dst, ":h"), "p")
                 spew(dst, code)
