@@ -88,6 +88,7 @@ local function complete_package(arg, line, pos)
             end
         end
     end
+    table.sort(loadable)
     return table.concat(loadable, "\n")
 end
 

@@ -102,7 +102,9 @@ end
 
 
 local function complete_module()
-    return table.concat(vim.tbl_keys(package.loaded), "\n")
+    local loaded = vim.tbl_keys(package.loaded)
+    table.sort(loaded)
+    return table.concat(loaded, "\n")
 end
 
 
