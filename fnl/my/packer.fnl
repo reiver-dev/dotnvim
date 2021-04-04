@@ -44,6 +44,10 @@
   (exec :clean))
 
 
+(defn status []
+  (exec :status))
+
+
 (def- commands
   "
   command! PackerInit     lua _T('my.packer', 'init-packages')
@@ -52,6 +56,7 @@
   command! PackerSync     lua _T('my.packer', 'sync')
   command! PackerClean    lua _T('my.packer', 'clean')
   command! PackerCompile  lua _T('my.packer', 'compile')
+  command! PackerStatus   lua _T('my.packer', 'status')
   ")
   
 
