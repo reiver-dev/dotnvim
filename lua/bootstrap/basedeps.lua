@@ -1,10 +1,7 @@
 --- Install basic dependencies
 --
 
-
-local M = {}
-
-
+local load_package = require("bootstrap.modules").load_package
 local fn = vim.fn
 
 local packages
@@ -56,21 +53,6 @@ local function load_module(module_name)
 end
 
 
-local function load_package(package_name)
-    local packer_plugins = _G.packer_plugins
-    if packer_plugins then
-        local plugin = packer_plugins[package_name]
-        if plugin then
-            if not plugin.loaded then
-                require("packer.load")({package_name}, {}, packer_plugins)
-            end
-            return
-        end
-    end
-    vim.cmd("packadd " .. package_name)
-end
-
-
 local function package_preloader(package_name)
     return function(module_name) 
         load_package(package_name)
@@ -84,7 +66,7 @@ local function ensure_plugin_loaders(package_name, module_name)
 end
 
 
-function M.setup()
+local function setup()
     if download("https://github.com/wbthomason/packer.nvim", packer_root) then
         vim.cmd("packadd packer.nvim")
     end
@@ -103,6 +85,6 @@ function M.setup()
 end
 
 
-return M
+return { setup = setup }
 
 --- setup.lua ends here

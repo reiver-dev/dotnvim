@@ -30,14 +30,11 @@ end
 
 
 local function load_packer_packages(names, plugins)
-    if not (names and next(names)) then
-        return
-    end
-    require("packer.load")(names, {}, plugins or _G.packer_plugins)
+    require("packer.load")(names, {}, plugins or _G.packer_plugins);
 end
 
 
-local function partition_packages(...)
+local function partition_packages(plugins, ...)
     local managed = {}
     local direct = {}
     for i = 1,select("#", ...) do
@@ -57,23 +54,42 @@ local function partition_packages(...)
 end
 
 
-local function load_package(...)
-    local n = select("#", ...)
-    if n == 0 then
-        return
-    end
-
+local function load_single_package(name)
     plugins = _G.packer_plugins
     if plugins and next(plugins) then
-        local managed, direct = partition_packages(...)
+        local plugin = plugins[name]
+        if plugin then
+            return plugin.loaded or load_packer_packages({name}, plugins)
+        end
+    end
+    vim.cmd("packadd " .. name)
+end
+
+
+local function load_many_packages(...)
+    plugins = _G.packer_plugins
+    if plugins and next(plugins) then
+        local managed, direct = partition_packages(plugins, ...)
         if #direct > 0 then
             load_direct_packages(direct)
         end
         if #managed > 0 then
             load_packer_packages(managed, plugins)
         end
+        return
+    end
+    return load_direct_packages({...})
+end
+
+
+local function load_package(...)
+    local n = select("#", ...)
+    if n == 0 then
+        return
+    elseif n == 1 then
+        return load_single_package(...)
     else
-        load_direct_packages({...})
+        return load_many_packages(...)
     end
 end
 
