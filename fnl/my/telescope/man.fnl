@@ -42,6 +42,12 @@
     (and ok (= res 1))))
 
 
+
+(defn- man-buffer-highlight [bufnr]
+  (let [hl (.  (require "man") :highlight_man_page)]
+    (vim.api.nvim_buf_call bufnr hl)))
+
+
 (defn- erzatz-man-filetype [bufnr section]
   (when (not (did-ftplugin? bufnr))
     (man-buffer-highlight bufnr)
@@ -51,11 +57,6 @@
     (vim.api.nvim_buf_set_option bufnr :iskeyword
                                  "@-@,:,a-z,A-Z,48-57,_,.,-,(,)")))
 
-
-(defn- man-buffer-highlight [bufnr]
-  (let [hl (.  (require "man") :highlight_man_page)]
-    (vim.api.nvim_buf_call bufnr hl)))
-  
 
 (defn- process-environment [tbl]
   (when tbl
@@ -103,10 +104,11 @@
 
 
 (defn- action-mapper [bufnr]
-  (t-actions.goto_file_selection_edit:replace man-edit)
-  (t-actions.goto_file_selection_split:replace man-hsplit)
-  (t-actions.goto_file_selection_vsplit:replace man-vsplit)
-  (t-actions.goto_file_selection_tabedit:replace man-tabedit)
+  (let [a t-actions]
+    (a.select_default:replace man-edit)
+    (a.select_horizontal:replace man-hsplit)
+    (a.select_vertical:replace man-vsplit)
+    (a.select_tab:replace man-tabedit))
   true)
 
 
@@ -121,8 +123,9 @@
 (defn manpages [opts]
   (let [opts (or opts {})]
 
-    (when (empty? opts.sections)
-      (set opts.sections ["1"]))
+    (match (type opts.sections)
+      "string" (set opts.sections [opts.sections])
+      "nil" (set opts.sections ["1"]))
 
     (when (empty? opts.man_pattern)
       (set opts.man_pattern (if (os-darwin?) " " "")))
