@@ -59,7 +59,7 @@ function M.leave(chan)
 end
 
 
-function execute_after(info)
+function M.execute_after(info)
     local ok, mod = pcall(function() return require"after.gui" end)
     if ok and mod.setup then
         mod.setup(info)
@@ -72,7 +72,7 @@ function M.configure()
         local info = client_info(chan)
         if info then
             if handle_gui_info(info) then
-                execute_after(info)
+                M.execute_after(info)
             end
         end
     end
