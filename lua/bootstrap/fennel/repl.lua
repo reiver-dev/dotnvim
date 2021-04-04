@@ -9,8 +9,17 @@ local view = require "fennel.view"
 
 local M = {}
 
+function M.environ(opts, env)
+    local R = {}
+    for k, v in pairs(package.loaded) do
+        R[k:gsub("%.", "/")] = v
+    end
+    return setmetatable({ _A = opts, R = R }, {__index = env or _G})
+end
+
+
 function M.eval(opts, env)
-    local env = setmetatable({ _A = opts }, {__index = env or _G})
+    local env = M.environ(opts, env)
     local options = {
         env = env,
         filename = "EvalExpr.fnl",
@@ -72,54 +81,54 @@ function M.prefix_map(input)
     local input_lens = {}
 
     do
-        local parts = vim.split(input, "%.")
-
         -- Multiple delimiters (empty part) is considered void
         -- and parts are merged back
-        do
-            local collapsed_parts = {}
-            for _, part in ipairs(parts) do
-                if part == "" then
-                    local last = collapsed_parts[#collapsed_parts]
-                    if last then
-                        last[#last + 1] = part
-                    else
-                        last = {part}
-                    end
-                else 
-                    local last = collapsed_parts[#collapsed_parts]
-                    if last and last[#last] == "" then
-                        last[#last + 1] = part
-                    else
-                        collapsed_parts[#collapsed_parts + 1] = {part}
-                    end
-                end
-            end
-            for i = 1,#collapsed_parts do
-                local element = collapsed_parts[i]
-                if #element == 1 then
-                    collapsed_parts[i] = element[1]
+        local parts = {}
+
+        for part in vim.gsplit(input, "%s.") do
+            if part == "" then
+                local last = parts[#parts]
+                if last then
+                    last[#last + 1] = part
                 else
-                    collapsed_parts[i] = table.concat(element, ".")
+                    parts[#parts] = {part}
+                end
+            else 
+                local last = parts[#parts]
+                if last and last[#last] == "" then
+                    last[#last + 1] = part
+                else
+                    parts[#parts + 1] = {part}
                 end
             end
-            parts = collapsed_parts
+        end
+
+        for i = 1,#parts do
+            local element = parts[i]
+            if #element == 1 then
+                parts[i] = element[1]
+            else
+                parts[i] = table.concat(element, ".")
+            end
         end
 
         -- cumulative sum to make [begin_0, end_0, begin_1, end_1, ...]
-        -- taking into account delimiter '.'
-        input_lens[1] = 1
-        input_lens[2] = #(parts[1])
-        local pos = 3
-        local acc = input_lens[2]
-        for i = 2,#parts do
-            acc = acc + 1
-            input_lens[pos] = acc + 1
-            acc = acc + #(parts[i])
-            input_lens[pos + 1]  = acc
-            pos = pos + 2
+        -- taking into account delimiter 
+        do
+            input_lens[1] = 1
+            input_lens[2] = #(parts[1])
+            local pos = 3
+            local acc = input_lens[2]
+            for i = 2,#parts do
+                acc = acc + 1
+                input_lens[pos] = acc + 1
+                acc = acc + #(parts[i])
+                input_lens[pos + 1]  = acc
+                pos = pos + 2
+            end
         end
     end
+
 
     local pref_pos = 1
     local len = #input_lens
@@ -152,12 +161,12 @@ function M.complete(text, pos)
     end
 
     local scope = compiler.scopes.global
-    local env = _G
     local matches = {}
+    local env = M.environ()
 
     find_completion_matches(matches, input, scope.specials or {})
     find_completion_matches(matches, input, scope.macros or {})
-    find_completion_matches(matches, input, env or {})
+    find_completion_matches(matches, input, env)
 
     table.sort(matches)
 
