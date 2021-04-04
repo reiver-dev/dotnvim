@@ -95,10 +95,10 @@
     result))
 
 
-(defn- map-append [result iter state idx val]
+(defn- map-append [result iter state idx key val]
   (if (~= idx nil)
     (do 
-      (tset result idx val)
+      (tset result key val)
       (map-append result iter state (iter state idx)))
     result))
 
