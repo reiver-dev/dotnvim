@@ -204,7 +204,7 @@
   (pkg :name :asynctasks
        :url "skywind3000/asynctasks.vim"
        :cmd ["AsyncTask" "AsyncTaskList" "AsyncTaskMacro" "AsyncTaskProfile"]
-       :config #(LOAD_PACKAGE "asyncrun")) 
+       :wants ["asyncrun"])
 
   ;; UI
   (pkg :name :devicons
