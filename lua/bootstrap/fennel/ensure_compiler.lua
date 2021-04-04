@@ -11,13 +11,13 @@ local function compile(fennel, src, dst)
     local options = {
         filename = path,
         requireAsInclude = false,
-        useMetadata = false
+        useMetadata = false,
     }
     basic.spew(dst, fennel.compileString(basic.slurp(src), options))
 end
 
 
-local function gather_files()
+local function gather_files(force)
     local result = {}
     local srcdir = "src"
     local dstdir = "lua"
@@ -29,7 +29,7 @@ local function gather_files()
             local srcpath = srcpath:gsub("\\", "/")
             local suffix = srcpath:sub(prefixlen + 1)
             local dstpath = dstdir .. suffix:sub(1, -4) .. "lua"
-            if getftime(srcpath) > getftime(dstpath) then
+            if force or getftime(srcpath) > getftime(dstpath) then
                 result[srcpath] = dstpath
             end
         end
@@ -38,12 +38,25 @@ local function gather_files()
 end
 
 
-function M.setup()
+function M.setup(opts)
+    local force = opts and opts.force
     local old_path = vim.api.nvim_get_runtime_file("old/fennel.lua", false)[1]
-    local old_fennel = loadfile(old_path)()
+
+    local old_fennel = loadfile(old_path)
+    setfenv(old_fennel, setmetatable({}, {__index = _G}))
+    old_fennel = old_fennel()
+
     local root = vim.fn.fnamemodify(old_path, ":p:h:h")
+
+    if force then
+        local dir = root .. "/lua"
+        vim.notify("Removing " .. dir)
+        basic.rmdir(dir)
+    end
+
     basic.with_dir(root, function()
         for src, dst in pairs(gather_files()) do
+            vim.notify(string.format("Compiling %s => %s", src, dst))
             compile(old_fennel, src, dst)
         end
     end)
