@@ -60,6 +60,18 @@
   (pkg :name :colorizer
        :url "norcalli/nvim-colorizer.lua"
        :config #(_T :colorizer :setup))
+
+  (pkg :name :terminal
+       :url "norcalli/nvim-terminal.lua"
+       :ft "terminal"
+       :config (fn []
+                 (_T :terminal :setup)
+                 (let [bufnr (tonumber (vim.fn.expand "<abuf>"))
+                       ft (vim.api.nvim_buf_get_option bufnr :filetype)]
+                   (when (= ft "terminal")
+                     (vim.api.nvim_buf_call
+                       bufnr #(vim.cmd "doautocmd <nomodeline> FileType terminal"))))))
+
   
   (pkg :name :profiler
        :url "norcalli/profiler.nvim"
