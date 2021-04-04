@@ -24,9 +24,9 @@
 
   (setw :number true)
   (setw :relativenumber false)
+  (setw :signcolumn "auto:1-9")
 
   (seto :showmode false)
-  (seto :signcolumn "yes")
   (seto :showtabline 2)
   (seto :shortmess "filnxtToOFIc")
   (seto :scrolloff 2)
