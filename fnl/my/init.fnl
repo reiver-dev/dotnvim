@@ -3,7 +3,7 @@
 (module my)
 
 
-(def- modules 
+(def- modules
   ["my.log"
    "my.bufreg"
    "my.options"
@@ -27,8 +27,14 @@
 
 (defn setup []
   (set vim.g.loaded_matchit 1)
-  (set vim.g.loaded_matchparen 1) 
-  (each [_ mod (ipairs modules)]
-    (_T mod "setup")))
+  (set vim.g.loaded_matchparen 1)
+  (each [_ modname (ipairs modules)]
+    (match (pcall require modname)
+      (true mod) (match (pcall mod.setup)
+                   (false err) (error
+                                 (string.format
+                                   "Fail at mod init %s:\n    %s" modname err)))
+      (false err) (vim.notify
+                    (string.format "Failed to load %s" mod) vim.log.levels.ERROR))))
 
 ;;; my.fnl ends here

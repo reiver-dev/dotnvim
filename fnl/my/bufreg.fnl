@@ -9,7 +9,7 @@
 
 
 (def- define-autocmd
-  "augroup buffer_registry
+  "augroup my_buffer_registry
 autocmd!
 autocmd VimEnter * lua _T('my.bufreg', 'autocmd-new')
 autocmd BufNew,BufNewFile * lua _T('my.bufreg', 'autocmd-new')
