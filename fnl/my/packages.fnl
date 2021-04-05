@@ -40,7 +40,8 @@
 
   (pkg :name :fennel
        :url "bakpakin/Fennel"
-       :opt true)
+       :opt true
+       :run #(_T :bootstrap.fennel.ensure_compiler :setup {:force true}))
 
   (pkg :name :conjure
        :url "Olical/conjure"
@@ -52,11 +53,11 @@
        :opt true
        :event ["InsertEnter"]
        :config #(_T :my.pack.compe :setup))
-  
+
   (pkg :name :compe-conjure
        :url "tami5/compe-conjure"
        :after ["conjure" "compe"])
-  
+
   (pkg :name :colorizer
        :url "norcalli/nvim-colorizer.lua"
        :config #(_T :colorizer :setup))
@@ -72,24 +73,24 @@
                      (vim.api.nvim_buf_call
                        bufnr #(vim.cmd "doautocmd <nomodeline> FileType terminal"))))))
 
-  
+
   (pkg :name :profiler
        :url "norcalli/profiler.nvim"
        :opt true
        :module "profiler")
-  
+
   (pkg :name :popup
        :url "nvim-lua/popup.nvim")
-  
+
   (pkg :name :plenary
        :url "nvim-lua/plenary.nvim")
-  
+
   (pkg :name :parinfer
        :url "eraserhd/parinfer-rust"
        :ft (_T :my.pack.parinfer :filetypes)
        :run #(_T :my.pack.parinfer :compile-library)
-       :config #(_T :my.pack.parinfer :setup)) 
-  
+       :config #(_T :my.pack.parinfer :setup))
+
   (pkg :name :fzf
        :url "junegunn/fzf"
        :run (fn [] (vim.call "fzf#install")))
@@ -98,10 +99,10 @@
        :url "junegunn/fzf.vim"
        :config (fn [] (_T :my.pack.fzf :setup))
        :requires ["fzf"])
-  
+
   (pkg :name "fennel.vim"
        :url "bakpakin/fennel.vim")
-  
+
   (pkg :name "readline.vim"
        :url "ryvnf/readline.vim"
        :event "CmdlineEnter")
@@ -112,7 +113,7 @@
   (pkg :name "snippets.nvim"
        :url "norcalli/snippets.nvim"
        :event "InsertCharPre")
-  
+
   ;; LSP
   (pkg :name :lspconfig
        :url "neovim/nvim-lspconfig"
@@ -124,7 +125,7 @@
        :cmd "Lspsaga"
        :module "lspsaga"
        :config #(_T :my.pack.lspsaga :setup))
-  
+
   (pkg :name :vista
        :url "liuchengxu/vista.vim"
        :cmd ["Vista"])
@@ -144,7 +145,7 @@
   (pkg :name "python-pep8-indent"
        :url "Vimjas/vim-python-pep8-indent"
        :ft ["python" "cython"])
-  
+
   ;; Editing
   (pkg :name :table-mode
        :url "dhruvasagar/vim-table-mode"
@@ -173,11 +174,11 @@
        :url "brooth/far.vim"
        :cmd ["Farr" "Farf"]
        :config #(tset vim.g "far#source" "rg"))
-  
+
   ;; VCS
   (pkg :name :signify
        :url "mhinz/vim-signify")
-  
+
   ;; Repl
   (pkg :name "iron.nvim"
        :url "hkupty/iron.nvim")
@@ -194,12 +195,13 @@
   (pkg :name "tree"
        :url "kyazdani42/nvim-tree.lua"
        :cmd [:NvimTreeOpen :NvimTreeToggle]
-       :config (_T :my.pack.tree :setup))
+       :config #(_T :my.pack.tree :setup))
 
+  ;; Tasks
   (pkg :name :asyncrun
        :url "skywind3000/asyncrun.vim"
        :cmd ["Make" "AsyncRun" "AsyncStop"]
-       :config (fn [] (_T :my.pack.asyncrun :setup)))
+       :config #(_T :my.pack.asyncrun :setup))
 
   (pkg :name :asynctasks
        :url "skywind3000/asynctasks.vim"
@@ -210,12 +212,19 @@
   (pkg :name :devicons
        :url "kyazdani42/nvim-web-devicons"
        :config #(_T :nvim-web-devicons :setup))
- 
+
   (pkg :name :galaxyline
        :url "glepnir/galaxyline.nvim"
        :branch "main"
        :requires [:devicons]
        :config #(require "my.ui.galaxyline"))
+
+  (pkg :name :better-whitespace
+       :url "ntpeters/vim-better-whitespace"
+       :config #(set vim.g.better_whitespace_filetypes_blacklist
+                     (vim.tbl_flatten
+                       [["packer"]
+                        vim.g.better_whitespace_filetypes_blacklist])))
 
   (pkg :name "colorbuddy"
        :url "tjdevries/colorbuddy.nvim")
