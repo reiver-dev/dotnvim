@@ -7,6 +7,8 @@
 
 (local methods {})
 (local exports {})
+(local raw {})
+(tset exports :raw raw)
 
 (local ceil math.ceil)
 (local abs math.abs)
@@ -16,7 +18,7 @@
 (local string-byte string.byte)
 
 
-(import-macros 
+(import-macros
   {: v1 : v2 : v3
    : call
    : export}
@@ -44,29 +46,49 @@
    :__tostring to-string})
 
 
+(fn iter-rpairs [state idx]
+  (local idx (- idx 1))
+  (when (not= 0 idx)
+    (values idx (. state idx))))
+
+
 (fn iter-string [state idx]
-  (var idx (+ idx 1))
-  (when (< (length state) idx)
+  (local idx (+ idx 1))
+  (when (not= idx (length state))
     (let [char (string-sub state idx idx)]
-      (values state char))))
+      (values idx char))))
 
 
 (fn iter-rev-string [state idx]
-  (var idx (- idx 1))
-  (when (< 0 idx)
+  (local idx (- idx 1))
+  (when (not= 0 idx)
     (let [char (string-sub state idx idx)]
-      (values state char))))
+      (values idx char))))
+
+
+(fn string-iter-chars [s]
+  (if (not= 0 (length s))
+    (values iter-string s 0)
+    (values empty nil nil)))
+
+
+(fn string-iter-chars-reversed [s]
+  (if (not= 0 (length s))
+    (values iter-rev-string s (+ (length s) 1))
+    (values empty nil nil)))
+
+
+(fn rpairs [tbl]
+  (values iter-rpairs tbl (+ (length tbl) 1)))
 
 
 (fn iter [it ?state ?idx]
   (match (type it)
     "table" (if (= iterator-mt (getmetatable it)) (values (. it 1) (. it 2) (. it 3))
-              (< 0 (length it)) (values iter-ipairs it 0)
-              (values iter-pairs iter nil)) 
+              (not= 0 (length it)) (values iter-ipairs it 0)
+              (values iter-pairs iter nil))
     "function" (values it ?state ?idx)
-    "string" (if (< 0 (length it))
-               (values iter-string it 0)
-               (values empty nil nil))))
+    "string" (string-iter-chars it)))
 
 
 (fn new [it ?state ?idx]
@@ -76,30 +98,99 @@
 (set exports.new new)
 (set exports.iter iter)
 
+(set exports.str string-iter-chars)
+(set exports.rstr string-iter-chars-reversed)
+(set exports.rpairs rpairs)
+
+
+;; Unit
+
+(fn iter-unit [state idx]
+  (when idx
+    (values false state)))
+
+
+(fn unit [value]
+  (values iter-unit true value))
+
+
+(set exports.unit unit)
+
+
+;; Repeat
+
+(fn iter-repeat [state idx]
+  (values idx state))
+
+
+(fn repeat [value]
+  (values iter-repeat value true))
+
+
+(set exports.repeat repeat)
+
+
+;; Repeat N
+
+
+(fn iter-repeat-n [state idx]
+  (when (not= 0 idx)
+    (values (- idx 1) state)))
+
+
+(fn repeat-n [n value]
+  (if (< 0 n)
+    (values iter-repeat-n value n)
+    (values empty nil nil)))
+
+
+(set exports.repeat-n repeat-n)
+
 
 ;; Take N
 
-(fn iter-take-1 [state num-collected idx ...]
+(fn iter-take-1 [num-remaining idx ...]
   (when (not= nil idx)
-    (values [(+ 1 num-collected) idx] ...)))
+    (values [(- num-remaining 1) idx] ...)))
 
 
 (fn iter-take [state idx]
-  (when (< (v1 idx) (v1 state))
-    (iter-take-1 state (v1 idx) (call state 2 3 $ (v2 idx)))))
+  (when (not= 0 (v1 idx))
+    (iter-take-1 (v1 idx) (call state 1 2 $ (v2 idx)))))
 
 
 (fn take [n iter state idx]
-  (values iter-take [n iter state] [0 idx]))
+  (if (< 0 n)
+    (values iter-take [iter state] [n idx])
+    (values empty nil nil)))
 
 
 (export take 1)
 
 
+;; Take one
+
+(fn iter-take-one-1 [idx ...]
+  (when (not= idx nil)
+    (values [false idx] ...)))
+
+
+(fn iter-take-one [state idx]
+  (when (v1 idx)
+    (iter-take-one-1 (call state 1 2 $ (v2 idx)))))
+
+
+(fn take-1 [iter state idx]
+  (values iter-take-one [iter state] [true idx]))
+
+
+(export take-1 0)
+
+
 ;; Take while
 
 (fn iter-take-while-1 [state idx ...]
-  (when (and (not= nil idx) ((. state 1) ...))
+  (when (and (not= nil idx) (call state 1 $ ...))
     (values idx ...)))
 
 
@@ -123,26 +214,44 @@
 (fn take-while-kv [predicate iter state idx]
   (values iter-take-while-kv [predicate iter state] idx))
 
-    
+
 (export take-while 1)
 
 
 ;; Enumerate
 
-(fn iter-enumerate-1 [nidx state idx ...]
+(fn iter-enumerate-1 [nidx idx ...]
   (when (not= nil idx)
-    (values [(+ (v1 nidx) 1) idx] state)))
+    (values [(+ nidx 1) idx] (+ nidx 1) ...)))
 
 
 (fn iter-enumerate [state idx]
-  (iter-enumerate-1 idx state (call state 1 2 $ (v2 idx))))
+  (iter-enumerate-1 (v1 idx) (call state 1 2 $ (v2 idx))))
 
 
 (fn enumerate [iter state idx]
-  (values iter-enumerate [iter state] [1 idx]))
+  (values iter-enumerate [iter state] [0 idx]))
 
 
-(export enumerate 1)
+(export enumerate 0)
+
+
+;; KV
+
+(fn kv-iter-1 [idx ...]
+  (when (not= nil idx)
+    (values idx idx ...)))
+
+
+(fn kv-iter [state idx]
+  (kv-iter-1 (call state 1 2 $ idx)))
+
+
+(fn kv [iter state idx]
+  (values iter-kv [iter state] idx))
+
+
+(export kv 0)
 
 
 ;; Filter
@@ -170,11 +279,11 @@
 
 
 (fn filter [predicate iter state idx]
-  (values iter-filter [predicate iter state] idx)) 
+  (values iter-filter [predicate iter state] idx))
 
 
 (fn filter-kv [predicate iter state idx]
-  (values iter-filter [predicate iter state] idx)) 
+  (values iter-filter [predicate iter state] idx))
 
 
 (export filter 1)
@@ -228,11 +337,11 @@
 (fn reduce-1 [func iter state idx ...]
   (when (not= nil idx)
     (fold-1 func ... iter state (iter state idx))))
-    
+
 
 (fn reduce [func iter state idx]
   (reduce-1 func iter state (iter state idx)))
-  
+
 
 (export fold 2)
 (export reduce 1)
@@ -285,41 +394,64 @@
 ;; Collect
 
 (fn array-append [result i iter state idx val]
-  (if (~= idx nil)
+  (if (not= idx nil)
     (do
       (tset result i val)
       (array-append result (+ i 1) iter state (iter state idx)))
     result))
 
 
-(fn map-append [result iter state idx val]
-  (if (~= idx nil)
-    (do 
+(fn map-append [result iter state idx key val]
+  (if (not= idx nil)
+    (do
+      (tset result key val)
+      (map-append result iter state (iter state idx)))
+    result))
+
+
+(fn map-append-kv [result iter state idx val]
+  (if (not= idx nil)
+    (do
       (tset result idx val)
       (map-append result iter state (iter state idx)))
     result))
 
 
 (fn to-table [iter state idx]
-  (array-append [] 0 iter state idx))
+  (array-append [] 1 iter state (iter state idx)))
 
 
 (fn to-map [iter state idx]
-  (map-append {} iter state idx))
+  (map-append {} iter state (iter state idx)))
 
 
-(fn add-to-table [tbl n iter state idx]
-  (array-append (or tbl []) (or n (length tbl)) iter state idx))
+(fn to-map-kv [iter state idx]
+  (map-append-kv {} iter state (iter state idx)))
+
+
+(fn add-to-table [tbl iter state idx]
+  (array-append (or tbl []) (+ (length tbl) 1) iter state (iter state idx)))
+
+
+(fn add-to-table-at [tbl n iter state idx]
+  (array-append (or tbl []) (or n (+ (length tbl) 1)) iter state (iter state idx)))
 
 
 (fn add-to-map [tbl iter state idx]
-  (map-append (or tbl {}) iter state idx))
+  (map-append (or tbl {}) iter state (iter state idx)))
+
+
+(fn add-to-map-kv [tbl iter state idx]
+  (map-append-kv (or tbl {}) iter state (iter state idx)))
 
 
 (export to-table 0)
 (export to-map 0)
-(export add-to-table 2)
+(export to-map-kv 0)
+(export add-to-table 1)
+(export add-to-table-at 2)
 (export add-to-map 1)
+(export add-to-map-kv 1)
 
 
 ;; Extract
@@ -354,7 +486,7 @@
 
 (fn iter-allpairs-impl [state idx]
   (iter-allpairs-impl-1 state (call state 1 2 $ idx)))
-    
+
 
 (fn allpairs [iter state idx]
   (values iter-allpairs-impl [iter state] idx))
@@ -374,7 +506,7 @@
         (do
           (tset hashset val true)
           (values idx ...))))))
-        
+
 
 (fn iter-dedup-impl [state idx]
   (iter-allpairs-impl-1 state (call state 2 3 $ idx)))
@@ -390,7 +522,7 @@
 ;; Zip
 
 (fn iter-zip-1 [i s nidx pidx state ...]
-  (if (< 0 i)
+  (if (not= 0 i)
     (let [(idx value) ((. state s) (. state (+ s 1)) (. pidx i))]
       (when (not= nil idx)
         (tset nidx i idx)
@@ -400,8 +532,8 @@
 
 (fn iter-zip [state idx]
   (iter-zip-1 (. state 1) (. state 2) [] idx state))
-                                        
-                         
+
+
 (fn zip-1 [iterfun count nidx nstate dest-state dest-idx iterator ...]
   (if (<= nidx count)
     (if (not= nil iterator)
@@ -431,7 +563,7 @@
                     (if ok
                       mod
                       (fn [narr nmap]
-                        [])))) 
+                        []))))
 
 
 (fn copyseq [seq ?into]

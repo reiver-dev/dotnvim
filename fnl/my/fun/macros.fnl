@@ -63,15 +63,21 @@
      `(fn ,name ,args ,call))))
 
 
+(fn with-name [param]
+  (values (tostring param) param))
+
+
 (fn export [func nargs]
   (let [exp (make-export func nargs)
         met (make-method func nargs)]
     `(do
+       (set ,(sym (.. :raw "." (tostring func))) ,func)
        (set ,(sym (.. :exports "." (tostring func))) ,exp)
        (set ,(sym (.. :methods "." (tostring func))) ,met))))
 
 
 {: v1 : v2 : v3
+ : with-name
  : call
  : export}
  
