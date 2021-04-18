@@ -179,6 +179,9 @@
   (pkg :name :signify
        :url "mhinz/vim-signify")
 
+  (pkg :name "vim-fugitive"
+       :url "tpope/vim-fugitive")
+
   ;; Repl
   (pkg :name "iron.nvim"
        :url "hkupty/iron.nvim")
