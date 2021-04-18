@@ -1,6 +1,6 @@
 (module my.options
   {require {s my.simple}})
-   
+
 
 (defn- seto [name value]
   (tset vim.o name value))
@@ -24,7 +24,7 @@
 
   (setw :number true)
   (setw :relativenumber false)
-  (setw :signcolumn "auto:1-9")
+  (setw :signcolumn "yes")
 
   (seto :showmode false)
   (seto :showtabline 2)
