@@ -1,5 +1,6 @@
 (module my.simple
-  {require {v my.vararg}})
+  {require {v my.vararg
+            s my.strutil}})
 
 
 (def- argpack v.pack)
@@ -57,6 +58,10 @@
       (vim.api.nvim_buf_set_keymap bufnr :n "q" ":bd<CR>" {:noremap true}))))
 
 
+(defn expandvar [text]
+  (s.expandvar text os.getenv))
+
+
 (defn- find-pos-1 [predicate next tbl idx]
   (let [(nidx val) (next tbl idx)]
     (when nidx
@@ -109,7 +114,6 @@
 
 (defn buffer-modified? [bufnr]
   (vim.api.nvim_buf_get_option bufnr :modified))
-
 
 
 (defn create-scratch-buffer []
