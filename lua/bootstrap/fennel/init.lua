@@ -1,7 +1,7 @@
 local M = {}
 
 
-local function gather_files(root)
+local function gather_files(root, force)
     local result = {}
     local srcdir = root .. "/fnl"
     local dstdir = root .. "/lua"
@@ -13,7 +13,7 @@ local function gather_files(root)
             local srcpath = srcpath:gsub("\\", "/")
             local suffix = srcpath:sub(prefixlen + 1)
             local dstpath = dstdir .. suffix:sub(1, -4) .. "lua"
-            if getftime(srcpath) > getftime(dstpath) then
+            if force or getftime(srcpath) > getftime(dstpath) then
                 result[srcpath] = dstpath
             end
         end
@@ -31,20 +31,27 @@ function M.ensure_modules()
         return require "fennel.view"
     end
 
+
+    local aniseed = function(name)
+        return "conjure." .. name
+    end
+
     package.preload["fennelview"] = fennelview
 
     package.preload["aniseed.deps.fennel"] = fennel
-    package.preload["aniseed.deps.fennelview"] = fennelview 
+    package.preload["aniseed.deps.fennelview"] = fennelview
+    package.preload["aniseed.autoload"] = aniseed
 
     package.preload["conjure.aniseed.deps.fennel"] = fennel
-    package.preload["conjure.aniseed.deps.fennelview"] = fennelview 
+    package.preload["conjure.aniseed.deps.fennelview"] = fennelview
+
 end
 
 
-function M.compile()
+function M.compile(force)
     local cfg = vim.fn.stdpath('config'):gsub('\\', '/')
-    local sources = gather_files(cfg) 
-    local afterfiles = gather_files(cfg .. "/after")
+    local sources = gather_files(cfg, force)
+    local afterfiles = gather_files(cfg .. "/after", force)
 
     if vim.tbl_isempty(sources) and vim.tbl_isempty(afterfiles) then
         return
@@ -105,7 +112,8 @@ function M.init()
         name = "InitRecompile",
         nargs = "*",
         modname = "bootstrap.fennel",
-        funcname = "compile"
+        funcname = "compile",
+        bang = "!",
     }
     vim.api.nvim_command(def)
 end
