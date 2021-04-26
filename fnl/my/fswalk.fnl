@@ -53,7 +53,8 @@
         path (fn [err stat rest]
                (if (not err)
                  (continuation path stat.type)
-                 (continuation)))))))
+                 (continuation)))))
+    1))
 
 
 (defn- async-gather-1 [path files directories]

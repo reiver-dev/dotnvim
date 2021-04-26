@@ -1,11 +1,12 @@
 (module my.async
-  {require {v my.vararg
-            u my.util}})
+  {require {v my.vararg}})
+
+(def- coroutine _G.coroutine)
 
 (require-macros :my.validate-macros)
 (require-macros :my.coroutine-macros)
 
-(def- nothing u.nothing)
+(defn- nothing [] nil)
 (def- argpack v.pack)
 (def- argunpack v.unpack)
 (def- argunpack-tail v.unpack-tail)
@@ -24,8 +25,8 @@
     (finally false (onerror coro ...))))
 
 
-(defn- resume [coro finally err continuation ...]
-  (proceed coro finally err continuation (coro-resume coro ...)))
+(defn- resume [coro finally onerror continuation ...]
+  (proceed coro finally onerror continuation (coro-resume coro ...)))
 
 
 (defn- maybe-create [func]
@@ -45,65 +46,197 @@
   (validate func callable? coro?)
   (validate onerror nil? callable?)
   (let [coro (maybe-create func)
-        finally (or callback nothing) 
-        err (or onerror default-error)]
+        finally (or callback nothing)
+        onerror (or onerror default-error)]
     (var continuation nil)
     (set continuation (fn [...]
-                        (resume coro finally err continuation ...)))
-    (resume coro finally onerror continuation ...)))
+                        (resume coro finally onerror continuation ...)))
+    (proceed coro finally onerror continuation (coro-resume coro ...))))
 
 
-(defn- bind-but-last-argument [func ...]
-  (match (select :# ...)
-    0 func
-    1 (let [arg1 ...]
-        (fn [continuation] (func arg1 continuation)))
-    2 (let [(arg1 arg2) ...]
-        (fn [continuation] (func arg1 arg2 continuation)))
-    3 (let [(arg1 arg2 arg3) ...]
-        (fn [continuation] (func arg1 arg2 arg3 continuation)))
-    _ (let [args (argpack ...)]
-        (fn [continuation] (func (argunpack-tail args continuation))))))
+(def- callback-bind-template
+  "return function(func)
+    return function(%A)
+      return function(continuation)
+        return func(%A %D continuation)
+      end
+    end
+  end")
 
 
-(defn from-callback [func]
+(def- coro-bind-template
+  "return function(step, func, onerror)
+    return function (%A)
+      return function(continuation)
+        return step(func, onerror %D %A)
+      end
+    end
+  end")
+
+
+(def- callback-wrap-template
+  "return function(func %D %A)
+    return function(continuation)
+      return func(%A %D continuation)
+    end
+  end")
+
+
+(def- coro-wrap-template
+  "return function(step, func, onerror %D %A)
+    return function(continuation)
+      return step(func, continuation, onerror %D %A)
+    end
+  end")
+
+
+(def- vim-wrap-template
+  "return function(func %D %A)
+    return function(continuation)
+      vim.schedule(function() continuation(pcall(func %D %A)) end)
+    end
+  end")
+
+
+(defn- argument-sequence [num]
+  (var result [])
+  (for [i 1 num]
+    (tset result i (.. "arg" (tostring i))))
+  (table.concat result ","))
+
+
+(defn- forbidden []
+  (error "Table insertion is forbidden."))
+
+
+(defn- bind-vararg [template numargs]
+  ((loadstring (string.gsub template
+                           "%%[A-Z]" {"%A" (argument-sequence numargs)
+                                      "%D" (or (and (< 0 numargs) ",") "")}))))
+
+
+(defn- make-vararg-binder [template]
+  (fn [tbl num]
+    (let [func (bind-vararg template num)]
+      (rawset tbl num func)
+      func)))
+
+
+(defn- make-callback-binder [tbl num]
+  (let [args (argument-sequence num)
+        func ((loadstring (string.format callback-bind-template args args)))]
+    (rawset tbl num func)
+    func))
+
+
+(defn- make-callback-wrapper [tbl num]
+  (let [args (argument-sequence num)
+        func ((loadstring (string.format callback-wrap-template args args)))]
+    (rawset tbl num func)
+    func))
+
+
+(defn- make-coro-wrapper [tbl num]
+  (let [args (argument-sequence num)
+        func ((loadstring (string.format coro-binder-template args args)))]
+    (rawset tbl num func)
+    func))
+
+
+(def- bind-callback-cache
+  (setmetatable {} {:__index (make-vararg-binder callback-bind-template)
+                    :__newindex forbidden}))
+
+
+(def- bind-coro-cache
+  (setmetatable {} {:__index (make-vararg-binder coro-bind-template)
+                    :__newindex forbidden}))
+
+
+(def- wrap-callback-cache
+  (setmetatable {} {:__index (make-vararg-binder callback-wrap-template)
+                    :__newindex forbidden}))
+
+
+(def- wrap-coro-cache
+  (setmetatable {} {:__index (make-vararg-binder coro-wrap-template)
+                    :__newindex forbidden}))
+
+
+(def- wrap-vim-cache
+  (setmetatable {} {:__index (make-vararg-binder vim-wrap-template)
+                    :__newindex forbidden}))
+
+
+;; FROM functions return (fn [...] (fn [continuation] ...))
+(defn from-callback [func numargs]
   (validate func callable?)
-  (fn [...] (bind-but-last-argument func ...)))
+  (if numargs
+    ((. bind-callback-cache numargs) func)
+    (fn [...] ((. wrap-callback-cache (select :# ...)) func ...))))
 
 
-(defn wrap-coro [func onerror ...]
-  (let [num (select :# ...)]
-    (match num
-      ;; No arg
-      0 (fn [continuation]
-          (step func continuation onerror))
-      ;; Single arg
-      1 (let [value ...]
-          (fn [continuation]
-            (step func continuation onerror value)))
-      ;; Two arg
-      2 (let [(value1 value2) ...]
-          (fn [continuation]
-            (step func continuation onerror value1 value2)))
-      ;; Varargs
-      _ (let [params (argpack ...)]
-          (fn [continuation]
-            (step func continuation onerror (argunpack params)))))))
+(defn from-coro [func numargs]
+  (if numargs
+    ((. bind-coro-cache numargs) func)
+    (fn [...] ((. wrap-coro-cache (select :# ...)) step func nil ...))))
 
 
-(defn wrap-vim [func]
-  (fn [continuation]
-    (vim.schedule
-      (fn [] (continuation (pcall func))))))
+;; WRAP functions return (fn [continuation] ...)
+(defn wrap-callback [func ...]
+  ((. wrap-callback-cache (select :# ...)) func ...))
+
+
+(defn wrap-coro [func ...]
+  ((. wrap-coro-cache (select :# ...)) step func nil ...))
+
+
+(defn wrap-vim [func ...]
+  ((. wrap-vim-cache (select :# ...)) func ...))
+
+
+;; WAIT functions yield (fn [continuation] ...)
+(defn wait-vim [func ...]
+  (coro-yield (wrap-vim func ...)))
+
+
+(defn wait-coro [func ...]
+  (coro-yield (wrap-coro func nil ...)))
 
 
 (defn wait-callback [func ...]
-  (validate func callable?)
-  (coro-yield (bind-but-last-argument func ...)))
+  (coro-yield (wrap-callback func ...)))
 
 
-(defn wait [...]
-  (coro-yield ...))
+(defn wait [awaitable]
+  (coro-yield awaitable))
+
+
+;; Helper to run coroutine detached
+(defn- error-message [function]
+  (let [info (debug.getinfo function :S)]
+    (string.format "Error during running async %s:%d\n"
+                   info.short_src info.linedefined)))
+
+
+(defn- finalizer [context]
+  (fn [status ...]
+    (set context.result (argpack ...))
+    (set context.completed true)
+    (set context.success status)
+    (when (not status)
+      (vim.schedule
+        (fn []
+          (vim.notify (.. (error-message context.func) (. context.result 0))
+                    vim.log.levels.ERROR))))))
+
+
+(defn run [func ...]
+  (let [context {:completed false
+                 :func func
+                 :coro (coroutine.create func)}]
+    (set context.step (step context.coro (finalizer context) nil ...))
+    context))
 
 
 (defn- gather-impl [coros callback]
