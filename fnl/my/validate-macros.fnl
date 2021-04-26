@@ -19,7 +19,7 @@
                            (table.insert prednames (tostring p))))
                        (values expression (table.concat prednames "|"))))
         errmsg (string.format "%s (%s) is not valid, got " varname msg)]
-    `(assert ,expr (.. ,errmsg (type ,value)))))
+    `(when (not ,expr) (error (.. ,errmsg (type ,value))))))
 
 
 {: nil?
