@@ -7,10 +7,13 @@
 !ginit.vim
 !pack
 !pack/local
-!lua
+!lua/bootstrap
 !fnl
 !fnl/my
+!fnl/telescope
 
 lua/my
+lua/telescope
 pack/minpac
 pack/packager
+pack/packer
