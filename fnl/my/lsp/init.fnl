@@ -8,7 +8,7 @@
 
 (defn- simplecall [mod fun]
   (string.format "<cmd>lua _T(%q, %q)<CR>" mod fun))
-  
+
 
 (defn- rangecall [mod fun]
   (string.format "<cmd>lua _T(%q, %q)<CR>" mod fun))
@@ -20,15 +20,15 @@
 
 (defn- F [fun]
   (simplecall handler fun))
- 
- 
+
+
 (defn- R [fun]
   (rangecall handler fun))
-  
-  
+
+
 (defn- T [fun]
   (termcall handler fun))
-   
+
 
 (def keymap
   {:gd "<cmd>lua vim.lsp.buf.declaration()<CR>"
@@ -102,7 +102,7 @@
                  "augroup END"]
    "\n"))
 
-  
+
 (defn- init-highlight [bufnr]
   (vim.api.nvim_exec highlight-command false))
 
@@ -110,7 +110,7 @@
 (defn- default-buffer-config [client buf]
   (vim.api.nvim_buf_set_option 0 "omnifunc" "v:lua.vim.lsp.omnifunc")
   (init-highlight))
-  
+
 
 (defn on-attach [client buf]
   (let [clients (vim.lsp.buf_get_clients buf)]
