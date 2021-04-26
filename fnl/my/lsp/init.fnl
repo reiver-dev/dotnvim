@@ -70,8 +70,8 @@
        :<C-K> (F :signature-help)
        :K (F :hover)}
    :v {:<leader>a (R :range-code-action)
-       :<leader>f (F :format-region)}}) 
-  
+       :<leader>f (F :format-region)}})
+
 
 
 (defn- configure-diagnostic []
