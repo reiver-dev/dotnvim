@@ -12,7 +12,7 @@ function M.setup()
 
     -- Download package manager and friends
     require("bootstrap.basedeps").setup()
-    require("bootstrap.trampouline").setup() 
+    require("bootstrap.trampouline").setup()
     require("bootstrap.reload").setup()
     require("bootstrap.modules").setup()
     require("bootstrap.fennel").setup()
