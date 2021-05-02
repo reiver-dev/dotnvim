@@ -3,6 +3,8 @@ local M = {}
 
 
 function M.setup()
+    vim.o.termguicolors = true
+
     if os.getenv("AK_PROFILER") then
         vim.cmd "packadd profiler"
         require("profiler")
