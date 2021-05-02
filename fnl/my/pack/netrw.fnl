@@ -7,20 +7,20 @@
   "augroup my_netrw
   autocmd!
   autocmd FileType netrw lua _T('my.pack.netrw', 'initialize')
-  autocmd")
+  augroup END")
 
 
 (def- autocmd-enable
   "augroup my_netrw_local
   autocmd! * <buffer>
   autocmd BufEnter <buffer> lua _T('my.pack.netrw', 'keep-initialized')
-  autocmd")
+  augroup END")
 
 
 (def- autocmd-disable
   "augroup my_netrw_local
   autocmd! * <buffer>
-  autocmd")
+  augroup END")
 
 
 (defn- enable []
