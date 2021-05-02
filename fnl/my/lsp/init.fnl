@@ -113,7 +113,8 @@
 
 
 (defn on-attach [client buf]
-  (LOAD_PACKAGE "lspsaga")
+  (pcall LOAD_PACKAGE "lspsaga")
+  (pcall LOAD_PACKAGE "lsptrouble")
   (let [clients (vim.lsp.buf_get_clients buf)]
     (when (and (= (length clients) 1)
                (= (. clients 1) client))
