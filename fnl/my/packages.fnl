@@ -118,13 +118,22 @@
   (pkg :name :lspconfig
        :url "neovim/nvim-lspconfig"
        :module ["lspconfig"]
+       :cmd [:LspInfo :LspStart :LspStop :LspRestart]
        :opt true)
 
   (pkg :name :lspsaga
        :url "glepnir/lspsaga.nvim"
-       :cmd "Lspsaga"
+       :cmd ["Lspsaga"]
        :module "lspsaga"
        :config #(_T :my.pack.lspsaga :setup))
+
+  (pkg :name :lsptrouble
+       :url "folke/lsp-trouble.nvim"
+       :module "trouble"
+       :config #(_T :my.pack.lsptrouble :setup))
+
+  (pkg :name :lspcolors
+       :url "folke/lsp-colors.nvim")
 
   (pkg :name :vista
        :url "liuchengxu/vista.vim"
