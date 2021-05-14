@@ -7,6 +7,7 @@
                (join (vim.fn.stdpath "config") "pack")
                (join (vim.fn.stdpath "data") "site" "pack"))]
     {:package_root root
+     :display {:open_cmd "vertical botright new [packer]"}
      :disable_commands true}))
 
 
@@ -22,7 +23,7 @@
   (RELOAD "my.packages")
   (init-packages)
   (_T :packer name))
-  
+
 
 (defn install []
   (exec :install))
