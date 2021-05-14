@@ -26,8 +26,8 @@
   (fn [...] (fun arg0 ...)))
 
 
-(fn get-local [bufnr ...]
-  (_T :my.bufreg :get-local bufnr ...))
+(fn get-local [...]
+  (_T :my.bufreg :get-local 0 ...))
 
 
 (fn join-entries [tbl]
@@ -105,12 +105,12 @@
 ;; File position
 
 (left :LineColumn
-      :provider #(string.format "%5s:%-3s" (vim.fn.line ".") (vim.fn.col ".")) 
+      :provider #(string.format "%5s:%-3s" (vim.fn.line ".") (vim.fn.col "."))
       :separator " "
       :separator_highlight [:NONE colors.bg]
       :highlight [colors.fg colors.bg])
-                  
-      
+
+
 (left :PerCent
       :provider #(let [current (vim.fn.line ".")
                        total (vim.fn.line "$")]
@@ -124,7 +124,7 @@
 
 
 (left :Directory
-      :provider #(let [dir (get-local 0 :directory)]
+      :provider #(let [dir (get-local :directory)]
                    (if dir (vim.fn.fnamemodify dir ":~") ""))
       :separator " "
       :separator_highlight [:NONE colors.bg]
@@ -137,7 +137,7 @@
   (let [lsp vim.lsp
         bufnr (vim.api.nvim_get_current_buf)
         clients (lsp.buf_get_clients bufnr)
-        enabled (or (get-local 0 :enabled-checkers) [])]
+        enabled (or (get-local :enabled-checkers) [])]
     (when (or (next clients) (next enabled))
       (var count 0)
       (each [_ client (ipairs clients)]
@@ -174,7 +174,7 @@
 
 
 (right :Project
-      :provider #(let [dir (get-local 0 :project :root)]
+      :provider #(let [dir (get-local :project :root)]
                    (and dir (vim.fn.fnamemodify dir ":~")))
       :separator " "
       :separator_highlight [:NONE colors.bg]
@@ -219,7 +219,7 @@
        :condition condition.hide_in_width
        :icon " "
        :highlight [colors.orange colors.bg])
-       
+
 (right :DiffRemove
        :provider "DiffRemove"
        :condition condition.hide_in_width
@@ -239,12 +239,20 @@
 
 (left-inactive :SFileName
                :provider "SFileName"
+               :separator " %<"
+               :separator_highlight [:NONE colors.bg]
                :condition condition.buffer_not_empty
                :highlight [colors.fg colors.bg :bold])
+
+(left-inactive :Directory
+               :provider #(let [dir (get-local :directory)]
+                            (if dir (vim.fn.fnamemodify dir ":~") ""))
+               :condition condition.buffer_not_empty
+               :highlight [colors.fg colors.bg :none])
 
 (right-inactive :BufferIcon
                 :provider "BufferIcon"
                 :highlight [colors.fg colors.bg])
-               
+
 
 ;;; galaxyline.fnl ends here
