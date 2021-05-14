@@ -241,15 +241,24 @@
   (pkg :name "colorbuddy"
        :url "tjdevries/colorbuddy.nvim")
 
-  (pkg :name "modus-theme"
-       :url "ishan9299/modus-theme-vim")
+  (pkg :name "lush"
+       :url "rktjmp/lush.nvim")
+
+  (pkg :name "jellybeans-theme"
+       :url "metalelf0/jellybeans-nvim")
+
+  (pkg :name "onedark-theme"
+       :url "olimorris/onedark.nvim"
+       :config #(vim.cmd "colorscheme onedark_nvim"))
+
+  (pkg :name "limestone-theme"
+       :url "tsbohc/limestone")
 
   (pkg :name "zephyr-theme"
        :url "glepnir/zephyr-nvim")
 
   (pkg :name "nvcode-theme"
-       :url "ChristianChiarulli/nvcode-color-schemes.vim"
-       :config #(vim.cmd "colorscheme nvcode")))
+       :url "ChristianChiarulli/nvcode-color-schemes.vim"))
 
 
 ;;; packages.fnl ends here
