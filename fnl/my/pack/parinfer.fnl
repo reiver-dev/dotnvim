@@ -11,7 +11,7 @@
 
 (defn filetypes []
   [:clojure :scheme :list :racket :hy :fennel :janet :carp :wast])
-  
+
 
 (defn guess-libname []
   (var name (. libnames (. (vim.loop.os_uname) :sysname)))
@@ -40,14 +40,25 @@
                          (vim.notify (string.format "Parinfer build exited: %d" data)))}]
     (vim.cmd (string.format ":vertical botright sbuffer %d" bufnr))
     (vim.fn.termopen command opts)))
-  
+
+
+(defn- keep-window-finalize [oldwin ok ...]
+  (vim.api.nvim_set_current_win oldwin)
+  (when (not ok) (error ...))
+  ...)
+
+
+(defn- keep-window [func ...]
+  (let [curwin (vim.api.nvim_get_current_win)]
+    (keep-window-finalize curwin (pcall func ...))))
+
 
 (defn compile-library [plugin]
   (let [plugin (or plugin (?. _G :packer_plugins :parinfer))
         path (when plugin (or plugin.path plugin.install_path))]
-    (vim.notify "Building paringer lib")
-    (start ["cargo" "build" "--release"] path)))
-      
+    (vim.notify "Building parinfer lib")
+    (keep-window start ["cargo" "build" "--release"] path)))
+
 
 (defn setup []
   (let [libpath (guess-libpath)]
@@ -57,4 +68,4 @@
         (set vim.g.parinfer_dylib_path libpath))
       (do
         (set vim.g.parinfer_enabled 0)))))
-      
+
