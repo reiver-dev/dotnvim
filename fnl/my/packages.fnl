@@ -252,8 +252,11 @@
        :url "metalelf0/jellybeans-nvim")
 
   (pkg :name "onedark-theme"
-       :url "olimorris/onedark.nvim"
-       :config #(vim.cmd "colorscheme onedark_nvim"))
+       :url "olimorris/onedark.nvim")
+
+  (pkg :name "darcula-solid-theme"
+       :url "briones-gabriel/darcula-solid.nvim"
+       :config #(vim.cmd "colorscheme darcula-solid"))
 
   (pkg :name "limestone-theme"
        :url "tsbohc/limestone")
