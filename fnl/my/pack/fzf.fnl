@@ -24,7 +24,7 @@
 (defn hg-files [opts]
   (when (or (not opts.path) (= "" opts.path))
     (set opts.path (vim.fn.getcwd)))
-  (fzf-run "hgfiles" 
+  (fzf-run "hgfiles"
            {:source "hg files ."
             :sink "e"
             :dir opts.path
@@ -33,13 +33,13 @@
 
 
 (defn projectile-hg-files []
-  (fzf-run "hgfiles" 
+  (fzf-run "hgfiles"
            {:source (.. "hg files " (vim.fn.fnameescape vim.b.projectile))
             :dir (hg-root)
             :sink "e"
             :options "-m --prompt \"HgFiles> \""}
            0))
-  
+
 
 (def- commands
   "command! -bang ProjectileFiles lua _T('my.pack.fzf', 'files', '<bang>0')
@@ -48,12 +48,6 @@
   ")
 
 
-(defn- bindings []
-  (vim.api.nvim_set_keymap
-    :n "<C-x>f" "<cmd>Files<CR>" {:noremap true}))
-
-
 (defn setup []
-  (bindings)
   (vim.api.nvim_exec commands false))
 

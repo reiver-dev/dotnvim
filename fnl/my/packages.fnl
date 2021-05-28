@@ -197,8 +197,12 @@
 
   ;; Telescope
   (pkg :name "telescope"
-       :url "nvim-lua/telescope.nvim"
+       :url "nvim-telescope/telescope.nvim"
        :config #(_T :my.pack.telescope :setup))
+
+  (pkg :name "telescope-fzy-native"
+       :url "nvim-telescope/telescope-fzy-native.nvim"
+       :config #(_T :my.pack.telescope-fzy-native :setup))
 
   ;; FileTree
   (pkg :name "vinegar"
