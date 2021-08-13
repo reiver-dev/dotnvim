@@ -5,7 +5,7 @@
       {:defaults
        {:prompt_prefix "❯ "
         :selection_caret "❯ "
-        :prompt_position :top
+        :layout_config {:prompt_position :top}
         :borderchars ["─" "│" "─" "│" "┌" "┐" "┘" "└"]}}))
 
 (defn buffers []

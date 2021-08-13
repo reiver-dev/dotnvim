@@ -138,7 +138,7 @@
 
 (defn- make-coro-wrapper [tbl num]
   (let [args (argument-sequence num)
-        func ((loadstring (string.format coro-binder-template args args)))]
+        func ((loadstring (string.format coro-bind-template args args)))]
     (rawset tbl num func)
     func))
 

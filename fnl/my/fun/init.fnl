@@ -307,7 +307,7 @@
   (when (not= nil idx)
     (if (call state 1 $ idx ...)
       (values idx ...)
-      (iter-filter-1 state (call state 2 3 $ idx)))))
+      (iter-filter-kv-1 state (call state 2 3 $ idx)))))
 
 
 (fn iter-filter [state idx]
@@ -323,7 +323,7 @@
 
 
 (fn filter-kv [predicate iter state idx]
-  (values iter-filter [predicate iter state] idx))
+  (values iter-filter-kv [predicate iter state] idx))
 
 
 (export filter 1 true)

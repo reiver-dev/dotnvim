@@ -113,8 +113,6 @@
 
 
 (defn on-attach [client buf]
-  (pcall LOAD_PACKAGE "lspsaga")
-  (pcall LOAD_PACKAGE "lsptrouble")
   (let [clients (vim.lsp.buf_get_clients buf)]
     (when (and (= (length clients) 1)
                (= (. clients 1) client))
@@ -126,6 +124,7 @@
 
 
 (defn setup []
+  (pcall LOAD_PACKAGE "lsptrouble")
   (each [mode keys (pairs keymap-extra)]
     (each [key action (pairs keys)]
       (vim.api.nvim_set_keymap mode key action {:noremap true}))))

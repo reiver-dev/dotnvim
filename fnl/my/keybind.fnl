@@ -17,7 +17,7 @@
 
   ;; Copy-paste
   (s.kmap-global :i :<S-Insert> :<C-R>+)
-  (s.kmap-global :nv :<S-Insert> "\"+p")
+  (s.kmap-global :nv :<S-Insert> "\"+P")
   (s.kmap-global :nv :<C-Insert> "\"+y")
 
   ;; Insert mode movement
@@ -47,7 +47,7 @@
   (s.kmap-global :i :<M-d> :<C-\><C-o>dw)
   (s.kmap-global :i :<M-DEL> :<C-\><C-o>dw)
 
-  ;; backward-delete-word 
+  ;; backward-delete-word
   (s.kmap-global :i :<M-h> :<C-\><C-o>db)
   (s.kmap-global :i :<M-BS> :<C-\><C-o>db)
 

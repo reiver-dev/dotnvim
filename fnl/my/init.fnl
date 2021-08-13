@@ -35,6 +35,7 @@
                                  (string.format
                                    "Fail at mod init %s:\n    %s" modname err)))
       (false err) (vim.notify
-                    (string.format "Failed to load %s" mod) vim.log.levels.ERROR))))
+                    (string.format "Failed to load %s:\n    %s" modname err)
+                    vim.log.levels.ERROR))))
 
 ;;; my.fnl ends here

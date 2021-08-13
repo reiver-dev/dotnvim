@@ -8,42 +8,45 @@
   (let [(ok mod) (pcall (fn [] (require mod)))]
     (when ok
       ((. mod name)))))
- 
- 
+
+
+(def base vim.lsp.buf)
+(def base-diag vim.lsp.diagnostic)
+
+
 (defn- saga [submod name]
   (modcall (.. "lspsaga." submod) name))
 
 
 (defn- telescope [name]
   (modcall "telescope.builtin" name))
- 
+
 
 (defn jump-declaration []
-  (vim.lsp.buf.declaration))
+  (base.declaration))
 
 
 (defn jump-definition []
-  (vim.lsp.buf.definition))
+  (base.definition))
 
 
 (defn jump-implementation []
-  (vim.lsp.buf.implementation))
+  (base.implementation))
 
 
 (defn jump-type-definition []
-  (vim.lsp.buf.type_definition))
+  (base.type_definition))
 
 
-(defn preview-definition []
-  (saga :provider :preview_definition))
-  
+(defn preview-definition [])
+
 
 (defn diagnostic-prev []
-  (saga :diagnostic :lsp_jump_diagnostic_prev))
-  
+  (base-diag.goto_prev))
+
 
 (defn diagnostic-next []
-  (saga :diagnostic :lsp_jump_diagnostic_next))
+  (base-diag.goto_next))
 
 
 (defn open-terminal []
@@ -55,32 +58,31 @@
 
 
 (defn code-action []
-  (saga :codeaction :code_action))
+  (base.code_action))
 
 
 (defn range-code-action []
-  (saga :codeaction :range_code_action))
+  (base.range_code_action))
 
 
 (defn rename []
-  (saga :rename :rename))
+  (base.rename))
 
 
 (defn format-line []
-  (vim.lsp.buf.range_formatting {} [(p.line-begin)] [(p.line-end)]))
-  
+  (base.range_formatting {} [(p.line-begin)] [(p.line-end)]))
+
 
 (defn format-region []
   (let [pos (p.visual-point)]
-    (vim.lsp.buf.range_formatting {} pos.min pos.max)))
+    (base.range_formatting {} pos.min pos.max)))
 
 
 (defn format-buffer []
-  (vim.lsp.buf.formatting))
+  (base.formatting))
 
 
-(defn symbol-find []
-  (saga :provider :lsp_finder))
+(defn symbol-find [])
 
 
 (defn symbol-references []
@@ -92,27 +94,27 @@
 
 
 (defn symbol-in-workspace []
-  (telescope :lsp_workspace_symbols)) 
+  (telescope :lsp_workspace_symbols))
 
 
 (defn line-diagnostic []
-  (vim.lsp.diagnostic.show_line_diagnostics))
+  (base-diag.show_line_diagnostics))
 
 
 (defn signature-help []
-  (saga :signaturehelp :signature_help))
+  (base.signature_help))
 
 
 (defn hover []
-  (vim.lsp.buf.hover))
+  (base.hover))
 
 
 (defn show-document-highlight []
-  (vim.lsp.buf.document_highlight))
+  (base.document_highlight))
 
 
 (defn clear-document-highlight []
-  (vim.lsp.buf.clear_references))
+  (base.clear_references))
 
 
 ;;; lsp.handlers ends here

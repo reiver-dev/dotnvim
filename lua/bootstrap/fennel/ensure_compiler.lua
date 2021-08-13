@@ -54,12 +54,21 @@ function M.setup(opts)
         basic.rmdir(dir)
     end
 
-    basic.with_dir(root, function()
+    local old = package.loaded.fennel
+    package.loaded.fennel = fennel
+
+    local ok, res = pcall(basic.with_dir, root, function()
         for src, dst in pairs(gather_files()) do
             vim.notify(string.format("Compiling %s => %s", src, dst))
             compile(old_fennel, src, dst)
         end
     end)
+
+    package.loaded.fennel = old
+
+    if not ok then
+        error(res)
+    end
 end
 
 

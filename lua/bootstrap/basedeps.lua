@@ -34,18 +34,19 @@ local function download(source, dest)
 end
 
 
-local function load_module(module_name)
+local function load_module(module_name, parent_loader)
     if module_name == nil then
-         error("Module name is nil")
+        error("Module name is nil")
     end
     local errors = {}
     local loaders = package.loaders
     for i = 1,#loaders do
         local loader = loaders[i](module_name)
         if vim.is_callable(loader) then
-            return loader()
-        end
-        if type(loader) == "string" then
+            if loader ~= parent_loader then
+                return loader(module_name)
+            end
+        elseif type(loader) == "string" then
             errors[#errors + 1] = loader
         end
     end
@@ -53,16 +54,18 @@ local function load_module(module_name)
 end
 
 
-local function package_preloader(package_name)
-    return function(module_name) 
+local function package_preloader(package_name, module_name)
+    local function preload_module_loader(modname)
+        assert(modname == module_name)
         load_package(package_name)
-        return load_module(module_name)
+        return load_module(modname, preload_module_loader)
     end
+    return preload_module_loader
 end
 
 
 local function ensure_plugin_loaders(package_name, module_name)
-    package.preload[module_name] = package_preloader(package_name)
+    package.preload[module_name] = package_preloader(package_name, module_name)
 end
 
 
@@ -77,7 +80,7 @@ local function setup()
     end
 
     download("https://github.com/Olical/conjure", conjure_root)
-    
+
     ensure_plugin_loaders("packer.nvim", "packer")
     ensure_plugin_loaders("fennel", "fennel")
     ensure_plugin_loaders("fennel", "fennel.view")

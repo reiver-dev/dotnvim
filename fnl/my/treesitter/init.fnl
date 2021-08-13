@@ -16,8 +16,6 @@
     {:highlight {:enable true
                  :is_supported (partial supported :has_highlights)
                  :disable [:css]}
-     :rainbow {:enable true
-               :is_supported (partial supported :has_highlights)}
      :playground {:enable true
                   :disable {}
                   :updatetime 25

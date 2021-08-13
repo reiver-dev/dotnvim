@@ -121,15 +121,8 @@
        :cmd [:LspInfo :LspStart :LspStop :LspRestart]
        :opt true)
 
-  (pkg :name :lspsaga
-       :url "glepnir/lspsaga.nvim"
-       :cmd ["Lspsaga"]
-       :module "lspsaga"
-       :config #(_T :my.pack.lspsaga :setup))
-
   (pkg :name :lsptrouble
        :url "folke/lsp-trouble.nvim"
-       :module "trouble"
        :config #(_T :my.pack.lsptrouble :setup))
 
   (pkg :name :lspcolors
@@ -146,9 +139,6 @@
 
   (pkg :name "nvim-treesitter-playground"
        :url "nvim-treesitter/playground")
-
-  (pkg :name "nvim-treesitter-rainbow"
-       :url "p00f/nvim-ts-rainbow")
 
   ;; File-specific
   (pkg :name "python-pep8-indent"

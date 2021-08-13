@@ -32,8 +32,59 @@ function M.compile_file(src, dst, opts)
 end
 
 
+local MACRO_ENV = setmetatable({
+    package = package,
+    pairs = pairs,
+    ipairs = ipairs,
+    type = type,
+    table = table,
+    tostring = tostring,
+    string = string,
+    select = select,
+    assert = assert,
+    getmetatable = getmetatable,
+    setmetatable = setmetatable,
+    debug = debug,
+}, {__newindex = function() error("Macro env insert attempt") end})
+
 local function macro_loader(modname, fname)
-    return fennel.dofile(fname, {env = "_COMPILER"})
+    return fennel.dofile(fname, {env = "_COMPILER", compilerEnv = MACRO_ENV})
+end
+
+
+local function lua_macro_loader(modname, fname)
+    local data = basic.slurp(fname)
+    return fennel['load-code'](data, fennel['make-compiler-env'], fname)
+end
+
+
+function M.module_searcher(name)
+    M.initialize()
+
+    local basename = string.gsub(name, "%.", "/")
+
+    local f = string.format
+    local paths = {
+        f("fnl/%s.fnl", basename),
+        f("fnl/%s/init.fnl", basename),
+    }
+
+    local get = vim.api.nvim_get_runtime_file
+    for _, path in ipairs(paths) do
+        local found = get(path, false)[1]
+        if found then
+            local code, err = ensure_cached(name, found)
+            if code then
+                local f, err = loadstring(code, name)
+                if err then
+                    return err
+                end
+                return f
+            else
+                return function() error(err) end
+            end
+        end
+    end
 end
 
 
@@ -44,6 +95,8 @@ local function macro_searcher(name)
     local paths = {
         f("fnl/%s.fnl", basename),
         f("fnl/%s/init.fnl", basename),
+        f("lua/%s.lua", basename),
+        f("lua/%s/init.lua", basename),
     }
 
     local get = vim.api.nvim_get_runtime_file
@@ -51,7 +104,11 @@ local function macro_searcher(name)
     for _, path in ipairs(paths) do
         local found = get(path, false)[1]
         if found then
-            return macro_loader, found
+            if string.sub(found, -3) == "fnl" then
+                return macro_loader, found
+            else
+                return lua_macro_loader, found
+            end
         end
     end
 
@@ -105,11 +162,11 @@ end
 function M.compiler_init()
     LOAD_PACKAGE("conjure")
     local searchers = fennel["macro-searchers"]
-    if searchers == nil then
-        fennel.path = M.resolve_path()
-    elseif #searchers == 1 then
+    if type(searchers) == 'table' then
         table.insert(searchers, 1, macro_searcher)
         table.insert(searchers, aniseed_macro_searcher)
+    else
+        fennel.path = M.resolve_path()
     end
 end
 

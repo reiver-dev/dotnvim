@@ -19,7 +19,6 @@
 
 
 (defn- exec [name]
-  (_T :bootstrap.fennel :compile)
   (RELOAD "my.packages")
   (init-packages)
   (_T :packer name))

@@ -42,8 +42,8 @@
       (match
         (pcall eval text {:env (setmetatable {:_A  options :view view}
                                              {:__index _G})})
-        (false err) (print "dir-locals eval failed: " err)))
-    (false err) (print "dir-locals read failed:" err)))
+        (false err) (print "dir-locals `" script-file "` eval failed: " err)))
+    (false err) (print "dir-locals `" script-file "` read failed:" err)))
 
 
 (defn- valid? [tbl]
