@@ -1,5 +1,8 @@
 local M = {}
 
+local cachedir = vim.fn.stdpath('cache'):gsub("\\", "/") .. "/fennel/"
+local basic = require "bootstrap.basic"
+
 
 local function gather_files(root, force)
     local result = {}
@@ -95,6 +98,129 @@ local function complete_fennel(arg, line, pos)
 end
 
 
+local function compile_and_load(srcfile, dstfile)
+    local opts = {
+        useMetadata = false,
+        compilerEnv = _G,
+        ["compiler-env"] = _G,
+        filename = srcfile,
+    }
+    local text = basic.slurp(srcfile):gsub("\r\n", "\n")
+
+    local compiler = require("bootstrap.fennel.compiler")
+    compiler.initialize()
+
+    local compiled, code = compiler.compile_module_source(text, opts)
+    if compiled then
+        basic.spew(dstfile, code)
+        return loadstring(code, dstfile)
+    end
+
+    return nil, ("Failed compile: %s\n%s"):format(src, code)
+end
+
+
+local function select_result(result, err)
+    if result ~= nil then
+        return result
+    end
+    return err
+end
+
+
+local function ensure_cached(modname, srcfile)
+    local dstfile = cachedir .. modname .. ".lua"
+    local uv = vim.loop
+
+    local srcstat, srcerr = uv.fs_stat(srcfile)
+    local dststat, dsterr = uv.fs_stat(dstfile)
+
+    if srcstat == nil then
+        if dststat then
+            os.remove(dstfile)
+        end
+        error(string.format("Fnl file error %s %s", fname, srcerr))
+    end
+
+    local needcompile
+    if dststat == nil then
+        if dsterr:gsub(":.*", "") ~= "ENOENT" then
+            error(string.format("Fail to compile %s into %s:",
+                                srcfile, dstfile, dsterr))
+        end
+        needcompile = true
+    else
+        needcompile = srcstat.mtime.sec >= dststat.mtime.sec
+    end
+
+    if needcompile then
+        return compile_and_load(srcfile, dstfile)
+    end
+
+    return loadfile(dstfile)
+end
+
+
+local function expedite_cached_searcher(modname)
+    local dstfile = cachedir .. modname .. ".lua"
+    local uv = vim.loop
+
+    local dststat, dsterr = uv.fs_stat(dstfile)
+    if dststat == nil then
+        if dsterr:gsub(":.*", "") ~= "ENOENT" then
+            return string.format("Fail to compile %s into %s:",
+                                 srcfile, dstfile, dsterr)
+        end
+        return
+    end
+
+    local basename = string.gsub(modname, "%.", "/")
+    local f = string.format
+    local paths = {
+        f("fnl/%s.fnl", basename),
+        f("fnl/%s/init.fnl", basename),
+    }
+
+    local get = vim.api.nvim_get_runtime_file
+    for _, path in ipairs(paths) do
+        local srcfile = get(path, false)[1]
+        if srcfile then
+            local srcstat, srcerr = uv.fs_stat(srcfile)
+            if srcstat == nil then
+                if dststat then
+                    os.remove(dstfile)
+                end
+                error(string.format("Fnl file error %s %s", fname, srcerr))
+            end
+
+            if srcstat.mtime.sec < dststat.mtime.sec then
+                return select_result(loadfile(dstfile))
+            end
+            return select_result(compile_and_load(srcfile, dstfile))
+        end
+    end
+end
+
+
+local function module_searcher(modname)
+    local basename = string.gsub(modname, "%.", "/")
+
+    local f = string.format
+    local paths = {
+        f("fnl/%s.fnl", basename),
+        f("fnl/%s/init.fnl", basename),
+    }
+
+    local get = vim.api.nvim_get_runtime_file
+    for _, path in ipairs(paths) do
+        local found = get(path, false)[1]
+        if found then
+            return select_result(ensure_cached(modname, found))
+        end
+    end
+end
+
+
 function M.init()
     interop = require"bootstrap.interop"
 
@@ -121,7 +247,9 @@ end
 
 function M.setup()
     M.ensure_modules()
-    M.compile()
+    -- M.compile()
+    table.insert(package.loaders, 2, module_searcher)
+    table.insert(package.loaders, 1, expedite_cached_searcher)
     M.init()
 end
 
