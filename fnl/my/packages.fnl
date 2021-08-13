@@ -132,6 +132,13 @@
        :url "liuchengxu/vista.vim"
        :cmd ["Vista"])
 
+  ;; Debugging
+  (pkg :name :nvim-dap
+       :url "mfussenegger/nvim-dap")
+
+  (pkg :name :nvim-gdb
+       :url "sakhnik/nvim-gdb")
+
   ;; Treesitter
   (pkg :name "nvim-treesitter"
        :url "nvim-treesitter/nvim-treesitter"
