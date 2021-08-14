@@ -33,7 +33,7 @@
   (setb :expandtab true)
   (setb :autoindent true)
   (setb :smartindent true)
-  (setb :lispwords (.. vim.o.lispwords ",module")))
+  (setb :lispwords (.. vim.o.lispwords ",module,collect,icollect")))
 
 
 (defn setup []
