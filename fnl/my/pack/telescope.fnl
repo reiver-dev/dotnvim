@@ -1,12 +1,20 @@
 (module my.pack.telescope)
 
 (defn configure []
-  (_T :telescope :setup
-      {:defaults
-       {:prompt_prefix "❯ "
-        :selection_caret "❯ "
-        :layout_config {:prompt_position :top}
-        :borderchars ["─" "│" "─" "│" "┌" "┐" "┘" "└"]}}))
+  (local telescope (require :telescope))
+  (local actions (require :telescope.actions))
+  (telescope.setup
+    {:defaults
+     {:mappings
+      {:n {:<C-g> actions.close
+           :<C-n> actions.move_selection_next
+           :<C-p> actions.move_selection_previous}
+       :i {:<C-g> actions.close
+           :<C-c> actions.close}}
+      :prompt_prefix "❯ "
+      :selection_caret "❯ "
+      :layout_config {:prompt_position :top}
+      :borderchars ["─" "│" "─" "│" "┌" "┐" "┘" "└"]}}))
 
 (defn buffers []
   (let [builtin (require :telescope.builtin)
