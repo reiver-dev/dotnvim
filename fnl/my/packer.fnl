@@ -1,14 +1,8 @@
 (module my.packer)
 
 (defn- packer-config []
-  (let [join (. (require "packer.util") :join_paths)
-        iswin (= (. (vim.loop.os_uname) :sysname) "Windows_NT")
-        root (if iswin
-               (join (vim.fn.stdpath "config") "pack")
-               (join (vim.fn.stdpath "data") "site" "pack"))]
-    {:package_root root
-     :display {:open_cmd "vertical botright new [packer]"}
-     :disable_commands true}))
+  {:display {:open_cmd "vertical botright new [packer]"}
+   :disable_commands true})
 
 
 (defn init-packages []

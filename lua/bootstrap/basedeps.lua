@@ -4,12 +4,7 @@
 local load_package = require("bootstrap.modules").load_package
 local fn = vim.fn
 
-local packages
-if fn.has("win32") == 1 then
-    packages = fn.stdpath("config"):gsub("\\", "/") .. "/pack/packer"
-else
-    packages = fn.stdpath("data"):gsub("\\", "/") .. "/site/pack/packer"
-end
+local packages = fn.stdpath("data"):gsub("\\", "/") .. "/site/pack/packer"
 
 local packer_root = packages .. "/opt/packer.nvim"
 local fennel_root = packages .. "/opt/fennel"
@@ -19,7 +14,7 @@ local conjure_root = packages .. "/opt/conjure"
 local function make_args(executable, ...)
     local args = {"!", executable, ...}
     for idx = 2,#args,1 do
-        args[idx] = fn.shellescape(args[idx]) 
+        args[idx] = fn.shellescape(args[idx])
     end
     return table.concat(args, " ")
 end
