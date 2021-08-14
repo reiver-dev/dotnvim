@@ -105,7 +105,7 @@ local function compile_and_load(srcfile, dstfile)
         ["compiler-env"] = _G,
         filename = srcfile,
     }
-    local text = basic.slurp(srcfile):gsub("\r\n", "\n")
+    local text = basic.slurp(srcfile)
 
     local compiler = require("bootstrap.fennel.compiler")
     compiler.initialize()

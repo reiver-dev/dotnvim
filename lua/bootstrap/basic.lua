@@ -19,7 +19,7 @@ end
 
 
 function M.slurp(path)
-    local stream = assert(io.open(path, "rb"))
+    local stream = assert(io.open(path, "r"))
     local ok, result = pcall(stream.read, stream, "*all")
     stream:close()
     if not ok then
