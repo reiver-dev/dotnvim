@@ -16,7 +16,6 @@
 (local fs_open vim.loop.fs_open)
 (local fs_close vim.loop.fs_close)
 (local gettimeofday vim.loop.gettimeofday)
-(local floor math.floor)
 
 
 (fn current-buffer []
@@ -48,24 +47,25 @@
   (.. (tostring key) ": <NOTSET>"))
 
 
-(fn gather-data-1 [tbl n i key val ...]
-  (tset tbl i (format-data-entry key val))
-  (when (not= i n)
-    (gather-data-1 tbl n (+ i 1) ...)))
+(fn gather-data-1 [tbl step nargs key val ...]
+  (if
+    (< 2 nargs) (do
+                  (tset tbl step (format-data-entry key val))
+                  (gather-data-1 tbl (+ step 1) (- nargs 2) ...))
+    (= 2 nargs) (do
+                 (tset tbl step (format-data-entry key val))
+                 tbl)
+    (= 1 nargs) (do
+                  (tset tbl step (format-data-key-only key val))
+                  tbl)
+    tbl))
 
 
 (fn gather-data [...]
   (local num-entries (select :# ...))
-  (when (not= 0 num-entries)
-    (let [full-pairs (floor (/ num-entries 2))
-          has-tail (% num-entries 2)
-          tbl {}]
-      (when (not= full-pairs 0)
-        (gather-data-1 tbl full-pairs 1 ...))
-      (when (not= has-tail 0)
-        (tset tbl (+ full-pairs 1)
-              (format-data-key-only (select num-entries ...))))
-      tbl)))
+  (when (not= num-entries 0)
+    (local tbl {})
+    (gather-data-1 tbl 1 num-entries ...)))
 
 
 (fn log [message ...]
