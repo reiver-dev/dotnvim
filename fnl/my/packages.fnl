@@ -48,15 +48,40 @@
        :ft ["fennel"]
        :opt true)
 
-  (pkg :name "compe"
-       :url "hrsh7th/nvim-compe"
-       :opt true
+  ;; completion with nvim-cmp
+  (pkg :name "cmp"
+       :url "hrsh7th/nvim-cmp"
        :event ["InsertEnter"]
-       :config #(_T :my.pack.compe :setup))
+       :opt true
+       :config #(_T :my.pack.cmp :setup))
 
-  (pkg :name :compe-conjure
-       :url "tami5/compe-conjure"
-       :after ["conjure" "compe"])
+  (pkg :name "cmp-lsp"
+       :url "hrsh7th/cmp-nvim-lsp"
+       :after ["cmp"]
+       :opt true
+       :config #(_T :my.pack.cmp-lsp :setup))
+
+  (pkg :name "cmp-buffer"
+       :after ["cmp"]
+       :opt true
+       :url "hrsh7th/cmp-buffer")
+
+  (pkg :name "cmp-path"
+       :after ["cmp"]
+       :opt true
+       :url "hrsh7th/cmp-path")
+
+  (pkg :name "cmp-nvim-lua"
+       :after ["cmp"]
+       :opt true
+       :url "hrsh7th/cmp-nvim-lua")
+
+  (pkg :name "cmp-conjure"
+       :url "PaterJason/cmp-conjure"
+       :opt true
+       :after ["conjure" "cmp"])
+
+  ;; end
 
   (pkg :name "fix-cursor-hold"
        :url "antoinemadec/FixCursorHold.nvim"
@@ -140,6 +165,9 @@
   (pkg :name :vista
        :url "liuchengxu/vista.vim"
        :cmd ["Vista"])
+
+  (pkg :name "lspkind"
+       :url "onsails/lspkind-nvim")
 
   ;; Debugging
   (pkg :name "fennel.vim"

@@ -4,22 +4,17 @@
   {require {p my.point}})
 
 
-(defn- modcall [mod name]
-  (let [(ok mod) (pcall (fn [] (require mod)))]
-    (when ok
-      ((. mod name)))))
+(def- base vim.lsp.buf)
+(def- base-diag vim.lsp.diagnostic)
 
 
-(def base vim.lsp.buf)
-(def base-diag vim.lsp.diagnostic)
-
-
-(defn- saga [submod name]
-  (modcall (.. "lspsaga." submod) name))
-
-
-(defn- telescope [name]
-  (modcall "telescope.builtin" name))
+(defn- telescope [name fallback]
+  (local (has ts) (pcall require :telescope.builtin))
+  (if
+    has
+    ((. ts name))
+    (not= nil fallback)
+    ((. base name))))
 
 
 (defn jump-declaration []
@@ -27,11 +22,11 @@
 
 
 (defn jump-definition []
-  (base.definition))
+  (telescope :lsp_definitions :definition))
 
 
 (defn jump-implementation []
-  (base.implementation))
+  (telescope :lsp_implementations :implementation))
 
 
 (defn jump-type-definition []
@@ -47,14 +42,6 @@
 
 (defn diagnostic-next []
   (base-diag.goto_next))
-
-
-(defn open-terminal []
-  (saga :floaterm :open_float_terminal))
-
-
-(defn close-terminal []
-  (saga :floaterm :close_float_terminal))
 
 
 (defn code-action []
@@ -86,15 +73,15 @@
 
 
 (defn symbol-references []
-  (telescope :lsp_references))
+  (telescope :lsp_references :references))
 
 
 (defn symbol-in-document []
-  (telescope :lsp_document_symbols))
+  (telescope :lsp_document_symbols :document_symbol))
 
 
 (defn symbol-in-workspace []
-  (telescope :lsp_workspace_symbols))
+  (telescope :lsp_workspace_symbols :workspace_symbol))
 
 
 (defn line-diagnostic []
