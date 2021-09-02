@@ -49,14 +49,12 @@
 
 
 (defn- mypy-directory [bufnr]
-  (b.update-local bufnr :python :mypy :config-dir
-                  (fn [cfgdir]
-                   (if cfgdir
-                     cfgdir
-                     (let [dir (b.get-local bufnr :directory)
-                           cfgdir (find-mypy-config dir)]
-                       (or (and cfgdir (p.parent cfgdir))
-                           dir))))))
+  (let [dir (b.get-local bufnr :directory)
+        cfg (find-mypy-config dir)
+        launch-dir (or (and cfgdir (p.parent cfgdir)) dir)]
+    (b.set-local bufnr :python :mypy :config cfg)
+    (b.set-local bufnr :python :mypy :directory launch-dir)
+    launch-dir))
 
 
 (defn- relative-path [path root]
@@ -70,18 +68,59 @@
   (log "Mypy Finished" :jobid jobid :result result))
 
 
+(def- default-configuration
+  ["--implicit-optional"
+   "--allow-redefinition"
+
+   "--check-untyped-defs"
+
+   "--disallow-any-generics"
+   "--disallow-subclassing-any"
+   "--disallow-incomplete-defs"
+   "--disallow-untyped-calls"
+   "--disallow-untyped-decorators"
+   "--disallow-untyped-defs"
+
+   "--disallow-any-unimported"
+   "--no-implicit-reexport"
+
+   "--strict-equality"
+
+   "--warn-incomplete-stub"
+   "--warn-redundant-casts"
+   "--warn-unused-ignores"
+   "--warn-return-any"])
+
+
+(defn- table-concat [...]
+  (local result {})
+  (var pos 1)
+  (for [i 1 (select :# ...)]
+    (let [tbl (select i ...)]
+      (when tbl
+        (for [j 1 (length tbl)]
+          (let [val (. tbl j)]
+            (when val
+              (tset result pos val)
+              (set pos (+ pos 1))))))))
+  result)
+
+
 (defn run [bufnr report-fn]
   (let [directory (mypy-directory bufnr)
         _ (log "Mypy directory" :dir directory)
+        has-config (not= nil (b.get-local bufnr :python :mypy :config))
         current (relative-path (b.get-local bufnr :file) directory)
         tmpname (j.backup-buffer bufnr)
         cleanup-fn #(vim.loop.fs_unlink tmpname)
-        command (python.module-command bufnr :mypy
-                                       "--show-column-numbers"
-                                       "--show-error-codes"
-                                       "--no-pretty"
-                                       "--shadow-file" current tmpname
-                                       current)
+        arguments (table-concat
+                    (if has-config [] default-configuration)
+                    ["--show-column-numbers"
+                     "--show-error-codes"
+                     "--no-pretty"
+                     "--shadow-file" current tmpname
+                     current])
+        command (python.module-command bufnr :mypy (unpack arguments))
         (ok res) (pcall
                    (fn []
                      (j.execute-command
