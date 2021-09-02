@@ -58,6 +58,10 @@
        :url "tami5/compe-conjure"
        :after ["conjure" "compe"])
 
+  (pkg :name "fix-cursor-hold"
+       :url "antoinemadec/FixCursorHold.nvim"
+       :config #(set vim.g.cursorhold_updatetime 1000))
+
   (pkg :name :colorizer
        :url "norcalli/nvim-colorizer.lua"
        :config #(_T :colorizer :setup))
@@ -91,6 +95,7 @@
        :run #(_T :my.pack.parinfer :compile-library)
        :config #(_T :my.pack.parinfer :setup))
 
+
   (pkg :name :fzf
        :url "junegunn/fzf"
        :run (fn [] (vim.call "fzf#install")))
@@ -100,19 +105,23 @@
        :config (fn [] (_T :my.pack.fzf :setup))
        :requires ["fzf"])
 
-  (pkg :name "fennel.vim"
-       :url "bakpakin/fennel.vim")
+  (pkg :name :diffview
+       :url "sindrets/diffview.nvim")
+
+  (pkg :name :which-key
+       :url "folke/which-key.nvim"
+       :config #(_T :which-key :setup {}))
 
   (pkg :name "readline.vim"
        :url "ryvnf/readline.vim"
        :event "CmdlineEnter")
 
-  (pkg :name "vim-fish"
-       :url "dag/vim-fish")
-
   (pkg :name "snippets.nvim"
        :url "norcalli/snippets.nvim"
        :event "InsertCharPre")
+
+  (pkg :name "rest-client"
+       :url "NTBBloodbath/rest.nvim")
 
   ;; LSP
   (pkg :name :lspconfig
@@ -133,6 +142,9 @@
        :cmd ["Vista"])
 
   ;; Debugging
+  (pkg :name "fennel.vim"
+       :url "bakpakin/fennel.vim")
+
   (pkg :name :nvim-dap
        :url "mfussenegger/nvim-dap")
 
@@ -148,6 +160,10 @@
        :url "nvim-treesitter/playground")
 
   ;; File-specific
+
+  (pkg :name "vim-fish"
+       :url "dag/vim-fish")
+
   (pkg :name "python-pep8-indent"
        :url "Vimjas/vim-python-pep8-indent"
        :ft ["python" "cython"])
@@ -175,6 +191,10 @@
 
   (pkg :name :visual-multi
        :url "mg979/vim-visual-multi")
+
+  (pkg :name "commented"
+       :url "winston0410/commented.nvim"
+       :config #(_T :commented :setup))
 
   (pkg :name "far.vim"
        :url "brooth/far.vim"
@@ -239,17 +259,29 @@
                        [["packer"]
                         vim.g.better_whitespace_filetypes_blacklist])))
 
+  (pkg :name "better-quickfix"
+       :url "kevinhwang91/nvim-bqf")
+
+  (pkg :name :indent-blankline
+       :url "lukas-reineke/indent-blankline.nvim"
+       :config #(_T :my.pack.indent-blankline :setup))
+
+  ;; Theming libs
   (pkg :name "colorbuddy"
        :url "tjdevries/colorbuddy.nvim")
 
   (pkg :name "lush"
        :url "rktjmp/lush.nvim")
 
+  ;; Themes
   (pkg :name "jellybeans-theme"
        :url "metalelf0/jellybeans-nvim")
 
   (pkg :name "onedark-theme"
        :url "olimorris/onedark.nvim")
+
+  (pkg :name "doom-one-theme"
+       :url "NTBBloodbath/doom-one.nvim")
 
   (pkg :name "darcula-solid-theme"
        :url "briones-gabriel/darcula-solid.nvim"
