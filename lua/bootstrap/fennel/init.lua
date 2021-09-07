@@ -113,7 +113,7 @@ local function compile_and_load(srcfile, dstfile)
     local compiled, code = compiler.compile_module_source(text, opts)
     if compiled then
         basic.spew(dstfile, code)
-        return loadstring(code, dstfile)
+        return loadstring(code, '@' .. dstfile)
     end
 
     return nil, ("Failed compile: %s\n%s"):format(src, code)
@@ -194,7 +194,8 @@ local function expedite_cached_searcher(modname)
             end
 
             if srcstat.mtime.sec < dststat.mtime.sec then
-                return select_result(loadfile(dstfile))
+                local code = basic.slurp(dstfile)
+                return select_result(loadstring(code, '@' .. dstfile))
             end
             return select_result(compile_and_load(srcfile, dstfile))
         end
