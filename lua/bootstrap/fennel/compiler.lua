@@ -6,6 +6,38 @@ local M = {}
 local fennel = require "fennel"
 local basic = require "bootstrap.basic"
 
+
+local function upvalues_iter(state, idx)
+    idx = idx + 1
+    local name, value = debug.getupvalue(state, idx)
+    if name ~= nil then
+        return idx, name, value
+    end
+end
+
+
+local function upvalues(func)
+    return upvalues_iter, func, 0
+end
+
+
+local function extract_sourcemap(mod)
+    for i, name, value in upvalues(fennel.traceback) do
+        if name == "traceback_frame" then
+            for i, name, value in upvalues(value) do
+                if name == "fennel_sourcemap" then
+                    return value
+                end
+            end
+            break
+        end
+    end
+end
+
+
+M.sourcemap = extract_sourcemap(fennel)
+
+
 function M.compile_module_source(text, opts)
     local code = "(require-macros \"aniseed.macros\")" .. text
     return xpcall(function() return fennel.compileString(code, opts) end,
