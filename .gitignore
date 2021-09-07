@@ -1,19 +1,11 @@
 # Ignore everything
 /*
 
-# Except 
+# Except
 !.gitignore
 !init.vim
 !ginit.vim
 !pack
 !pack/local
-!lua/bootstrap
+!lua
 !fnl
-!fnl/my
-!fnl/telescope
-
-lua/my
-lua/telescope
-pack/minpac
-pack/packager
-pack/packer
