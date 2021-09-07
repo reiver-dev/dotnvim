@@ -197,16 +197,24 @@ end
 
 
 local function error_handler(message)
-    if type(message) ~= "string" then
-        message = ("Error Value: %s"):format(view(message))
+    if type(message) == "table" then
+        local mt = getmetatable(message)
+        if mt ~= nil and mt.__tostring ~= nil then
+            message = string.format("Error String: %q\n       Value: %s",
+                                    tostring(message), view(message))
+        else
+            message = string.format("Error Value: %s", view(message))
+        end
+    elseif type(message) ~= "string" then
+        message = string.format("Error Value: %s", view(message))
     end
-    local t = debug.traceback(message, 2):gsub("\n", "\n\t")
+    local t = fennel.traceback(message, 2):gsub("\n", "\n\t")
     return ("EvalExpr\n\t%s\n"):format(t):gsub("\t", "    ")
 end
 
 
 function M.eval_print(opts)
-    accept(xpcall(M.eval, error_handler, opts))
+    accept(xpcall(function() return M.eval(opts); end, error_handler))
 end
 
 
