@@ -12,10 +12,10 @@
     (_T :my.packages :configure-packages)))
 
 
-(defn- exec [name]
+(defn- exec [name ...]
   (RELOAD "my.packages")
   (init-packages)
-  (_T :packer name))
+  (_T :packer name ...))
 
 
 (defn install []
@@ -30,8 +30,8 @@
   (exec :sync))
 
 
-(defn compile []
-  (exec :compile))
+(defn compile [...]
+  (exec :compile ...))
 
 
 (defn clean []
@@ -42,6 +42,10 @@
   (exec :status))
 
 
+(defn profile []
+  (exec :profile_output))
+
+
 (def- commands
   "
   command! PackerInit     lua _T('my.packer', 'init-packages')
@@ -49,10 +53,11 @@
   command! PackerUpdate   lua _T('my.packer', 'update')
   command! PackerSync     lua _T('my.packer', 'sync')
   command! PackerClean    lua _T('my.packer', 'clean')
-  command! PackerCompile  lua _T('my.packer', 'compile')
+  command! -nargs=* PackerCompile  lua _T('my.packer', 'compile', <q-args>)
   command! PackerStatus   lua _T('my.packer', 'status')
+  command! PackerProfile  lua _T('my.packer', 'profile')
   ")
-  
+
 
 (defn setup []
   (vim.api.nvim_exec commands false))
