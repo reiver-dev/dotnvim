@@ -78,6 +78,7 @@ local function setup()
 
     ensure_plugin_loaders("packer.nvim", "packer")
     ensure_plugin_loaders("fennel", "fennel")
+    ensure_plugin_loaders("fennel", "fennel.compiler")
     ensure_plugin_loaders("fennel", "fennel.view")
     ensure_plugin_loaders("fennel", "fennel.metadata")
 end
