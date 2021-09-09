@@ -291,10 +291,6 @@
   (pkg :name "better-quickfix"
        :url "kevinhwang91/nvim-bqf")
 
-  (pkg :name :indent-blankline
-       :url "lukas-reineke/indent-blankline.nvim"
-       :config #(_T :my.pack.indent-blankline :setup))
-
   ;; Theming libs
   (pkg :name "colorbuddy"
        :url "tjdevries/colorbuddy.nvim")
