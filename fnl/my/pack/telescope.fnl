@@ -3,18 +3,21 @@
 (defn configure []
   (local telescope (require :telescope))
   (local actions (require :telescope.actions))
+  (local border ["─" "│" "─" "│" "┌" "┐" "┘" "└"])
   (telescope.setup
     {:defaults
      {:mappings
       {:n {:<C-g> actions.close
            :<C-n> actions.move_selection_next
-           :<C-p> actions.move_selection_previous}
+           :<C-p> actions.move_selection_previous
+           :q actions.close}
        :i {:<C-g> actions.close
            :<C-c> actions.close}}
       :prompt_prefix "❯ "
-      :selection_caret "❯ "
+      :selection_caret " "
       :layout_config {:prompt_position :top}
-      :borderchars ["─" "│" "─" "│" "┌" "┐" "┘" "└"]}})
+      :borderchars border}})
+  (vim.cmd "highlight TelescopeBorder guifg=Grey37")
   (_T :telescope :load_extension :my))
 
 
