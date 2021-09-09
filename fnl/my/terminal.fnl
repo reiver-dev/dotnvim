@@ -12,7 +12,7 @@
 (defn running? [bufnr]
   (let [chan (vim.api.nvim_buf_get_option bufnr :channel)]
     (when chan (= -1 (. (vim.fn.jobwait [chan]) 0)))))
-  
+
 
 (defn- find [func iter state idx]
   (let [(idx value) (iter state idx)]
@@ -40,7 +40,7 @@
         sequence (.. "<C-X>" input)
         keys (vim.api.nvim_replace_termcodes sequence true true true)]
     (vim.api.nvim_feedkeys keys :m true)))
-  
+
 
 (defn- schedule-insert-mode []
   (let [bufnr (vim.api.nvim_get_current_buf)]
@@ -55,14 +55,15 @@
   (_T :my.simple :message "Key <C-x> ?" (vim.fn.getcmdline))
   (when (or (not (pcall execute-prefix-1)) (~= "" vim.v.errmsg))
     (schedule-insert-mode)))
-  
+
 
 (defn- setup-bindings []
   (let [bind-1 vim.api.nvim_set_keymap
         bind (fn [key cmd] (bind-1 :t key cmd {:noremap true}))]
+    (bind :<C-g> "<C-\\><C-N>")
     (bind :<C-x> "<C-\\><C-N>:lua _T('my.terminal', 'execute-prefix')<CR>")
     (bind :<C-y> "<C-\\><C-N>pi")))
-        
+
 
 (defn chdir [bufnr directory]
   (vim.api.nvim_buf_set_var bufnr :default_directory directory)
@@ -81,4 +82,4 @@
 (defn setup []
   (setup-bindings)
   (vim.api.nvim_exec autocmd false))
-  
+
