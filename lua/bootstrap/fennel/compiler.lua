@@ -76,7 +76,6 @@ local MACRO_ENV = setmetatable({
     assert = assert,
     getmetatable = getmetatable,
     setmetatable = setmetatable,
-    debug = debug,
 }, {__newindex = function() error("Macro env insert attempt") end})
 
 local function macro_loader(modname, fname)
