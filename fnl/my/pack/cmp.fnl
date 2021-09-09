@@ -16,16 +16,22 @@
               (tset tbl key val)
               val)})
 
+(def- left-brace "[")
+(def- right-brace "]")
 
 (defn- format-source-name [str]
   (var str (tostring str))
   (when (= "nvim_" (string.sub str 1 5))
     (set str (string.sub str 6)))
-  (.. "[" (string.upper (string.sub str 1 1)) (string.sub str 2) "]"))
+  (.. left-brace
+      (string.upper (string.sub str 1 1))
+      (string.sub str 2)
+      right-brace))
 
 
 (def- source-mapping
-  (setmetatable {:nvim_lsp "[LSP]"} (make-cache-mt format-source-name)))
+  (setmetatable {:nvim_lsp (.. left-brace "LSP" right-brace)}
+                (make-cache-mt format-source-name)))
 
 
 (defn- format-kind-name [str]
@@ -35,7 +41,7 @@
 
 
 (def- kind-mapping
-  (setmetatable {:TypeParameter "  TypeParameter"}
+  (setmetatable {:TypeParameter "[T] TypeParameter"}
                 (make-cache-mt format-kind-name)))
 
 
@@ -56,8 +62,16 @@
    :<CR> (cmp.mapping.confirm {:behavior cmp.ConfirmBehavior.Insert :select true})})
 
 
+(def- border
+  (let [r []]
+    (for [i 1 8]
+      (tset r i [" " :FloatShadow]))
+    r))
+
+
 (defn setup []
   (cmp.setup {:mapping mapping
               :formatting {:format format}
+              :documentation {:border border}
               :sources sources}))
 
