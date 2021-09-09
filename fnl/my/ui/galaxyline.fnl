@@ -1,9 +1,29 @@
 (var gl (require "galaxyline"))
-(var colors (. (require "galaxyline.theme") :default))
 (var condition (require "galaxyline.condition"))
 (var icons (require "my.ui.icons"))
 
-(set gl.short_line_list [:NvimTree :vista :dbui])
+
+(fn merge [...]
+  (local result {})
+  (for [i 1 (select :# ...)]
+    (each [k v (pairs (select i ...))]
+      (tset result k v)))
+  result)
+
+
+(fn tbl-reset [tbl new]
+  (each [k v (pairs tbl)]
+    (tset tbl k nil))
+  (each [k v (pairs new)]
+    (tset tbl k v)))
+
+
+(fn tohex [tbl]
+  (collect [k v (pairs tbl)]
+    (if (and (= (type k) :string)
+             (= (type v) :number))
+      (values k (string.format "#%.6x" v))
+      (values k v))))
 
 
 (fn argpairs-1 [tbl n k v ...]
@@ -43,6 +63,95 @@
                                               (table.concat " ")))))
 
 
+(set gl.short_line_list [:NvimTree :vista :dbui])
+
+
+
+(local base-colors-default
+  {:bg-base "#202328"
+   :fg-base "#bbc2cf"
+   :yellow "#ECBE7B"
+   :cyan "#008080"
+   :darkblue "#081633"
+   :green "#98be65"
+   :orange "#FF8800"
+   :violet "#a9a1e1"
+   :magenta "#c678dd"
+   :blue "#51afef"
+   :red "#ec5f67"})
+
+
+(local base-colors-dark
+  {:yellow :Yellow
+   :cyan :DarkCyan
+   :darkblue :LightBlue
+   :green base-colors-default.green
+   :orange :Orange
+   :violet base-colors-default.violet
+   :magenta base-colors-default.magenta
+   :blue :LightBlue
+   :red base-colors-default.red})
+
+
+(local base-colors-light
+  {:yellow :Brown
+   :cyan :DarkCyan
+   :darkblue :DarkBlue
+   :green :DarkGreen
+   :orange :Orange
+   :violet :Purple
+   :magenta :DarkMagenta
+   :blue :SlateBlue
+   :red base-colors-default.red})
+
+
+(var color-statusline {})
+(var color-statusline-inactive {})
+(var base-colors {})
+
+
+(local base-color-access
+  (collect [k v (pairs base-colors-default)]
+    (values k (fn [] (or (. base-colors k)
+                         (. base-colors-default k))))))
+
+
+(local colors
+  (merge {:bg (fn [] (or color-statusline.background
+                         base-colors-default.bg-base))
+          :fg (fn [] (or color-statusline.foreground
+                         base-colors-default.fg-base))}
+         base-color-access))
+
+
+(local colors-inactive
+  (merge {:bg (fn [] (or color-statusline-inactive.background
+                         base-colors-default.bg-base))
+          :fg (fn [] (or color-statusline-inactive.foreground
+                         base-colors-default.fb-base))}
+         base-color-access))
+
+
+(fn on-colorscheme []
+  (tbl-reset color-statusline
+       (tohex (vim.api.nvim_get_hl_by_name :StatusLine true)))
+  (tbl-reset color-statusline-inactive
+       (tohex (vim.api.nvim_get_hl_by_name :StatusLineNC true)))
+  (tbl-reset base-colors (if (= vim.o.background :light)
+                           base-colors-light
+                           base-colors-dark)))
+
+
+(on-colorscheme)
+
+
+(vim.cmd
+  "augroup galaxyline_colorscheme
+  autocmd!
+  autocmd ColorScheme * lua _T('my.ui.galaxyline', 'on-colorscheme')
+  augroup END")
+
+
 (set gl.section.left [])
 (set gl.section.right [])
 (set gl.section.short_line_left [])
@@ -54,15 +163,15 @@
 (local right-inactive (pt section gl.section.short_line_right))
 
 
-(local mode-colors {:N colors.red
-                    :V colors.blue
-                    :I colors.green
-                    :C colors.magenta
-                    :P colors.cyan
-                    :S colors.orange
-                    :R colors.violet
-                    :T colors.blue
-                    :$ colors.red})
+(local mode-colors {:N base-colors-default.red
+                    :V base-colors-default.blue
+                    :I base-colors-default.green
+                    :C base-colors-default.magenta
+                    :P base-colors-default.cyan
+                    :S base-colors-default.orange
+                    :R base-colors-default.violet
+                    :T base-colors-default.blue
+                    :$ base-colors-default.red})
 
 
 ;; (left :RainbowRed
@@ -74,7 +183,7 @@
       :provider (fn []
                   (let [mode (_T :my.ui.mode :resolve-current)]
                     (hi :GalaxyViMode
-                        :guifg colors.bg
+                        :guifg (colors.bg-base)
                         :guibg (. mode-colors mode)
                         :gui "bold")
                     (string.format "  %s " (. icons.mode mode))))
@@ -128,7 +237,7 @@
                    (if dir (vim.fn.fnamemodify dir ":~") ""))
       :separator " "
       :separator_highlight [:NONE colors.bg]
-      :highlight [colors.fg colors.bg])
+      :highlight [colors.fg colors.bg :nocombine])
 
 
 ;; Diagnostics
@@ -231,28 +340,30 @@
 ;;        :highlight [colors.blue colors.bg])
 
 
-(left-inactive :BufferType
+(left-inactive :SBufferType
                :provider "FileTypeName"
                :separator " "
-               :separator_highlight [:NONE colors.bg]
-               :highlight [colors.blue colors.bg :bold])
+               :separator_highlight [:NONE colors-inactive.bg]
+               :highlight [colors-inactive.blue colors-inactive.bg :bold])
 
 (left-inactive :SFileName
                :provider "SFileName"
                :separator " %<"
-               :separator_highlight [:NONE colors.bg]
+               :separator_highlight [:NONE colors-inactive.bg]
                :condition condition.buffer_not_empty
-               :highlight [colors.fg colors.bg :bold])
+               :highlight [colors-inactive.fg colors-inactive.bg :bold])
 
-(left-inactive :Directory
+(left-inactive :SDirectory
                :provider #(let [dir (get-local :directory)]
                             (if dir (vim.fn.fnamemodify dir ":~") ""))
                :condition condition.buffer_not_empty
-               :highlight [colors.fg colors.bg :none])
+               :highlight [colors-inactive.fg colors-inactive.bg :none])
 
-(right-inactive :BufferIcon
+(right-inactive :SBufferIcon
                 :provider "BufferIcon"
-                :highlight [colors.fg colors.bg])
+                :highlight [colors-inactive.fg colors-inactive.bg])
 
+
+{: on-colorscheme}
 
 ;;; galaxyline.fnl ends here
