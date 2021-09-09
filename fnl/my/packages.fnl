@@ -41,7 +41,8 @@
   (pkg :name :fennel
        :url "bakpakin/Fennel"
        :opt true
-       :run #(_T :bootstrap.fennel.ensure_compiler :setup {:force true}))
+       :run #(vim.schedule
+               #(_T :bootstrap.fennel.ensure_compiler :setup {:force true})))
 
   (pkg :name :conjure
        :url "Olical/conjure"
