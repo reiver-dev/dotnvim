@@ -26,7 +26,7 @@
   (s.kmap-global :i :<C-f> :<Right>)
   (s.kmap-global :i :<C-b> :<Left>)
 
-  (s.kmap-global :i :<C-a> :<Home>)
+  (s.kmap-global :i :<C-a> :<C-o>^)
   (s.kmap-global :i :<C-e> :<End>)
 
   (s.kmap-global :i :<M-f> :<S-Right>)
