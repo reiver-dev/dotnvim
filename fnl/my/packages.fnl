@@ -309,8 +309,7 @@
        :url "NTBBloodbath/doom-one.nvim")
 
   (pkg :name "darcula-solid-theme"
-       :url "briones-gabriel/darcula-solid.nvim"
-       :config #(vim.cmd "colorscheme darcula-solid"))
+       :url "briones-gabriel/darcula-solid.nvim")
 
   (pkg :name "limestone-theme"
        :url "tsbohc/limestone")
