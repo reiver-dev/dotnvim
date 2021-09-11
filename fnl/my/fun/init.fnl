@@ -143,6 +143,8 @@
 (set exports.new new)
 (set exports.iter make-iter)
 
+(set exports.empty (fn empty-iter [] (values empty nil nil)))
+
 ;; Unit
 
 (fn iter-unit [state idx]
@@ -256,6 +258,7 @@
 
 
 (export take-while 1 true)
+(export take-while-kv 1 true)
 
 
 ;; Enumerate
