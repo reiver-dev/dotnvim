@@ -1,39 +1,7 @@
-(module my.packages
-  {require {packer packer}})
+;;; Main package configuration
 
 
-(def- packer-use packer.use)
-(def- packer-load)
-
-(defn- argpairs-1 [tbl n k v ...]
-  (when k
-    (tset tbl k v))
-  (if (< 0 n)
-    (argpairs-1 tbl (- n 2) ...)
-    tbl))
-
-
-(defn- argpairs [...]
-  (argpairs-1 {} (- (select :# ...) 2) ...))
-
-
-(defn- pkg [...]
-  (let [opts (argpairs ...)]
-    (tset opts :as opts.name)
-    (tset opts 1 opts.url)
-    (set opts.name nil)
-    (set opts.url nil)
-    (packer-use opts)))
-
-
-(defn- make-set [...]
-  (let [res {}]
-    (each [_ arg (ipairs [...])]
-      (tset res arg true))
-    res))
-
-
-(defn configure-packages []
+(fn configure-packages [{: pkg}]
   (pkg :name :packer.nvim
        :url "wbthomason/packer.nvim"
        :opt true)
@@ -308,17 +276,37 @@
   (pkg :name "doom-one-theme"
        :url "NTBBloodbath/doom-one.nvim")
 
+  (pkg :name "catppuccino-theme"
+       :url "Pocco81/Catppuccino.nvim")
+
   (pkg :name "darcula-solid-theme"
        :url "briones-gabriel/darcula-solid.nvim")
+
+  (pkg :name "one-theme"
+       :url "rakr/vim-one")
+
+  (pkg :name "edge-theme"
+       :url "sainnhe/edge")
+
+  (pkg :name "papercolor-theme"
+       :url "NLKNguyen/papercolor-theme")
 
   (pkg :name "limestone-theme"
        :url "tsbohc/limestone")
 
+  (pkg :name "zenbones-theme"
+       :url "mcchrish/zenbones.nvim")
+
   (pkg :name "zephyr-theme"
        :url "glepnir/zephyr-nvim")
+
+  (pkg :name "modus-theme"
+       :url "ishan9299/modus-theme-vim")
 
   (pkg :name "nvcode-theme"
        :url "ChristianChiarulli/nvcode-color-schemes.vim"))
 
+
+configure-packages
 
 ;;; packages.fnl ends here

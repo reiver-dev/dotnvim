@@ -5,15 +5,60 @@
    :disable_commands true})
 
 
-(defn init-packages []
+(defn- argpairs-1 [tbl n k v ...]
+  (when k
+    (tset tbl k v))
+  (if (< 0 n)
+    (argpairs-1 tbl (- n 2) ...)
+    tbl))
+
+
+(defn- argpairs [...]
+  (argpairs-1 {} (- (select :# ...) 2) ...))
+
+
+(defn- handle-packer-options [...]
+  (local opts (argpairs ...))
+  (tset opts :as opts.name)
+  (tset opts 1 opts.url)
+  (set opts.name nil)
+  (set opts.url nil)
+  opts)
+
+
+(defn- make-packer-module [mod]
+  (local mod (or mod (require "packer")))
+  (local packer-use mod.use)
+  (fn pkg [...] (packer-use (handle-packer-options ...)))
+  {:packer mod :pkg pkg :use packer-use})
+
+
+(defonce- package-hooks {})
+
+
+(defn package-hook-set [name hook]
+  (tset package-hooks name hook))
+
+
+(defn- package-hook-execute [packer]
+  (each [name hook (pairs package-hooks)]
+    (hook (make-packer-module packer))))
+
+
+(defn- init-packages []
   (let [packer (require "packer")]
     (packer.init (packer-config))
     (packer.reset)
-    (_T :my.packages :configure-packages)))
+    (package-hook-execute packer)))
+
+
+(defn- configure-default-packages [mod]
+  ((require :my.packages) mod))
 
 
 (defn- exec [name ...]
   (RELOAD "my.packages")
+  (package-hook-set :my.packages configure-default-packages)
   (init-packages)
   (_T :packer name ...))
 
