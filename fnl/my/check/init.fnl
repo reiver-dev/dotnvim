@@ -18,20 +18,23 @@
     (vim.api.nvim_get_current_buf)))
 
 
-(defn publish [client-id bufnr entries]
+(defn publish [client_id bufnr entries]
   (let [method "textDocument/publishDiagnostics"
         err nil
         opts nil
         handler (. vim.lsp.handlers method)
         params {:uri (vim.uri_from_bufnr bufnr)
-                :diagnostics entries}]
+                :diagnostics entries}
+        ctx {: method
+             : client_id
+             : bufnr}]
     (vim.schedule
       (fn []
         (let [(ok res) (xpcall handler debug.traceback
-                               err method params client-id bufnr opts)]
+                               err params ctx opts)]
           (when (not ok)
             (error res)))))))
-    
+
 
 (defn- execute-checkers [bufnr]
   (log "Execute checkers"
