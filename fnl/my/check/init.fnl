@@ -7,7 +7,7 @@
 
 (defonce- new-id (u.counter))
 (defonce- client-ids {})
- 
+
 
 (defn- buffer [bufnr]
   (let [t (type bufnr)]
@@ -18,22 +18,10 @@
     (vim.api.nvim_get_current_buf)))
 
 
-(defn publish [client_id bufnr entries]
-  (let [method "textDocument/publishDiagnostics"
-        err nil
-        opts nil
-        handler (. vim.lsp.handlers method)
-        params {:uri (vim.uri_from_bufnr bufnr)
-                :diagnostics entries}
-        ctx {: method
-             : client_id
-             : bufnr}]
-    (vim.schedule
-      (fn []
-        (let [(ok res) (xpcall handler debug.traceback
-                               err params ctx opts)]
-          (when (not ok)
-            (error res)))))))
+(defn publish [id bufnr entries]
+  (vim.schedule
+    (fn []
+      (vim.diagnostic.set id bufnr entries))))
 
 
 (defn- execute-checkers [bufnr]
@@ -51,7 +39,7 @@
 
 (defn register [name run cancel]
   (when (not (. client-ids name))
-    (tset client-ids name (- (+ 100 (new-id)))))
+    (tset client-ids name (vim.api.nvim_create_namespace name)))
   (reg.register name run cancel))
 
 

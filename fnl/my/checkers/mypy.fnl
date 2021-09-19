@@ -6,10 +6,10 @@
             python my.lang.python}})
 
 
-(def- Error vim.lsp.protocol.DiagnosticSeverity.Error)
-(def- Warning vim.lsp.protocol.DiagnosticSeverity.Warning)
-(def- Information vim.lsp.protocol.DiagnosticSeverity.Information)
-(def- Hint vim.lsp.protocol.DiagnosticSeverity.Hint)
+(def- Error vim.diagnostic.severity.ERROR)
+(def- Warning vim.diagnostic.severity.WARN)
+(def- Information vim.diagnostic.severity.INFO)
+(def- Hint vim.diagnostic.severity.HINT)
 
 
 (def- line-pattern
@@ -21,9 +21,10 @@
     (when name
       (let [line (- (tonumber line) 1)
             col (- (tonumber col) 1)]
-        {:source "mypy"
-         :range {:start {:line line :character col}
-                 :end {:line line :character (+ col 1)}}
+        {:lnum line
+         :end_lnum line
+         :col col
+         :end_col (+ col 1)
          :severity (match severity
                      :error Error
                      :note Information
@@ -51,14 +52,22 @@
 (defn- mypy-directory [bufnr]
   (let [dir (b.get-local bufnr :directory)
         cfg (find-mypy-config dir)
-        launch-dir (or (and cfgdir (p.parent cfgdir)) dir)]
+        launch-dir (or (and cfg (p.parent cfg)) dir)]
     (b.set-local bufnr :python :mypy :config cfg)
     (b.set-local bufnr :python :mypy :directory launch-dir)
     launch-dir))
 
 
+(defn- cut-prefix [str prefix]
+  (local slen (length str))
+  (local plen (length prefix))
+  (if (and (<= plen slen) (= prefix (string.sub str 1 plen)))
+    (values (string.sub str (+ plen 1)) (+ plen 1))
+    (values str 0)))
+
+
 (defn- relative-path [path root]
-  (p.trim (path:gsub root "") p.separator?))
+  (p.trim (cut-prefix path root) p.separator?))
 
 
 (defn- handle-result [bufnr report-fn cleanup-fn jobid result]

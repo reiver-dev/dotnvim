@@ -243,40 +243,33 @@
 ;; Diagnostics
 
 (fn extract-diagnostics [kind]
-  (let [lsp vim.lsp
-        bufnr (vim.api.nvim_get_current_buf)
-        clients (lsp.buf_get_clients bufnr)
-        enabled (or (get-local :enabled-checkers) [])]
-    (when (or (next clients) (next enabled))
-      (var count 0)
-      (each [_ client (ipairs clients)]
-        (set count (+ count (lsp.diagnostic.get_count bufnr kind client.id))))
-      (each [_ client-id (pairs enabled)]
-        (set count (+ count (lsp.diagnostic.get_count bufnr kind client-id))))
-      (when (< 0 count)
-        (string.format "%d " count)))))
+  (let [bufnr (vim.api.nvim_get_current_buf)
+        diags (vim.diagnostic.get bufnr {:severity kind})
+        dcount (length diags)]
+    (when (< 0 dcount)
+      (string.format "%d " dcount))))
 
 
 (left :DiagnosticError
-      :provider (pt extract-diagnostics "Error")
+      :provider (pt extract-diagnostics "ERROR")
       :condition condition.hide_in_width
       :icon " "
       :highlight [colors.red colors.bg])
 
 (left :DiagnosticWarning
-      :provider (pt extract-diagnostics "Warning")
+      :provider (pt extract-diagnostics "WARN")
       :condition condition.hide_in_width
       :icon " "
       :highlight [colors.yellow colors.bg])
 
 (left :DiagnosticHint
-      :provider (pt extract-diagnostics "Hint")
+      :provider (pt extract-diagnostics "HINT")
       :condition condition.hide_in_width
       :icon " "
       :highlight [colors.cyan colors.bg])
 
 (left :DiagnosticInformation
-      :provider (pt extract-diagnostics "Information")
+      :provider (pt extract-diagnostics "INFO")
       :condition condition.hide_in_width
       :icon " "
       :highlight [colors.blue colors.bg])

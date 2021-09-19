@@ -3,10 +3,10 @@
             python my.lang.python}})
 
 
-(def- Error vim.lsp.protocol.DiagnosticSeverity.Error)
-(def- Warning vim.lsp.protocol.DiagnosticSeverity.Warning)
-(def- Information vim.lsp.protocol.DiagnosticSeverity.Information)
-(def- Hint vim.lsp.protocol.DiagnosticSeverity.Hint)
+(def- Error vim.diagnostic.severity.ERROR)
+(def- Warning vim.diagnostic.severity.WARN)
+(def- Information vim.diagnostic.severity.INFO)
+(def- Hint vim.diagnostic.severity.HINT)
 
 
 (def- line-pattern
@@ -42,9 +42,10 @@
     (when line
       (let [line (- (tonumber line) 1)
             col (- (tonumber col) 1)]
-        {:source "flake8"
-         :range {:start {:line line :character col}
-                 :end {:line line :character (+ col 1)}}
+        {:lnum line
+         :end_lnum line
+         :col col
+         :end_col (+ col 1)
          :message msg
          :severity (convert-severity code)}))))
 
