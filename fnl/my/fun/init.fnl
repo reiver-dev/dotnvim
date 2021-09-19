@@ -16,6 +16,7 @@
 (local iter-pairs (pairs {}))
 (local string-sub string.sub)
 (local string-byte string.byte)
+(local string-find string.find)
 
 
 (import-macros
@@ -110,7 +111,7 @@
     "function" (values it ?state ?idx)
     "table" (if (= iterator-mt (getmetatable it)) (values (. it 1) (. it 2) (. it 3))
               (not= 0 (length it)) (values iter-ipairs it 0)
-              (values iter-pairs iter nil))
+              (values iter-pairs it nil))
     "string" (string-iter-chars it)))
 
 
@@ -119,7 +120,7 @@
     "function" [it ?state ?idx]
     "table" (if (= iterator-mt (getmetatable it)) it
               (not= 0 (length it)) [iter-ipairs it 0]
-              [iter-pairs iter])
+              [iter-pairs it])
     "string" [(string-iter-chars it)]))
 
 
@@ -134,6 +135,8 @@
 (set raw.ipairs new-ipairs)
 (set raw.pairs new-pairs)
 
+(set raw.empty empty)
+
 (set exports.str (fn [s] (new (string-iter-chars s))))
 (set exports.rstr (fn [s] (new (string-iter-chars-reversed s))))
 (set exports.rpairs (fn [tbl] (new (new-rpairs tbl))))
@@ -143,7 +146,7 @@
 (set exports.new new)
 (set exports.iter make-iter)
 
-(set exports.empty (fn empty-iter [] (values empty nil nil)))
+(set exports.empty (fn [] (new empty nil nil)))
 
 ;; Unit
 
@@ -313,12 +316,34 @@
       (iter-filter-kv-1 state (call state 2 3 $ idx)))))
 
 
+(fn iter-filter1-1 [state idx ...]
+  (when (not= nil idx)
+    (if (call state 1 $ (select 1 ...))
+      (values idx ...)
+      (iter-filter-1 state (call state 2 3 $ idx)))))
+
+
+(fn iter-filter1-kv-1 [state idx ...]
+  (when (not= nil idx)
+    (if (call state 1 $ idx (select 1 ...))
+      (values idx ...)
+      (iter-filter-kv-1 state (call state 2 3 $ idx)))))
+
+
 (fn iter-filter [state idx]
   (iter-filter-1 state (call state 2 3 $ idx)))
 
 
 (fn iter-filter-kv [state idx]
   (iter-filter-kv-1 state (call state 2 3 $ idx)))
+
+
+(fn iter-filter1 [state idx ...]
+  (iter-filter1-1 state (call state 2 3 $ idx)))
+
+
+(fn iter-filter1-kv [state idx ...]
+  (iter-filter1-kv-1 state (call state 2 3 $ idx)))
 
 
 (fn filter [predicate iter state idx]
@@ -329,9 +354,85 @@
   (values iter-filter-kv [predicate iter state] idx))
 
 
+(fn filter1 [predicate iter state idx]
+  (values iter-filter1 [predicate iter state] idx))
+
+
+(fn filter1-kv [predicate iter state idx]
+  (values iter-filter1-kv [predicate iter state] idx))
+
+
 (export filter 1 true)
 (export filter-kv 1 true)
+(export filter1 1 true)
+(export filter1-kv 1 true)
 
+;; Reject
+
+(fn iter-reject-1 [state idx ...]
+  (when (not= nil idx)
+    (if (call state 1 $ ...)
+      (iter-reject-1 state (call state 2 3 $ idx))
+      (values idx ...))))
+
+
+(fn iter-reject-kv-1 [state idx ...]
+  (when (not= nil idx)
+    (if (call state 1 $ idx ...)
+      (iter-reject-kv-1 state (call state 2 3 $ idx))
+      (values idx ...))))
+
+
+(fn iter-reject1-1 [state idx ...]
+  (when (not= nil idx)
+    (if (call state 1 $ (select 1 ...))
+      (iter-reject-1 state (call state 2 3 $ idx))
+      (values idx ...))))
+
+
+(fn iter-reject1-kv-1 [state idx ...]
+  (when (not= nil idx)
+    (if (call state 1 $ idx (select 1 ...))
+      (iter-reject-kv-1 state (call state 2 3 $ idx))
+      (values idx ...))))
+
+
+(fn iter-reject [state idx]
+  (iter-reject-1 state (call state 2 3 $ idx)))
+
+
+(fn iter-reject-kv [state idx]
+  (iter-reject-kv-1 state (call state 2 3 $ idx)))
+
+
+(fn iter-reject1 [state idx ...]
+  (iter-reject1-1 state (call state 2 3 $ idx)))
+
+
+(fn iter-reject1-kv [state idx ...]
+  (iter-reject1-kv-1 state (call state 2 3 $ idx)))
+
+
+(fn reject [predicate iter state idx]
+  (values iter-reject [predicate iter state] idx))
+
+
+(fn reject-kv [predicate iter state idx]
+  (values iter-reject-kv [predicate iter state] idx))
+
+
+(fn reject1 [predicate iter state idx]
+  (values iter-reject1 [predicate iter state] idx))
+
+
+(fn reject1-kv [predicate iter state idx]
+  (values iter-reject1-kv [predicate iter state] idx))
+
+
+(export reject 1 true)
+(export reject-kv 1 true)
+(export reject1 1 true)
+(export reject1-kv 1 true)
 
 ;; Map
 
@@ -474,6 +575,30 @@
 (export add-to-map 1)
 (export add-to-map-kv 1)
 
+;; Conditions
+
+(fn boolean-call [func idx ...]
+  (when (not= nil idx)
+    (values idx (func ...))))
+
+
+(fn any [func iter state idx]
+  (var (idx cond) (boolean-call func (iter state idx)))
+  (while (and (not= nil idx) (not cond))
+    (set (idx cond) (boolean-call func (iter state idx))))
+  cond)
+
+
+(fn all [func iter state idx]
+  (var (idx cond) (boolean-call func (iter state idx)))
+  (while (and (not= nil idx) acc)
+    (set (idx cond) (boolean-call func (iter state idx))))
+  cond)
+
+
+(export any 1 false)
+(export all 1 false)
+
 
 ;; Extract
 
@@ -588,6 +713,47 @@
   (set methods.zip method-zip))
 
 
+;;; String
+
+(fn iter-string-split-plain [state idx]
+  (local len (length (. state 1)))
+  (when (not= idx len)
+    (local idx (+ idx 1))
+    (var (start stop) (string-find (. state 1) (. state 2) idx true))
+    (if (not= nil start)
+      (values stop (string-sub (. state 1) idx (- start 1)))
+      (values len (string-sub (. state 1) idx len)))))
+
+
+(fn iter-string-split-pattern [state idx]
+  (local len (length (. state 1)))
+  (when (not= idx len)
+    (local idx (+ idx 1))
+    (var (start stop) (string-find (. state 1) (. state 2) idx false))
+    (if (not= nil start)
+      (values stop (string-sub (. state 1) idx (- start 1)))
+      (values len (string-sub (. state 1) idx len)))))
+
+
+(fn string-split [text sep]
+  (if (or (= "" text) (= "" sep))
+    (values empty nil nil)
+    (values iter-string-split-plain [text sep] 0)))
+
+
+(fn string-split-pattern [text sep]
+  (if (or (= "" text) (= "" sep))
+    (values empty nil nil)
+    (values iter-string-split-pattern [text sep] 0)))
+
+
+(set raw.string-split string-split)
+(set raw.string-split-pattern string-split-pattern)
+
+(set exports.string-split (fn [text sep] (new (string-split text sep))))
+(set exports.string-split-pattern (fn [text sep] (new (string-split-pattern text sep))))
+
+
 ;; Util
 
 (fn maybe-require [modname]
@@ -620,7 +786,7 @@
       (if (> n 0)
         (let [into (table-new n 0)]
           (for [i 1 n]
-            (tset into i (copy (. seq i))))
+            (tset into i (copy (. obj i))))
           into)
         (let [into {}]
           (each [k v (values iter-pairs obj nil)]
