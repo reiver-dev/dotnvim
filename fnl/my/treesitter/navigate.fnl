@@ -151,7 +151,7 @@
 (fn iter-parents [node]
   (if (not= nil node)
     (values parent-iterator nil node)
-    (fun.empty)))
+    (values fun.raw.empty nil nil)))
 
 
 (fn raise-while [func node]
@@ -162,19 +162,19 @@
 
 
 (fn make-node-range-matcher [sr sc er ec]
-  (fn [node ...]
+  (fn [node]
     (local (psr psc per pec) (node:range))
     (range-match sr sc er ec psr psc per pec)))
 
 
 (fn make-node-start-matcher [row col]
-  (fn [node ...]
+  (fn [node]
     (local (nrow ncol) (node:start))
     (and (= row nrow) (= col ncol))))
 
 
 (fn make-node-end-matcher [row col]
-  (fn [node ...]
+  (fn [node]
     (local (nrow ncol) (node:end_))
     (and (= row nrow) (= col (- ncol 1)))))
 
@@ -220,9 +220,7 @@
 (fn get-current-node [row col]
   (local (row col) (ensure-cursor row col))
   (local node (node-at-cursor row col))
-  (print "N" (tostring node))
   (when node
-    (print "CC" (node:child_count))
     (if (< 0 (node:child_count))
       (let [(back forth) (nodes-around-cursor node row col)]
         (values back nil forth))
