@@ -24,11 +24,20 @@
   bufnr)
 
 
+(defn find-buf-by-name [name]
+  (var bufnr -1)
+  (each [_ num (ipairs (vim.api.nvim_list_bufs)) :until (<= 0 bufnr)]
+    (let [bufname (vim.api.nvim_buf_get_name num)]
+      (when (= name (string.sub bufname (- (length name))))
+        (set bufnr num))))
+  bufnr)
+
+
 (defn make-or-switch [name]
   (local name (if (and (not= nil name) (not= "" name))
                 name
                 "[Scratch]"))
-  (var bufnr (vim.fn.bufnr name))
+  (var bufnr (find-buf-by-name name))
   (when (= bufnr -1)
     (set bufnr (make-scratch-buffer name)))
   (assert (< 0 bufnr))
