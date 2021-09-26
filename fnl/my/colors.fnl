@@ -10,7 +10,7 @@
    :strong     "#000000" ;; Black
    :popout     "#FFAB91" ;; Deep Orange / L200
    :subtle     "#ECEFF1" ;; Blue Grey / L50
-   :faded      "#B0BEC5"})
+   :faded      "#B0BEC5"}) ;; Blue Grey / L200
    
    
 (def dark
