@@ -18,7 +18,7 @@
   (when (<= idx (. state 1))
     (values (+ idx 1)
             (+ (* (. state 3) idx) (. state 2)))))
-    
+
 
 (defn range [start stop ?step]
   (let [step (or ?step 1)
@@ -57,7 +57,7 @@
     nil (values irange-iter-inc1 stop (- start 1))
     1 (values irange-iter-inc1 stop (- start 1))
     -1 (values irange-iter-dec1 stop (+ start 1))
-    0 empty 
+    0 (values empty 0 0)
     (x ? (< 0 x)) (values irange-iter-inc [stop x] (- start x))
     (x ? (> 0 x)) (values irange-iter-dec [stop (- x)] (- start x))))
 

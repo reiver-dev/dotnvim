@@ -225,11 +225,11 @@
     (iter-take-one-1 (call state 1 2 $ (v2 idx)))))
 
 
-(fn take-1 [iter state idx]
+(fn take-one [iter state idx]
   (values iter-take-one [iter state] [true idx]))
 
 
-(export take-1 0 true)
+(export take-one 0 true)
 
 
 ;; Take while
@@ -492,6 +492,33 @@
 (export reduce 1 false)
 
 
+;; Find
+
+
+(fn find-1 [predicate iter state idx ...]
+  (when (not= nil idx)
+    (if (predicate ...) (values ...)
+      (find-1 predicate iter state (iter state idx)))))
+
+
+(fn find-kv-1 [predicate iter state idx ...]
+  (when (not= nil idx)
+    (if (predicate idx ...) (values ...)
+      (find-1 predicate iter state (iter state idx)))))
+
+
+(fn find [predicate iter state idx]
+  (find-1 predicate iter state (iter state idx)))
+
+
+(fn find-kv [predicate iter state idx]
+  (find-kv-1 predicate iter state (iter state idx)))
+
+
+(export find 1 false)
+(export find-kv 1 false)
+
+
 ;; Each
 
 (fn foreach-kv-1 [func iter state idx ...])
@@ -515,56 +542,64 @@
 
 ;; Collect
 
+(fn array-insert [result i iter state idx val]
+  (if (not= idx nil)
+    (do
+      (tset result i val)
+      (array-insert result (+ i 1) iter state (iter state idx)))
+    result))
+
+
 (fn array-append [result i iter state idx val]
   (if (not= idx nil)
     (do
       (tset result i val)
-      (array-append result (+ i 1) iter state (iter state idx)))
+      (array-append result (if val (+ i 1) i)) iter state (iter state idx))
     result))
 
 
-(fn map-append [result iter state idx key val]
+(fn map-insert-pairs [result iter state idx key val]
   (if (not= idx nil)
     (do
       (tset result key val)
-      (map-append result iter state (iter state idx)))
+      (map-insert-pairs result iter state (iter state idx)))
     result))
 
 
-(fn map-append-kv [result iter state idx val]
+(fn map-insert-kv [result iter state idx val]
   (if (not= idx nil)
     (do
       (tset result idx val)
-      (map-append result iter state (iter state idx)))
+      (map-insert-kv result iter state (iter state idx)))
     result))
 
 
 (fn to-table [iter state idx]
-  (array-append [] 1 iter state (iter state idx)))
+  (array-insert [] 1 iter state (iter state idx)))
 
 
 (fn to-map [iter state idx]
-  (map-append {} iter state (iter state idx)))
+  (map-insert-pairs {} iter state (iter state idx)))
 
 
 (fn to-map-kv [iter state idx]
-  (map-append-kv {} iter state (iter state idx)))
+  (map-insert-kv {} iter state (iter state idx)))
 
 
 (fn add-to-table [tbl iter state idx]
-  (array-append (or tbl []) (+ (length tbl) 1) iter state (iter state idx)))
+  (array-insert (or tbl []) (+ (length tbl) 1) iter state (iter state idx)))
 
 
 (fn add-to-table-at [tbl n iter state idx]
-  (array-append (or tbl []) (or n (+ (length tbl) 1)) iter state (iter state idx)))
+  (array-insert (or tbl []) (or n (+ (length tbl) 1)) iter state (iter state idx)))
 
 
 (fn add-to-map [tbl iter state idx]
-  (map-append (or tbl {}) iter state (iter state idx)))
+  (map-insert-pairs (or tbl {}) iter state (iter state idx)))
 
 
 (fn add-to-map-kv [tbl iter state idx]
-  (map-append-kv (or tbl {}) iter state (iter state idx)))
+  (map-insert-kv (or tbl {}) iter state (iter state idx)))
 
 
 (export to-table 0)
@@ -591,7 +626,7 @@
 
 (fn all [func iter state idx]
   (var (idx cond) (boolean-call func (iter state idx)))
-  (while (and (not= nil idx) acc)
+  (while (and (not= nil idx) cond)
     (set (idx cond) (boolean-call func (iter state idx))))
   cond)
 
