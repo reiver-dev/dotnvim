@@ -308,17 +308,17 @@
 
 ;; File text info
 (local file-format-icon
-  {:unix "␊"
-   :dos "␍␊"
-   :mac "␍"})
+  {:unix "\\n"
+   :dos "\\r\\n"
+   :mac "\\r"})
 
 
 (fn file-format []
   (local enc vim.bo.fileencoding)
   (local ff vim.bo.fileformat)
-  (.. enc (if (not= enc :binary)
-            (.. " " (or (. file-format-icon ff) ff))
-            "")))
+  (string.format
+    "[%s%s]" enc
+    (if (not= enc :binary) (.. " " (or (. file-format-icon ff) ff) ""))))
 
 
 (right :FileFormat
