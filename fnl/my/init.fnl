@@ -22,7 +22,8 @@
    "my.repl"
    "my.lang"
    "my.pack"
-   "my.checkers"])
+   "my.checkers"
+   "my.scratch"])
 
 
 (defn setup []
