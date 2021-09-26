@@ -33,10 +33,10 @@
 (defn visual-point []
   (let [(sb se) (getpos arg-v)
         (eb ee) (getpos arg-dot)]
-    {:min [(math.min sb eb)
-           (math.min se ee)]
-     :max [(math.max sb eb)
-           (math.max se ee)]}))
+    (values (math.min sb eb)
+            (math.min se ee)
+            (math.max sb eb)
+            (math.max se ee))))
 
 
 (defn line-begin []
@@ -48,16 +48,20 @@
 
 
 (defn operator-begin []
-  (vim.api.nvim_buf_get_mark 0 "["))
+  (let [[b e] (vim.api.nvim_buf_get_mark 0 "[")]
+    (values b e)))
 
 
 (defn operator-end []
-  (vim.api.nvim_buf_get_mark 0 "]"))
+  (let [[b e] (vim.api.nvim_buf_get_mark 0 "]")]
+    (values b e)))
 
 
-(defn visual-begin []
-  (vim.api.nvim_buf_get_mark 0 "<"))
+(defn range-begin []
+  (let [[b e] (vim.api.nvim_buf_get_mark 0 "<")]
+    (values b e)))
 
 
-(defn visual-end []
-  (vim.api.nvim_buf_get_mark 0 ">"))
+(defn range-end []
+  (let [[b e] (vim.api.nvim_buf_get_mark 0 ">")]
+    (values b e)))

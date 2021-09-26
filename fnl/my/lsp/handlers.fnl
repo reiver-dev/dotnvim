@@ -61,8 +61,8 @@
 
 
 (defn format-region []
-  (let [pos (p.visual-point)]
-    (base.range_formatting {} pos.min pos.max)))
+  (let [(bl bc el ec) (p.visual-point)]
+    (base.range_formatting {} [bl bc] [el ec])))
 
 
 (defn format-buffer []
