@@ -107,6 +107,7 @@
 
 (var color-statusline {})
 (var color-statusline-inactive {})
+(var color-vertsplit {})
 (var base-colors {})
 
 
@@ -137,6 +138,8 @@
        (tohex (vim.api.nvim_get_hl_by_name :StatusLine true)))
   (tbl-reset color-statusline-inactive
        (tohex (vim.api.nvim_get_hl_by_name :StatusLineNC true)))
+  (tbl-reset color-vertsplit
+       (tohex (vim.api.nvim_get_hl_by_name :VertSplit true)))
   (tbl-reset base-colors (if (= vim.o.background :light)
                            base-colors-light
                            base-colors-dark)))
@@ -174,11 +177,6 @@
                     :$ base-colors-default.red})
 
 
-;; (left :RainbowRed
-;;       :provider (fn [] "▊")
-;;       :highlight [colors.blue colors.bg])
-
-
 (left :ViMode
       :provider (fn []
                   (let [mode (_T :my.ui.mode :resolve-current)]
@@ -201,13 +199,21 @@
 
 (left :FileIcon
       :provider "FileIcon"
-      :condition condition.buffer_not_empty
-      :highlight [(. (require "galaxyline.provider_fileinfo") :get_file_icon_color)
+      :highlight [(. (require "galaxyline.providers.fileinfo") :get_file_icon_color)
                   colors.bg :NONE])
 
+
+
+(fn file-name []
+  (string.format
+    "%s%s %s"
+    (if (or (= :help vim.bo.filetype) vim.bo.readonly) " " "")
+    (let [name (vim.fn.expand "%:t")] (if (not= name "") name "[No Name]"))
+    (if (and vim.bo.modifiable vim.bo.modified) "" " ")))
+
+
 (left :FileName
-      :provider "FileName"
-      :condition condition.buffer_not_empty
+      :provider file-name
       :highlight [colors.magenta colors.bg :bold])
 
 
@@ -276,24 +282,47 @@
 
 
 (right :Project
-      :provider #(let [dir (get-local :project :root)]
-                   (and dir (vim.fn.fnamemodify dir ":~")))
-      :separator " "
-      :separator_highlight [:NONE colors.bg]
-      :highlight [colors.fg colors.bg])
+       :provider #(let [dir (get-local :project :root)]
+                    (and dir (vim.fn.fnamemodify dir ":~")))
+       :separator " "
+       :separator_highlight [:NONE colors.bg]
+       :highlight [colors.fg colors.bg])
+
+
+(fn lsp-clients []
+  (local client-names
+    (icollect [_ client (ipairs (vim.lsp.buf_get_clients 0))]
+      (string.format "%s(%d)" client.name client.id)))
+  (if (< 0 (length client-names))
+    (string.format "LSP[%s]" (table.concat client-names ", "))
+    "LSP[∅]"))
+
+
+(right :LspClients
+       :provider lsp-clients
+       :condition condition.hide_in_width
+       :separator " "
+       :separator_highlight [colors.fb colors.bg]
+       :highlight [colors.fg colors.bg])
 
 
 ;; File text info
+(local file-format-icon
+  {:unix "␊"
+   :dos "␍␊"
+   :mac "␍"})
 
-(right :FileEncode
-       :provider "FileEncode"
-       :condition condition.hide_in_width
-       :separator " "
-       :separator_highlight [:NONE colors.bg]
-       :highlight [colors.green colors.bg :bold])
+
+(fn file-format []
+  (local enc vim.bo.fileencoding)
+  (local ff vim.bo.fileformat)
+  (.. enc (if (not= enc :binary)
+            (.. " " (or (. file-format-icon ff) ff))
+            "")))
+
 
 (right :FileFormat
-       :provider "FileFormat"
+       :provider file-format
        :condition condition.hide_in_width
        :separator " "
        :separator_highlight [:NONE colors.bg]
@@ -327,10 +356,6 @@
        :condition condition.hide_in_width
        :icon " "
        :highlight [colors.red colors.bg])
-
-;; (right :RainbowBlue
-;;        :provider (fn [] "▊")
-;;        :highlight [colors.blue colors.bg])
 
 
 (left-inactive :SBufferType

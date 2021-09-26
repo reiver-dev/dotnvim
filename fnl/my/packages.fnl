@@ -244,7 +244,7 @@
        :config #(_T :nvim-web-devicons :setup))
 
   (pkg :name :galaxyline
-       :url "glepnir/galaxyline.nvim"
+       :url "NTBBloodbath/galaxyline.nvim"
        :branch "main"
        :requires [:devicons]
        :config #(require "my.ui.galaxyline"))
