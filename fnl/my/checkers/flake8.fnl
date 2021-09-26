@@ -42,7 +42,8 @@
     (when line
       (let [line (- (tonumber line) 1)
             col (- (tonumber col) 1)]
-        {:lnum line
+        {:source "flake8"
+         :lnum line
          :end_lnum line
          :col col
          :end_col (+ col 1)
