@@ -1,29 +1,22 @@
 ;;; Functional primitives
 
-(local vararg (require "my.vararg"))
-
-(local varpack vararg.pack)
-(local varunpack vararg.unpack)
-
-(local methods {})
-(local exports {})
-(local raw {})
-(tset exports :raw raw)
-
-(local ceil math.ceil)
-(local abs math.abs)
-(local iter-ipairs (ipairs []))
-(local iter-pairs (pairs {}))
-(local string-sub string.sub)
-(local string-byte string.byte)
-(local string-find string.find)
-
-
 (import-macros
   {: v1 : v2 : v3
    : call
    : export}
   :my.fun.macros)
+
+(local methods {})
+(local exports {})
+(local raw {})
+
+(tset exports :raw raw)
+
+(local iter-ipairs (ipairs []))
+(local iter-pairs (pairs {}))
+(local string-sub string.sub)
+(local string-byte string.byte)
+(local string-find string.find)
 
 
 (fn empty [state idx])
@@ -82,15 +75,37 @@
       (values idx char))))
 
 
+(fn iter-bytes [state idx]
+  (when (not= idx (length state))
+    (local idx (+ idx 1))
+    (let [val (string-byte state idx)]
+      (values idx val))))
+
+
+(fn iter-rev-bytes [state idx]
+  (when (not= 0 idx)
+    (local idx (- idx 1))
+    (let [val (string-byte state idx)]
+      (values idx val))))
+
+
 (fn string-iter-chars [s]
-  (if (not= 0 (length s))
-    (values iter-string s 0)
-    (values empty nil nil)))
+  (values iter-string s 0))
 
 
 (fn string-iter-chars-reversed [s]
   (if (not= 0 (length s))
     (values iter-rev-string s (+ (length s) 1))
+    (values empty nil nil)))
+
+
+(fn string-iter-bytes [s]
+  (values iter-bytes s 0))
+
+
+(fn string-iter-bytes-reversed [s]
+  (if (not= 0 (length s))
+    (values iter-rev-bytes s (+ (length s) 1))
     (values empty nil nil)))
 
 
@@ -131,6 +146,9 @@
 (set raw.str string-iter-chars)
 (set raw.rstr string-iter-chars-reversed)
 
+(set raw.str-bytes string-iter-bytes)
+(set raw.rstr-bytes string-iter-bytes-reversed)
+
 (set raw.rpairs new-rpairs)
 (set raw.ipairs new-ipairs)
 (set raw.pairs new-pairs)
@@ -139,6 +157,8 @@
 
 (set exports.str (fn [s] (new (string-iter-chars s))))
 (set exports.rstr (fn [s] (new (string-iter-chars-reversed s))))
+(set exports.str-bytes (fn [s] (new (string-iter-bytes s))))
+(set exports.rstr-bytes (fn [s] (new (string-iter-bytes-reversed s))))
 (set exports.rpairs (fn [tbl] (new (new-rpairs tbl))))
 (set exports.ipairs (fn [tbl] (new (new-ipairs tbl))))
 (set exports.pairs (fn [tbl] (new (new-pairs tbl))))
@@ -338,12 +358,18 @@
   (iter-filter-kv-1 state (call state 2 3 $ idx)))
 
 
-(fn iter-filter1 [state idx ...]
-  (iter-filter1-1 state (call state 2 3 $ idx)))
+(fn iter-filter1 [state idx]
+  (var (idx val) (call state 2 3 $ idx))
+  (while (and (not= nil idx) (not (call state 1 $ val)))
+    (set (idx val) (call state 2 3 $ idx)))
+  (values idx val))
 
 
 (fn iter-filter1-kv [state idx ...]
-  (iter-filter1-kv-1 state (call state 2 3 $ idx)))
+  (var (idx val) (call state 2 3 $ idx))
+  (while (and (not= nil idx) (not (call state 1 $ idx val)))
+    (set (idx val) (call state 2 3 $ idx)))
+  (values idx val))
 
 
 (fn filter [predicate iter state idx]
@@ -383,20 +409,6 @@
       (values idx ...))))
 
 
-(fn iter-reject1-1 [state idx ...]
-  (when (not= nil idx)
-    (if (call state 1 $ (select 1 ...))
-      (iter-reject-1 state (call state 2 3 $ idx))
-      (values idx ...))))
-
-
-(fn iter-reject1-kv-1 [state idx ...]
-  (when (not= nil idx)
-    (if (call state 1 $ idx (select 1 ...))
-      (iter-reject-kv-1 state (call state 2 3 $ idx))
-      (values idx ...))))
-
-
 (fn iter-reject [state idx]
   (iter-reject-1 state (call state 2 3 $ idx)))
 
@@ -405,12 +417,18 @@
   (iter-reject-kv-1 state (call state 2 3 $ idx)))
 
 
-(fn iter-reject1 [state idx ...]
-  (iter-reject1-1 state (call state 2 3 $ idx)))
+(fn iter-reject1 [state idx]
+  (var (idx val) (call state 2 3 $ idx))
+  (while (and (not= nil idx) (call state 1 $ val))
+    (set (idx val) (call state 2 3 $ idx)))
+  (values idx val))
 
 
-(fn iter-reject1-kv [state idx ...]
-  (iter-reject1-kv-1 state (call state 2 3 $ idx)))
+(fn iter-reject1-kv [state idx]
+  (var (idx val) (call state 2 3 $ idx))
+  (while (and (not= nil idx) (call state 1 $ idx val))
+    (set (idx val) (call state 2 3 $ idx)))
+  (values idx val))
 
 
 (fn reject [predicate iter state idx]
@@ -587,11 +605,15 @@
 
 
 (fn add-to-table [tbl iter state idx]
-  (array-insert (or tbl []) (+ (length tbl) 1) iter state (iter state idx)))
+  (if (not= nil tbl)
+    (array-insert tbl (+ (length tbl) 1) iter state (iter state idx))
+    (array-insert [] 1 iter state (iter state idx))))
 
 
 (fn add-to-table-at [tbl n iter state idx]
-  (array-insert (or tbl []) (or n (+ (length tbl) 1)) iter state (iter state idx)))
+  (if (not= nil tbl)
+    (array-insert tbl (or n (+ (length tbl) 1)) iter state (iter state idx))
+    (array-insert [] (or n 1) iter state (iter state idx))))
 
 
 (fn add-to-map [tbl iter state idx]
@@ -782,50 +804,11 @@
     (values iter-string-split-pattern [text sep] 0)))
 
 
-(set raw.string-split string-split)
-(set raw.string-split-pattern string-split-pattern)
+(set raw.str-split string-split)
+(set raw.str-split-pattern string-split-pattern)
 
-(set exports.string-split (fn [text sep] (new (string-split text sep))))
-(set exports.string-split-pattern (fn [text sep] (new (string-split-pattern text sep))))
-
-
-;; Util
-
-(fn maybe-require [modname]
-  (let [(ok mod) (pcall require modname)]
-    (when ok mod)))
-
-
-(local table-new (or (maybe-require "table.new") (fn [] [])))
-
-
-(fn copyseq [seq ?into]
-  (let [n (length seq)
-        into (or ?into (table-new n 0))]
-    (for [i 1 n]
-      (tset into i (. seq i)))
-    into))
-
-
-(fn copymap [tbl ?into]
-  (let [into (or ?into {})]
-    (each [k v (pairs tbl)]
-      (tset into k v))
-    into))
-
-
-(fn copy [obj]
-  (if (not= (type obj) "table")
-    obj
-    (let [n (length obj)]
-      (if (> n 0)
-        (let [into (table-new n 0)]
-          (for [i 1 n]
-            (tset into i (copy (. obj i))))
-          into)
-        (let [into {}]
-          (each [k v (values iter-pairs obj nil)]
-            (tset into k (copy v))))))))
+(set exports.str-split (fn [text sep] (new (string-split text sep))))
+(set exports.str-split-pattern (fn [text sep] (new (string-split-pattern text sep))))
 
 
 exports

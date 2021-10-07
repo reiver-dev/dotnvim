@@ -6,11 +6,13 @@ local os_is_posix = {
     Unix = true,
     Windows = false,
     Windows_NT = false,
+    MINGW32_NT = false,
 }
 
 local os_is_win = {
     Windows = true,
     Windows_NT = true,
+    MINGW32_NT = true,
 }
 
 local os_feature = {

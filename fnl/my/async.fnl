@@ -48,9 +48,8 @@
   (let [coro (maybe-create func)
         finally (or callback nothing)
         onerror (or onerror default-error)]
-    (var continuation nil)
-    (set continuation (fn [...]
-                        (resume coro finally onerror continuation ...)))
+    (fn continuation [...]
+      (resume coro finally onerror continuation ...))
     (proceed coro finally onerror continuation (coro-resume coro ...))))
 
 
@@ -109,62 +108,44 @@
   (error "Table insertion is forbidden."))
 
 
-(defn- bind-vararg [template numargs]
+(defn- bind-vararg [template numargs chunkname]
   ((loadstring (string.gsub template
                            "%%[A-Z]" {"%A" (argument-sequence numargs)
-                                      "%D" (or (and (< 0 numargs) ",") "")}))))
+                                      "%D" (or (and (< 0 numargs) ",") "")})
+               chunkname)))
 
 
-(defn- make-vararg-binder [template]
+(defn- make-vararg-binder [template chunkname]
   (fn [tbl num]
-    (let [func (bind-vararg template num)]
+    (let [func (bind-vararg template num (if (not= nil chunkname)
+                                           (.. chunkname "_" (tostring num))
+                                           nil))]
       (rawset tbl num func)
       func)))
 
 
-(defn- make-callback-binder [tbl num]
-  (let [args (argument-sequence num)
-        func ((loadstring (string.format callback-bind-template args args)))]
-    (rawset tbl num func)
-    func))
-
-
-(defn- make-callback-wrapper [tbl num]
-  (let [args (argument-sequence num)
-        func ((loadstring (string.format callback-wrap-template args args)))]
-    (rawset tbl num func)
-    func))
-
-
-(defn- make-coro-wrapper [tbl num]
-  (let [args (argument-sequence num)
-        func ((loadstring (string.format coro-bind-template args args)))]
-    (rawset tbl num func)
-    func))
-
-
 (def- bind-callback-cache
-  (setmetatable {} {:__index (make-vararg-binder callback-bind-template)
+  (setmetatable {} {:__index (make-vararg-binder callback-bind-template "bind_cb")
                     :__newindex forbidden}))
 
 
 (def- bind-coro-cache
-  (setmetatable {} {:__index (make-vararg-binder coro-bind-template)
+  (setmetatable {} {:__index (make-vararg-binder coro-bind-template "bind_coro")
                     :__newindex forbidden}))
 
 
 (def- wrap-callback-cache
-  (setmetatable {} {:__index (make-vararg-binder callback-wrap-template)
+  (setmetatable {} {:__index (make-vararg-binder callback-wrap-template "wrap_cb")
                     :__newindex forbidden}))
 
 
 (def- wrap-coro-cache
-  (setmetatable {} {:__index (make-vararg-binder coro-wrap-template)
+  (setmetatable {} {:__index (make-vararg-binder coro-wrap-template "wrap_coro")
                     :__newindex forbidden}))
 
 
 (def- wrap-vim-cache
-  (setmetatable {} {:__index (make-vararg-binder vim-wrap-template)
+  (setmetatable {} {:__index (make-vararg-binder vim-wrap-template "bind_vim")
                     :__newindex forbidden}))
 
 

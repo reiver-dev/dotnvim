@@ -33,7 +33,7 @@
   (fill-call-forms-get (list) 1 (select :# ...) tbl ...))
 
 
-(fn make-method [func nargs wrap?]
+(fn make-export-method [func nargs wrap?]
   (var call `(,func))
   (var args [(sym :self)])
   (for [i 1 nargs]
@@ -48,7 +48,7 @@
     `(fn ,name ,args ,call)))
 
 
-(fn make-export [func nargs wrap?]
+(fn make-export-func [func nargs wrap?]
  (var call `(,func))
  (var args [])
  (for [i 1 nargs]
@@ -72,8 +72,8 @@
 
 
 (fn export [func nargs wrap?]
-  (let [exp (make-export func nargs wrap?)
-        met (make-method func nargs wrap?)]
+  (let [exp (make-export-func func nargs wrap?)
+        met (make-export-method func nargs wrap?)]
     `(do
        (set ,(sym (.. :raw "." (tostring func))) ,func)
        (set ,(sym (.. :exports "." (tostring func))) ,exp)
@@ -83,6 +83,8 @@
 {: v1 : v2 : v3
  : with-name
  : call
- : export}
+ : export
+ : make-export-func
+ : make-export-method}
 
 ;;; fun/macros.fnl ends here

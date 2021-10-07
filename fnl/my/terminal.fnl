@@ -24,10 +24,10 @@
 
 
 (defn- find-keymap [bufnr mode key]
-  (or (find (fn [map] (= (. map :lhs) key))
-           (ipairs (vim.api.nvim_buf_get_keymap bufnr mode)))
-      (find (fn [map] (= (. map :lhs) key))
-           (ipairs (vim.api.nvim_get_keymap mode)))))
+  (or (fun.find (fn [map] (= (. map :lhs) key))
+                (ipairs (vim.api.nvim_buf_get_keymap bufnr mode)))
+      (fun.find (fn [map] (= (. map :lhs) key))
+                (ipairs (vim.api.nvim_get_keymap mode)))))
 
 
 (defn- execute-prefix-1 []
@@ -169,7 +169,6 @@
               (el ec) (point.range-end)]
           (if (and (= range 2) (= bl line1) (= el line2))
             (let [(lines regtype) (get-normal-visual-lines)]
-              (print "RT" regtype (= 0x16 (string.byte regtype 1)))
               (if (= 86 (string.byte regtype 1))
                 (lines-dedent lines)
                 lines))

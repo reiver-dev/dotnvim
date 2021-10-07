@@ -68,7 +68,7 @@
 
        :<leader>q (F :line-diagnostic)
        :<C-K> (F :signature-help)
-       :K (F :hover)}
+       :<leader>h (F :hover)}
    :v {:<leader>a (R :range-code-action)
        :<leader>f (F :format-region)
        :<leader>F (F :format-region)}})
