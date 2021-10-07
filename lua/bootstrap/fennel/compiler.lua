@@ -38,16 +38,36 @@ end
 M.sourcemap = extract_sourcemap(fennel)
 
 
-function M.compile_module_source(text, opts)
-    local code = "(require-macros \"aniseed.macros\")" .. text
-    return xpcall(function() return fennel.compileString(code, opts) end,
-                  fennel.traceback)
+local function compile_source(text, opts)
+    return pcall(fennel.compileString, text, opts)
 end
 
 
-function M.compile_source(text, opts)
-    return xpcall(function() return fennel.compileString(text, opts) end,
-                  fennel.traceback)
+M.compile_source = compile_source
+
+
+local FIX_ANISEED_MACROS = ""
+.. "(macro defonce- [name value] `(def- ,name (or (. *module-locals* ,(tostring name)) ,value)))"
+.. "(macro defonce [name value] `(def ,name (or (. *module-locals* ,(tostring name)) ,value)))"
+
+
+function M.compile_module_source(text, opts)
+    local file
+    if opts.filename == nil then
+        file = "nil"
+    else
+        file = string.format("%q", opts.filename)
+    end
+    local filevar = string.format([[(local *file* %s)]], file)
+    local code = filevar .. "(require-macros \"aniseed.macros\")" .. FIX_ANISEED_MACROS .. text
+    local delete_pat = "\n[^\n]-\"ANISEED_DELETE_ME\".-"
+    _G.ANISEED_STATIC_MODULES = true
+    local ok, res, sm = compile_source(code, opts)
+    if ok then
+	res = string.gsub(res, delete_pat .. "\n", "\n")
+	res = string.gsub(res, delete_pat .. "$", "")
+    end
+    return ok, res, sm
 end
 
 
@@ -64,6 +84,63 @@ function M.compile_file(src, dst, opts)
 end
 
 
+local function find_macro(basename)
+    local basename = string.gsub(name, "%.", "/")
+
+    local f = string.format
+    local paths = {
+        f("fnl/%s.fnl", basename),
+        f("fnl/%s/init.fnl", basename),
+        f("lua/%s.lua", basename),
+        f("lua/%s/init.lua", basename),
+    }
+
+    local get = vim.api.nvim_get_runtime_file
+
+    for _, path in ipairs(paths) do
+        local found = get(path, false)[1]
+        if found ~= nil then
+            return found
+        end
+    end
+end
+
+
+local function find_macro_fnl(name)
+    local basename = string.gsub(name, "%.", "/")
+
+    local f = string.format
+    local paths = {
+        f("fnl/%s.fnl", basename),
+        f("fnl/%s/init.fnl", basename),
+    }
+
+    local get = vim.api.nvim_get_runtime_file
+
+    for _, path in ipairs(paths) do
+        local found = get(path, false)[1]
+        if found ~= nil then
+            return found
+        end
+    end
+end
+
+
+local function load_macro_ast(modname)
+    local found = find_macro_fnl(modname)
+    if found then
+        local text = basic.slurp(found)
+        local chunks = {}
+        for ok, ast in fennel.parser(fennel['string-stream'](text)) do
+            if ok then
+                chunks[#chunks+1] = ast
+            end
+        end
+        return chunks
+    end
+end
+
+
 local MACRO_ENV = setmetatable({
     package = package,
     pairs = pairs,
@@ -71,12 +148,75 @@ local MACRO_ENV = setmetatable({
     type = type,
     table = table,
     tostring = tostring,
+    tonumber = tonumber,
     string = string,
     select = select,
     assert = assert,
+    error = error,
+    require = require,
+    debug = debug,
+    print = print,
+    pcall = pcall,
+    xpcall = xpcall,
+    loadast = load_macro_ast,
     getmetatable = getmetatable,
     setmetatable = setmetatable,
+    _SYSNAME = vim.loop.os_uname().sysname,
 }, {__newindex = function() error("Macro env insert attempt") end})
+
+
+local ALLOWED_GLOBALS = setmetatable({
+    -- builtin
+    "tonumber",
+    "tostring",
+    "error",
+    "pcall",
+    "xpcall",
+    "loadfile",
+    "load",
+    "loadstring",
+    "dofile",
+    "gcinfo",
+    "collectgarbage",
+    "newproxy",
+    "print",
+    "require",
+    "assert",
+    "type",
+    "next",
+    "pairs",
+    "ipairs",
+    "getmetatable",
+    "setmetatable",
+    "getfenv",
+    "setfenv",
+    "rawget",
+    "rawset",
+    "rawequal",
+    "unpack",
+    "select",
+    "_VERSION",
+    -- modules
+    "package",
+    "coroutine",
+    "debug",
+    "table",
+    "string",
+    "math",
+    "io",
+    "os",
+    "jit",
+    "bit",
+    "_G",
+    -- globals
+    "vim",
+    "log",
+    "_T",
+    "_trampouline",
+    "LOAD_PACKAGE",
+    "RELOAD",
+}, {__newindex = function() error("Allowed globals insert attempt") end})
+
 
 local function macro_loader(modname, fname)
     return fennel.dofile(fname, {env = "_COMPILER", compilerEnv = MACRO_ENV})
@@ -86,6 +226,16 @@ end
 local function lua_macro_loader(modname, fname)
     local data = basic.slurp(fname)
     return fennel['load-code'](data, fennel['make-compiler-env'], fname)
+end
+
+
+function M.compiler_env()
+    return MACRO_ENV
+end
+
+
+function M.allowed_globals()
+    return ALLOWED_GLOBALS
 end
 
 

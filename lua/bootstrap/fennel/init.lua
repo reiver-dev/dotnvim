@@ -4,27 +4,6 @@ local cachedir = vim.fn.stdpath('cache'):gsub("\\", "/") .. "/fennel/"
 local basic = require "bootstrap.basic"
 
 
-local function gather_files(root, force)
-    local result = {}
-    local srcdir = root .. "/fnl"
-    local dstdir = root .. "/lua"
-    local prefixlen = srcdir:len()
-    local sources = vim.fn.globpath(srcdir, "**/*.fnl", true, true)
-    local getftime = vim.fn.getftime
-    for _, srcpath in ipairs(sources) do
-        if not srcpath:match(".*macros.fnl") then
-            local srcpath = srcpath:gsub("\\", "/")
-            local suffix = srcpath:sub(prefixlen + 1)
-            local dstpath = dstdir .. suffix:sub(1, -4) .. "lua"
-            if force or getftime(srcpath) > getftime(dstpath) then
-                result[srcpath] = dstpath
-            end
-        end
-    end
-    return result
-end
-
-
 function M.ensure_modules()
     local fennel = function()
         return require "fennel"
@@ -51,64 +30,23 @@ function M.ensure_modules()
 end
 
 
-function M.compile(force)
-    local cfg = vim.fn.stdpath('config'):gsub('\\', '/')
-    local sources = gather_files(cfg, force)
-    local afterfiles = gather_files(cfg .. "/after", force)
-
-    if vim.tbl_isempty(sources) and vim.tbl_isempty(afterfiles) then
-        return
-    end
-
-    local fennel = require("bootstrap.fennel.compiler")
-    fennel.initialize()
-
-    local opts = {
-        useMetadata = false,
-        compilerEnv = _G,
-        ["compiler-env"] = _G
-    }
-
-    local errors = {}
-
-    for src, dst in pairs(sources) do
-        opts.filename = src
-        local ok, result = pcall(fennel.compile_file, src, dst, opts, true)
-        if not ok then
-            errors[#errors + 1] = ("Failed to compile %s: %s"):format(src, result)
-        end
-    end
-
-    for src, dst in pairs(afterfiles) do
-        opts.filename = src
-        local ok, result = pcall(fennel.compile_file, src, dst, opts, true)
-        if not ok then
-            errors[#errors + 1] = ("Failed to compile %s: %s"):format(src, result)
-        end
-    end
-
-    if next(errors) then
-        error(table.concat(errors, "\n"))
-    end
-end
-
-
 local function complete_fennel(arg, line, pos)
     return require("bootstrap.fennel.repl").complete(arg, pos)
 end
 
 
 local function compile_and_load(srcfile, dstfile)
-    local opts = {
-        useMetadata = false,
-        compilerEnv = _G,
-        ["compiler-env"] = _G,
-        filename = srcfile,
-    }
     local text = basic.slurp(srcfile)
 
     local compiler = require("bootstrap.fennel.compiler")
     compiler.initialize()
+
+    local opts = {
+        filename = srcfile,
+        useMetadata = false,
+        allowedGlobals = compiler.allowed_globals(),
+        compilerEnv = compiler.compiler_env(),
+    }
 
     local compiled, code = compiler.compile_module_source(text, opts)
     if compiled then
@@ -116,7 +54,7 @@ local function compile_and_load(srcfile, dstfile)
         return loadstring(code, '@' .. dstfile)
     end
 
-    return nil, ("Failed compile: %s\n%s"):format(src, code)
+    return nil, ("Failed compile: %s\n%s"):format(srcfile, code)
 end
 
 

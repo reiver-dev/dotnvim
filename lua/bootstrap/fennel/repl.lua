@@ -19,11 +19,15 @@ end
 
 
 function M.eval(opts, env)
+    local allowedGlobals = vim.tbl_keys(env or _G)
+    allowedGlobals[#allowedGlobals + 1] = "R"
+    allowedGlobals[#allowedGlobals + 1] = "_A"
     local env = M.environ(opts, env)
     local options = {
         env = env,
         filename = "EvalExpr.fnl",
-        useMetadata = true
+        useMetadata = true,
+        allowedGlobals = allowedGlobals,
     }
     return fennel.eval(opts.rawargs, options)
 end
