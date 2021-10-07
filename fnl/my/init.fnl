@@ -23,6 +23,7 @@
    "my.lang"
    "my.pack"
    "my.checkers"
+   "my.help"
    "my.scratch"])
 
 
