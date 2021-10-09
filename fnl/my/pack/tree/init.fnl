@@ -1,6 +1,11 @@
 (module my.pack.tree)
 
+(def- config
+  {:disable_netrw false
+   :hijack_netrw false})
+
+
 (defn setup []
-  (set vim.g.nvim_tree_hijack_netrw 0)
-  (set vim.g.nvim_tree_disable_netrw 0)) 
+  (local tree (require "nvim-tree"))
+  (tree.setup config))
 
