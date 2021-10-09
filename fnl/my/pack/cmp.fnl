@@ -1,5 +1,6 @@
 (module my.pack.cmp
-  {require {cmp cmp}})
+  {require {cmp cmp
+            lspkind lspkind}})
 
 
 (def- sources
@@ -59,7 +60,7 @@
    :<C-f> (cmp.mapping.scroll_docs 4)
    :<C-x><C-x> (cmp.mapping.complete)
    :<C-e> (cmp.mapping.close)
-   :<CR> (cmp.mapping.confirm {:behavior cmp.ConfirmBehavior.Insert :select true})})
+   :<CR> (cmp.mapping.confirm {:behavior cmp.ConfirmBehavior.Replace :select true})})
 
 
 (def- border
@@ -71,7 +72,10 @@
 
 (defn setup []
   (cmp.setup {:mapping mapping
-              :formatting {:format format}
+              :formatting {:format (lspkind.cmp_format
+                                     {:with_text true
+                                      :maxwidth 50
+                                      :menu source-mapping})}
               :documentation {:border border}
               :sources sources}))
 
