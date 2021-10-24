@@ -43,6 +43,9 @@ end
 
 
 local function ensure_global(t, k)
+    if k == "__fnl_global__reference_3f" then
+        return nil
+    end
     local msg = string.format("Attempt to get key: %s", k)
     error(msg)
 end
