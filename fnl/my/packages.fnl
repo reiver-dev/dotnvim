@@ -189,9 +189,9 @@
   (pkg :name :visual-multi
        :url "mg979/vim-visual-multi")
 
-  (pkg :name "commented"
-       :url "winston0410/commented.nvim"
-       :config #(_T :commented :setup))
+  (pkg :name "comment"
+       :url "numToStr/Comment.nvim"
+       :config #(_T "Comment" :setup))
 
   (pkg :name "far.vim"
        :url "brooth/far.vim"
