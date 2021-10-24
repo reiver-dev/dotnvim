@@ -60,7 +60,9 @@
    :<C-f> (cmp.mapping.scroll_docs 4)
    :<C-x><C-x> (cmp.mapping.complete)
    :<C-e> (cmp.mapping.close)
-   :<CR> (cmp.mapping.confirm {:behavior cmp.ConfirmBehavior.Replace :select true})})
+   :<CR> (cmp.mapping.confirm
+           {:behavior cmp.ConfirmBehavior.Replace
+            :select true})})
 
 
 (def- border
@@ -77,5 +79,7 @@
                                       :maxwidth 50
                                       :menu source-mapping})}
               :documentation {:border border}
+              :experimental {:native_menu false
+                             :ghost_text true}
               :sources sources}))
 
