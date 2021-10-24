@@ -4,11 +4,11 @@
 
 
 (def- sources
-  [{:name :buffer}
-   {:name :nvim_lsp}
+  [{:name :nvim_lsp}
+   {:name :nvim_lua}
    {:name :conjure}
    {:name :path}
-   {:name :nvim_lua}])
+   {:name :buffer}])
 
 
 (defn- make-cache-mt [func]
