@@ -274,9 +274,6 @@
   (pkg :name "jellybeans-theme"
        :url "metalelf0/jellybeans-nvim")
 
-  (pkg :name "onedark-theme"
-       :url "olimorris/onedark.nvim")
-
   (pkg :name "doom-one-theme"
        :url "NTBBloodbath/doom-one.nvim")
 
@@ -306,6 +303,15 @@
 
   (pkg :name "modus-theme"
        :url "ishan9299/modus-theme-vim")
+
+  (pkg :name "happyhacking-theme"
+       :url "https://gitlab.com/yorickpeterse/happy_hacking.vim")
+
+  (pkg :name "grey-theme"
+       :url "https://gitlab.com/yorickpeterse/nvim-grey")
+
+  (pkg :name "paper-theme"
+       :url "https://gitlab.com/yorickpeterse/vim-paper")
 
   (pkg :name "nvcode-theme"
        :url "ChristianChiarulli/nvcode-color-schemes.vim"))
