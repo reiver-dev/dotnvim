@@ -98,7 +98,7 @@
    :cyan :DarkCyan
    :darkblue :DarkBlue
    :green :DarkGreen
-   :orange :Orange
+   :orange :Brown
    :violet :Purple
    :magenta :DarkMagenta
    :blue :SlateBlue
