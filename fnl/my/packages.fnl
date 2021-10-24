@@ -256,6 +256,10 @@
                        [["packer"]
                         vim.g.better_whitespace_filetypes_blacklist])))
 
+  (pkg :name "prettier-quickfix"
+       :url "https://gitlab.com/yorickpeterse/nvim-pqf"
+       :config #(_T :pqf :setup))
+
   (pkg :name "better-quickfix"
        :url "kevinhwang91/nvim-bqf")
 
