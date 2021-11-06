@@ -4,26 +4,31 @@
 
 (defn lines-trim-region [lines col-begin col-end]
   (local len (length lines))
+  (local str-sub string.sub)
+  (local max math.max)
   (if
     (< 1 len)
     (do
-      (tset lines 1 (string.sub (. lines 1) (math.max 1 col-begin)))
-      (tset lines len (string.sub (. lines len) 1 col-end)))
+      (tset lines 1 (str-sub (. lines 1) (max 1 col-begin)))
+      (tset lines len (str-sub (. lines len) 1 col-end)))
     (< 0 len)
-    (tset lines 1 (string.sub (. lines 1) (math.max 1 col-begin) col-end)))
+    (tset lines 1 (str-sub (. lines 1) (max 1 col-begin) col-end)))
   lines)
 
 
 (defn lines-trim-block [lines col-begin col-end]
+  (local str-sub string.sub)
+  (local max math.max)
   (for [i 1 (length lines)]
-    (tset lines i (string.sub (. lines i) (math.max 1 col-begin))))
+    (tset lines i (str-sub (. lines i) (max 1 col-begin))))
   lines)
 
 
 (defn lines-max-length [lines]
+  (local max math.max)
   (var maxlen 0)
   (for [i 1 (length lines)]
-    (set maxlen (math.max maxlen (length (. lines i)))))
+    (set maxlen (max maxlen (length (. lines i)))))
   maxlen)
 
 
@@ -32,43 +37,49 @@
 
 
 (defn lines-dedent [lines]
+  (local min math.min)
+  (local sub string.sub)
   (var min-indent 2147483647)
   (for [i 1 (length lines)]
     (local line (. lines 1))
     (local indent (string-indent line))
     (when (not= 0 indent)
-      (set min-indent (math.min min-indent indent))))
+      (set min-indent (min min-indent indent))))
   (when (< 1 min-indent)
     (for [i 1 (length lines)]
-      (tset lines i (string.sub (. lines i) min-indent))))
+      (tset lines i (sub (. lines i) min-indent))))
   lines)
 
 
 (defn lines-dedent-nonempty [lines]
+  (local str-sub string.sub)
+  (local min math.min)
   (local nlines [])
   (var min-indent 0)
   (for [i 1 (length lines)]
     (local line (. lines 1))
     (local indent (string-indent line))
     (when (not= nil indent)
-      (set min-indent (math.min min-indent indent))
+      (set min-indent (min min-indent indent))
       (tset nlines (+ 1 (length nlines)) line)))
   (when (< 1 min-indent)
     (for [i 1 (length nlines)]
-      (tset lines i (string.sub (. lines i) min-indent))))
+      (tset lines i (str-sub (. lines i) min-indent))))
   nlines)
 
 
 (defn lines-reindent [lines]
+  (local str-sub string.sub)
+  (local str-rep string.rep)
   (local base-indent (string-indent (. lines 1)))
   (when (< 1 base-indent)
-    (tset lines 1 (string.sub (. lines 1) base-indent))
+    (tset lines 1 (str-sub (. lines 1) base-indent))
     (for [i 2 (length lines)]
       (local line (. lines i))
       (local indent (string-indent line))
       (if (or (<= base-indent indent) (= indent 0))
-        (tset lines i (string.sub line base-indent))
-        (tset lines i (.. (string.rep " " (+ 1 (- base-indent indent)))
+        (tset lines i (str-sub line base-indent))
+        (tset lines i (.. (str-rep " " (+ 1 (- base-indent indent)))
                           line)))))
   lines)
 
