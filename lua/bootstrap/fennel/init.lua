@@ -66,6 +66,31 @@ local function select_result(result, err)
 end
 
 
+local runtime
+if vim.api.nvim__get_runtime then
+    runtime = function(paths)
+        return ipairs(vim.api.nvim__get_runtime(paths, false, {is_lua = false}))
+    end
+else
+    local function runtime_iter(state, idx)
+        while true do
+            idx = idx + 1
+            local next_path = state[idx]
+            if next_path == nil then
+                return
+            end
+            local found = vim.api.nvim_get_runtime_file(next_path, false)[1]
+            if found then
+                return idx, found
+            end
+        end
+    end
+    runtime = function(paths)
+        return runtime_iter, paths, 0
+    end
+end
+
+
 local function ensure_cached(modname, srcfile)
     local dstfile = cachedir .. modname .. ".lua"
     local uv = vim.loop
@@ -119,24 +144,20 @@ local function expedite_cached_searcher(modname)
         f("fnl/%s/init.fnl", basename),
     }
 
-    local get = vim.api.nvim_get_runtime_file
-    for _, path in ipairs(paths) do
-        local srcfile = get(path, false)[1]
-        if srcfile then
-            local srcstat, srcerr = uv.fs_stat(srcfile)
-            if srcstat == nil then
-                if dststat then
-                    os.remove(dstfile)
-                end
-                error(string.format("Fnl file error %s %s", fname, srcerr))
+    for _, srcfile in runtime(paths) do
+        local srcstat, srcerr = uv.fs_stat(srcfile)
+        if srcstat == nil then
+            if dststat then
+                os.remove(dstfile)
             end
-
-            if srcstat.mtime.sec < dststat.mtime.sec then
-                local code = basic.slurp(dstfile)
-                return select_result(loadstring(code, '@' .. dstfile))
-            end
-            return select_result(compile_and_load(srcfile, dstfile))
+            error(string.format("Fnl file error %s %s", fname, srcerr))
         end
+
+        if srcstat.mtime.sec < dststat.mtime.sec then
+            local code = basic.slurp(dstfile)
+            return select_result(loadstring(code, '@' .. dstfile))
+        end
+        return select_result(compile_and_load(srcfile, dstfile))
     end
 end
 
@@ -150,12 +171,8 @@ local function module_searcher(modname)
         f("fnl/%s/init.fnl", basename),
     }
 
-    local get = vim.api.nvim_get_runtime_file
-    for _, path in ipairs(paths) do
-        local found = get(path, false)[1]
-        if found then
-            return select_result(ensure_cached(modname, found))
-        end
+    for _, found in runtime(paths) do
+        return select_result(ensure_cached(modname, found))
     end
 end
 

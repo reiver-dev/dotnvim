@@ -84,6 +84,31 @@ function M.compile_file(src, dst, opts)
 end
 
 
+local runtime
+if vim.api.nvim__get_runtime then
+    runtime = function(paths)
+        return ipairs(vim.api.nvim__get_runtime(paths, false, {is_lua = false}))
+    end
+else
+    local function runtime_iter(state, idx)
+        while true do
+            idx = idx + 1
+            local next_path = state[idx]
+            if next_path == nil then
+                return
+            end
+            local found = vim.api.nvim_get_runtime_file(next_path, false)[1]
+            if found then
+                return idx, found
+            end
+        end
+    end
+    runtime = function(paths)
+        return runtime_iter, paths, 0
+    end
+end
+
+
 local function find_macro(basename)
     local basename = string.gsub(name, "%.", "/")
 
@@ -95,13 +120,8 @@ local function find_macro(basename)
         f("lua/%s/init.lua", basename),
     }
 
-    local get = vim.api.nvim_get_runtime_file
-
-    for _, path in ipairs(paths) do
-        local found = get(path, false)[1]
-        if found ~= nil then
-            return found
-        end
+    for _, found in runtime(paths) do
+        return found
     end
 end
 
@@ -115,13 +135,8 @@ local function find_macro_fnl(name)
         f("fnl/%s/init.fnl", basename),
     }
 
-    local get = vim.api.nvim_get_runtime_file
-
-    for _, path in ipairs(paths) do
-        local found = get(path, false)[1]
-        if found ~= nil then
-            return found
-        end
+    for _, found in runtime(paths) do
+        return found
     end
 end
 
@@ -239,36 +254,6 @@ function M.allowed_globals()
 end
 
 
-function M.module_searcher(name)
-    M.initialize()
-
-    local basename = string.gsub(name, "%.", "/")
-
-    local f = string.format
-    local paths = {
-        f("fnl/%s.fnl", basename),
-        f("fnl/%s/init.fnl", basename),
-    }
-
-    local get = vim.api.nvim_get_runtime_file
-    for _, path in ipairs(paths) do
-        local found = get(path, false)[1]
-        if found then
-            local code, err = ensure_cached(name, found)
-            if code then
-                local f, err = loadstring(code, name)
-                if err then
-                    return err
-                end
-                return f
-            else
-                return function() error(err) end
-            end
-        end
-    end
-end
-
-
 local function macro_searcher(name)
     local basename = string.gsub(name, "%.", "/")
 
@@ -280,16 +265,11 @@ local function macro_searcher(name)
         f("lua/%s/init.lua", basename),
     }
 
-    local get = vim.api.nvim_get_runtime_file
-
-    for _, path in ipairs(paths) do
-        local found = get(path, false)[1]
-        if found then
-            if string.sub(found, -3) == "fnl" then
-                return macro_loader, found
-            else
-                return lua_macro_loader, found
-            end
+    for _, found in runtime(paths) do
+        if string.sub(found, -3) == "fnl" then
+            return macro_loader, found
+        else
+            return lua_macro_loader, found
         end
     end
 
