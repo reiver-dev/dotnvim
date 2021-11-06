@@ -12,7 +12,7 @@ local expand_keys = {
 local expand = vim.fn.expand
 
 local normalize = nil
-if vim.fn.has('win32') then
+if vim.fn.has('win32') == 1 then
     normalize = function(path)
         return path:gsub('\\', '/')
     end

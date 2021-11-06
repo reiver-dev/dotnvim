@@ -3,7 +3,7 @@
 
 local M = {}
 
-local is_win = vim.fn.has("win32")
+local is_win = vim.fn.has("win32") == 1
 
 
 local function fserror(fname, err)
@@ -47,9 +47,9 @@ end
 
 
 local function chdir_command()
-    if vim.fn.haslocaldir() then
+    if vim.fn.haslocaldir() == 1 then
         return "lcd"
-    elseif vim.fn.haslocaldir(-1, 0) then
+    elseif vim.fn.haslocaldir(-1, 0) == 1 then
         return "tcd"
     else
         return "cd"
@@ -73,7 +73,7 @@ end
 
 
 function M.mkdir(path)
-    local stat, err, code = vim.loop.fs_stat()
+    local stat, err, code = vim.loop.fs_stat(path)
     if stat ~= nil then
         if stat.type ~= "directory" then
             error("Path is not directory: " .. path)
