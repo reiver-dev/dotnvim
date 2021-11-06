@@ -21,10 +21,13 @@ local function compile(fennel, src, dst, env)
 end
 
 
-local function gather_files(force)
+local function gather_files(root, force)
+    if root == nil or root == "" then
+        error("Empty root dir")
+    end
     local result = {}
-    local srcdir = "src"
-    local dstdir = "lua"
+    local srcdir = root .. "/src"
+    local dstdir = root .. "/lua"
     local prefixlen = srcdir:len()
     local sources = vim.fn.globpath(srcdir, "**/*.fnl", true, true)
     local getftime = vim.fn.getftime
@@ -43,9 +46,6 @@ end
 
 
 local function ensure_global(t, k)
-    if k == "__fnl_global__reference_3f" then
-        return nil
-    end
     local msg = string.format("Attempt to get key: %s", k)
     error(msg)
 end
@@ -63,18 +63,48 @@ local strict_global = {
     __newindex = forbid_new_global
 }
 
+local forbid_insert = {
+    __newindex = forbid_new_global
+}
 
-local function pick(base, ...)
-    local result = {}
-    for i = 1, select("#", ...) do
-        local k = select(i, ...)
-        result[k] = base[k]
-    end
-    return setmetatable(result, strict_global)
+
+local function is_simple_type(t)
+    return t == "table" or t == "function" or t == "boolean" or t == "number"
 end
 
 
-local function make_compiler_env()
+local function protect(tbl)
+    local result = {}
+    for key, val in pairs(tbl) do
+        local t = type(val)
+        if not is_simple_type(t) then
+            local msg = string.format("Unexpected type(%s): %s => %s",
+                                       t, key, vim.inspect(val))
+            error(msg)
+        end
+        if t == "table" then
+            result[key] = protect(tbl)
+        else
+            result[key] = val
+        end
+    end
+    return setmetatable(result, forbid_insert)
+end
+
+
+local function open_ro(path, mode)
+    if mode ~= nil and string.match(mode, "[wa]") ~= nil then
+        error(string.format("Unexpected io.open mode: %s", mode))
+    end
+    return io.open(path, mode)
+end
+
+
+local function make_compiler_env(environ)
+    if environ == nil then
+        environ = {}
+    end
+
     local _package = {
         config = package.config,
         loaded = {},
@@ -92,14 +122,16 @@ local function make_compiler_env()
 
     local baseenv
     local baseenv = {
+        _VERSION = _VERSION,
         package = _package,
         require = _require,
         unpack = unpack or table.unpack,
         pcall = pcall,
         xpcall = xpcall,
-        string = string,
-        io = io,
-        table = table,
+        string = protect(string),
+        io = setmetatable({open = open_ro}, strict_global),
+        table = protect(table),
+        bit = protect(bit),
         setmetatable = setmetatable,
         getmetatable = getmetatable,
         error = error,
@@ -107,7 +139,7 @@ local function make_compiler_env()
         pairs = pairs,
         ipairs = ipairs,
         type = type,
-        math = math,
+        math = protect(math),
         tostring = tostring,
         tonumber = tonumber,
         select = select,
@@ -117,17 +149,17 @@ local function make_compiler_env()
         next = next,
         print = print,
         debug = setmetatable({traceback = debug.traceback}, strict_global),
-        os = {
+        os = setmetatable({
             getenv = function(k)
-                return nil
+                return environ[k]
             end
-        }
+        }, strict_global)
     }
 
     local _G = baseenv
     baseenv._G = _G
 
-    baseenv.load = function(...)
+    function baseenv.load(...)
         return load(...)
     end
 
@@ -148,11 +180,12 @@ function M.setup(opts)
         error("Failed to load fennel: " .. errmsg)
     end
 
-    local baseenv = make_compiler_env()
+    local root = vim.fn.fnamemodify(old_path, ":p:h:h")
+    assert(root ~= nil and root ~= "", "Empty fennel path")
+
+    local baseenv = make_compiler_env({FENNEL_SRC = root})
     setfenv(old_fennel_loader, baseenv)
     local old_fennel = old_fennel_loader("fennel")
-
-    local root = vim.fn.fnamemodify(old_path, ":p:h:h")
 
     if force then
         local dir = root .. "/lua"
@@ -160,8 +193,8 @@ function M.setup(opts)
         basic.rmdir(dir)
     end
 
-    local ok, res = pcall(basic.with_dir, root, function()
-        for src, dst in pairs(gather_files()) do
+    local ok, res = pcall(function()
+        for src, dst in pairs(gather_files(root)) do
             vim.notify(string.format("Compiling %s => %s", src, dst))
             compile(old_fennel, src, dst, baseenv)
         end
