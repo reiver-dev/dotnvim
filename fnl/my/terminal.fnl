@@ -20,7 +20,7 @@
                                 (vim.api.nvim_buf_is_valid chan.buffer)
                                 (= (job-pid chan.id) pid)))
                          (vim.api.nvim_list_chans))]
-      chan)))
+      (when chan chan.buffer))))
 
 
 (defn- find-keymap [bufnr mode key]
@@ -61,9 +61,8 @@
 
 
 (defn chdir [bufnr directory]
-  (vim.api.nvim_buf_set_var bufnr :default_directory directory)
-  (vim.api.nvim_buf_call
-    bufnr (fn [] (vim.cmd (.. "lcd " (vim.fn.fnameescape directory))))))
+  (vim.notify (string.format "bufnr: %s, directory: %s" bufnr directory))
+  (_T :my.directory :force-default-directory bufnr directory))
 
 
 (defn gather-data [kind]

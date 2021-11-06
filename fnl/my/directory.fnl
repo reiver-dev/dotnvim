@@ -93,13 +93,21 @@
 (defn- apply-default-directory [bufnr]
   "Attempt to update default-directory for BUFNR buffer."
   (let [dd (default-directory bufnr)]
-    (vim.api.nvim_buf_call 
-      bufnr
-      (fn []
-        (let [dir (or (current-buffer-dir) (vim.fn.getcwd))]
-          (when (~= dir dd)
-            (set-default-directory bufnr dir)
-            (fire-default-directory-updated bufnr dir)))))))
+    (vim.api.nvim_buf_call
+      bufnr #(let [dir (or (current-buffer-dir) (vim.fn.getcwd))]
+               (set-default-directory bufnr dir)
+               (when (~= dir dd)
+                 (fire-default-directory-updated bufnr dir))))))
+
+
+(defn force-default-directory [bufnr directory]
+  "Make default-directory for BUFNR buffern to become DIRECTORY."
+  (let [dd (default-directory bufnr)]
+    (vim.api.nvim_buf_call
+      bufnr (fn []
+              (set-default-directory bufnr directory)
+              (when (not= directory dd)
+                (fire-default-directory-updated bufnr directory))))))
 
 
 (defn on-file-enter []
