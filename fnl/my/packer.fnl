@@ -45,7 +45,7 @@
     (hook (make-packer-module packer))))
 
 
-(defn- init-packages []
+(defn init-packages []
   (let [packer (require "packer")]
     (packer.init (packer-config))
     (packer.reset)
