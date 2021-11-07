@@ -106,6 +106,24 @@ function M.is_dir(path)
 end
 
 
+if vim.api.nvim__get_runtime then
+    function M.runtime(paths)
+        return vim.api.nvim__get_runtime(paths, false, {is_lua = false})[1]
+    end
+else
+    function M.runtime(paths)
+        local get = vim.api.nvim_get_runtime_file
+        for _, p in ipairs(paths) do
+            local found = get(p, false)[1]
+            if found then
+                return found
+            end
+        end
+	return nil
+    end
+end
+
+
 return M
 
 --- basic.lua ends here
