@@ -18,7 +18,9 @@
 
 
 (defn- handle-packer-options [...]
-  (local opts (argpairs ...))
+  (local opts (if (= (select :# ...) 1)
+                ...
+                (argpairs ...)))
   (tset opts :as opts.name)
   (tset opts 1 opts.url)
   (set opts.name nil)
@@ -63,16 +65,16 @@
   (_T :packer name ...))
 
 
-(defn install []
-  (exec :install))
+(defn install [...]
+  (exec :install ...))
 
 
-(defn update []
-  (exec :update))
+(defn update [...]
+  (exec :update ...))
 
 
-(defn sync []
-  (exec :sync))
+(defn sync [...]
+  (exec :sync ...))
 
 
 (defn compile [...]
@@ -91,12 +93,20 @@
   (exec :profile_output))
 
 
+(defn open-dir [...]
+  (each [_ p (ipairs [...])]
+    (local plugin (. _G.packer_plugins p))
+    (when plugin
+      (vim.cmd (.. "split " (vim.fn.fnameescape plugin.path))))))
+
+
 (def- commands
   "
   command! PackerInit     lua _T('my.packer', 'init-packages')
-  command! PackerInstall  lua _T('my.packer', 'install')
-  command! PackerUpdate   lua _T('my.packer', 'update')
-  command! PackerSync     lua _T('my.packer', 'sync')
+  command! -nargs=1 -complete=customlist,v:lua.require'packer'.plugin_complete PackerOpen     lua _T('my.packer', 'open-dir', <f-args>)
+  command! -nargs=* -complete=customlist,v:lua.require'packer'.plugin_complete PackerInstall  lua require('my.packer').install(<f-args>)
+  command! -nargs=* -complete=customlist,v:lua.require'packer'.plugin_complete PackerUpdate   lua require('my.packer').update(<f-args>)
+  command! -nargs=* -complete=customlist,v:lua.require'packer'.plugin_complete PackerSync     lua require('my.packer').sync(<f-args>)
   command! PackerClean    lua _T('my.packer', 'clean')
   command! -nargs=* PackerCompile  lua _T('my.packer', 'compile', <q-args>)
   command! PackerStatus   lua _T('my.packer', 'status')
