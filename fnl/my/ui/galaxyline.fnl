@@ -209,7 +209,7 @@
     "%s%s %s"
     (if (or (= :help vim.bo.filetype) vim.bo.readonly) " " "")
     (let [name (vim.fn.expand "%:t")] (if (not= name "") name "[No Name]"))
-    (if (and vim.bo.modifiable vim.bo.modified) "" " ")))
+    (if (and vim.bo.modifiable vim.bo.modified) " " "  ")))
 
 
 (left :FileName
