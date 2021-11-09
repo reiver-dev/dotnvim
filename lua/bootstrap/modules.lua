@@ -100,7 +100,7 @@ local function complete_package(arg, line, pos)
     if plugins then
         for name, plugin in pairs(plugins) do
             if not plugin.loaded then
-                loadable[#loadable + 1] = name 
+                loadable[#loadable + 1] = name
             end
         end
     end
