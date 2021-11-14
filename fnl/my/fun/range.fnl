@@ -1,58 +1,84 @@
-(module my.range)
+;;; Range iterators
 
-(def- abs math.abs)
-(def- ceil math.ceil)
+(local abs math.abs)
+(local ceil math.ceil)
+(local floor math.floor)
 
-(defn- empty [state idx])
+
+(fn empty [state idx])
 
 
-(defn range-len [start stop step]
+(fn range-len-inclusive [start stop step]
   (if (or (and (> step 0) (< start stop))
           (and (< step 0) (< stop start)))
-    (ceil (/ (abs (- stop start))
-             (abs step)))
+    (floor (/ (abs (- stop start))
+              (abs step)))
     0))
 
 
-(defn range-iter [state idx]
+(fn range-len-exclusive [start stop step]
+  (if (or (and (> step 0) (< start stop))
+          (and (< step 0) (< stop start)))
+    (ceil (/ (abs (- stop start))
+              (abs step)))
+    0))
+
+
+(fn iter-range-inclusive [state idx]
   (when (<= idx (. state 1))
     (values (+ idx 1)
             (+ (* (. state 3) idx) (. state 2)))))
 
 
-(defn range [start stop ?step]
+(fn iter-range-exclusive [state idx]
+  (when (< idx (. state 1))
+    (values (+ idx 1)
+            (+ (* (. state 3) idx) (. state 2)))))
+
+
+(fn range [start stop ?step]
   (let [step (or ?step 1)
-        len (range-len start stop step)]
+        len (range-len-inclusive start stop step)]
     (if (< 0 len)
-      (values range-iter [len start step] 0)
-      empty)))
+      (values iter-range-inclusive [len start step] 0)
+      (values empty 0 0))))
 
 
-(defn- dup [x]
+(fn erange [start stop ?step]
+  (let [step (or ?step 1)
+        len (range-len-exclusive start stop step)]
+    (if (< 0 len)
+      (values iter-range-exclusive [len start step] 0)
+      (values empty 0 0))))
+
+
+(fn dup [x]
   (values x x))
 
 
-(defn irange-iter-inc1 [state idx]
+(fn irange-iter-inc1 [state idx]
   (when (< idx state)
     (dup (+ idx 1))))
 
 
-(defn irange-iter-inc [state idx]
-  (when (< idx (. state 1))
-    (dup (+ idx (. state 2)))))
+(fn irange-iter-inc [state idx]
+  (local nidx (+ idx (. state 2)))
+  (when (<= nidx (. state 1))
+    (dup nidx)))
 
 
-(defn irange-iter-dec1 [state idx]
+(fn irange-iter-dec1 [state idx]
   (when (> idx state)
     (dup (- idx 1))))
 
 
-(defn irange-iter-dec [state idx]
-  (when (> idx (. state 1))
-    (dup (- idx (. state 2)))))
+(fn irange-iter-dec [state idx]
+  (local nidx (- idx (. state 2)))
+  (when (>= nidx (. state 1))
+    (dup nidx)))
 
 
-(defn irange [start stop ?step]
+(fn irange [start stop ?step]
   (match ?step
     nil (values irange-iter-inc1 stop (- start 1))
     1 (values irange-iter-inc1 stop (- start 1))
@@ -62,11 +88,6 @@
     (x ? (> 0 x)) (values irange-iter-dec [stop (- x)] (- start x))))
 
 
-(let [tbl [5 4 3 2 1]]
-  (each [k v (range 1 (length tbl) 1)]
-    (print k (. tbl v))))
-
-
-(let [tbl [5 4 3 2 1]]
-  (each [k (irange 1 (length tbl))]
-    (print k)))
+{: range
+ : erange
+ : irange}
