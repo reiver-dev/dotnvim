@@ -170,7 +170,7 @@ end
 
 function M.setup(opts)
     local force = opts and opts.force
-    local old_path = vim.api.nvim_get_runtime_file("old/fennel.lua", false)[1]
+    local old_path = basic.runtime({"bootstrap/fennel.lua", "old/fennel.lua"})
     if old_path == nil or old_path == "" then
         error("Fennel old compiler not found")
     end
