@@ -9,7 +9,26 @@ local view = require "fennel.view"
 
 local M = {}
 
-function M.environ(opts, env)
+
+local require_missing_mt = {
+    __index = function(t, key)
+        local val = require(key:gsub("/", "."))
+        rawset(t, key, val)
+        return val
+    end,
+    __newindex = function(t, key, val)
+        error("Require trampouline is immutable")
+    end,
+}
+
+
+function M.exec_environ(opts, env)
+    local R = setmetatable({}, require_missing_mt)
+    return setmetatable({ _A = opts, R = R }, {__index = env or _G})
+end
+
+
+function M.repl_environ(opts, env)
     local R = {}
     for k, v in pairs(package.loaded) do
         R[k:gsub("%.", "/")] = v
@@ -22,7 +41,7 @@ function M.eval(opts, env)
     local allowedGlobals = vim.tbl_keys(env or _G)
     allowedGlobals[#allowedGlobals + 1] = "R"
     allowedGlobals[#allowedGlobals + 1] = "_A"
-    local env = M.environ(opts, env)
+    local env = M.exec_environ(opts, env)
     local options = {
         env = env,
         filename = "EvalExpr.fnl",
@@ -166,7 +185,7 @@ function M.complete(text, pos)
 
     local scope = compiler.scopes.global
     local matches = {}
-    local env = M.environ()
+    local env = M.repl_environ()
 
     find_completion_matches(matches, input, scope.specials or {})
     find_completion_matches(matches, input, scope.macros or {})
