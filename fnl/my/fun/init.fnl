@@ -811,6 +811,46 @@
 (set exports.str-split-pattern (fn [text sep] (new (string-split-pattern text sep))))
 
 
+(fn utf8-pos-iter [state idx]
+  (local idx (+ 1 idx))
+  (when (not= nil (. state 1 (+ idx 1)))
+    (values idx (string-sub (. state 2)
+                            (. state 1 idx)
+                            (- (. state 1 (+ idx 1)) 1)))))
+
+
+(fn utf8 [text]
+  (local len (length text))
+  (local pos (vim.str_utf_pos text))
+  (tset pos (+ 1 (length pos)) (+ len 1))
+  (values utf8-pos-iter [pos text] 0))
+
+
+
+(fn reversed-utf8-pos-iter [state idx]
+  (local nidx (- idx 1))
+  (when (not= 0 nidx)
+    (values nidx (string-sub (. state 2)
+                             (. state 1 nidx)
+                             (- (. state 1 idx) 1)))))
+
+
+(fn rutf8 [text]
+  (local len (length text))
+  (local pos (vim.str_utf_pos text))
+  (tset pos (+ 1 (length pos)) (+ len 1))
+  (if (= len 0)
+    (values empty nil nil)
+    (values reversed-utf8-pos-iter [pos text] (length pos))))
+
+
+(set raw.str-utf8 utf8)
+(set raw.str-rutf8 rutf8)
+
+(set exports.str-utf8 (fn [text] (new (utf8 text))))
+(set exports.str-rutf8 (fn [text] (new (rutf8 text))))
+
+
 exports
 
 ;;; fun/init.fnl ends here
