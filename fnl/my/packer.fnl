@@ -97,17 +97,18 @@
   (exec :profile_output))
 
 
-(defn open-dir [...]
-  (each [_ p (ipairs [...])]
-    (local plugin (. _G.packer_plugins p))
+(defn open-dir [plugin-names command-mods]
+  (each [_ plugin-name (ipairs plugin-names)]
+    (local plugin (. _G.packer_plugins plugin-name))
     (when plugin
-      (vim.cmd (.. "split " (vim.fn.fnameescape plugin.path))))))
+      (vim.cmd (.. (or command-mods "") " split "
+                   (vim.fn.fnameescape plugin.path))))))
 
 
 (def- commands
   "
   command! PackerInit     lua _T('my.packer', 'init-packages')
-  command! -nargs=1 -complete=customlist,v:lua.require'packer'.plugin_complete PackerOpen     lua _T('my.packer', 'open-dir', <f-args>)
+  command! -nargs=+ -complete=customlist,v:lua.require'packer'.plugin_complete PackerOpen     lua _T('my.packer', 'open-dir', {<f-args>}, <q-mods>)
   command! -nargs=* -complete=customlist,v:lua.require'packer'.plugin_complete PackerInstall  lua require('my.packer').install(<f-args>)
   command! -nargs=* -complete=customlist,v:lua.require'packer'.plugin_complete PackerUpdate   lua require('my.packer').update(<f-args>)
   command! -nargs=* -complete=customlist,v:lua.require'packer'.plugin_complete PackerSync     lua require('my.packer').sync(<f-args>)
