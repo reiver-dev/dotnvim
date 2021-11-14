@@ -42,6 +42,10 @@
   (tset package-hooks name hook))
 
 
+(defn hook [name hook]
+  (tset package-hooks name hook))
+
+
 (defn- package-hook-execute [packer]
   (each [name hook (pairs package-hooks)]
     (hook (make-packer-module packer))))
