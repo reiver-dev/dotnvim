@@ -64,29 +64,29 @@
 
 (fn iter-string [state idx]
   (when (not= idx (length state))
-    (local idx (+ idx 1))
-    (let [char (string-sub state idx idx)]
+    (let [idx (+ idx 1)
+          char (string-sub state idx idx)]
       (values idx char))))
 
 
 (fn iter-rev-string [state idx]
-  (when (not= 0 idx)
-    (local idx (- idx 1))
-    (let [char (string-sub state idx idx)]
+  (when (not= 1 idx)
+    (let [idx (- idx 1)
+          char (string-sub state idx idx)]
       (values idx char))))
 
 
 (fn iter-bytes [state idx]
   (when (not= idx (length state))
-    (local idx (+ idx 1))
-    (let [val (string-byte state idx)]
+    (let [idx (+ idx 1)
+          val (string-byte state idx)]
       (values idx val))))
 
 
 (fn iter-rev-bytes [state idx]
-  (when (not= 0 idx)
-    (local idx (- idx 1))
-    (let [val (string-byte state idx)]
+  (when (not= 1 idx)
+    (let [idx (- idx 1)
+          val (string-byte state idx)]
       (values idx val))))
 
 
