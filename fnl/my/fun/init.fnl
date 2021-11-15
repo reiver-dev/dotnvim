@@ -17,6 +17,7 @@
 (local string-sub string.sub)
 (local string-byte string.byte)
 (local string-find string.find)
+(local bit-and bit.band)
 
 
 (fn empty [state idx])
@@ -811,41 +812,87 @@
 (set exports.str-split-pattern (fn [text sep] (new (string-split-pattern text sep))))
 
 
+(fn utf8-forward-step [val]
+  (if
+    (= (bit-and val 0x80) 0x00) 0
+    (= (bit-and val 0xe0) 0xc0) 1
+    (= (bit-and val 0xf0) 0xe0) 2
+    (= (bit-and val 0xf8) 0xf0) 3
+    (= (bit-and val 0xfc) 0xf8) 4
+    (= (bit-and val 0xfe) 0xfc) 5
+    0))
+
+
+(fn utf8-forward [str at]
+  (values at (+ at (utf8-forward-step (string-byte str at)))))
+
+
+(fn utf8-backward [str at]
+  (if (= (bit-and (string-byte str at) 0x80) 0x00) (values at at)
+    (do
+      (var nidx (- at 1))
+      (while (and (not= nidx 1)
+                  (= (bit-and (string-byte str nidx) 0xc0) 0x80))
+        (set nidx (- nidx 1)))
+      (values nidx at))))
+
+
 (fn iter-utf8-pos [state idx]
-  (local idx (+ 1 idx))
-  (when (not= nil (. state 1 (+ idx 1)))
-    (values idx (string-sub (. state 2)
-                            (. state 1 idx)
-                            (- (. state 1 (+ idx 1)) 1)))))
-
-
-(fn utf8 [text]
-  (local len (length text))
-  (local pos (vim.str_utf_pos text))
-  (tset pos (+ 1 (length pos)) (+ len 1))
-  (values iter-utf8-pos [pos text] 0))
-
+  (when (< idx (length state))
+    (local (fr to) (utf8-forward state (+ idx 1)))
+    (values to fr to)))
 
 
 (fn iter-utf8-pos-reversed [state idx]
-  (local nidx (- idx 1))
-  (when (not= 0 nidx)
-    (values nidx (string-sub (. state 2)
-                             (. state 1 nidx)
-                             (- (. state 1 idx) 1)))))
+  (when (< 1 idx)
+    (local (fr to) (utf8-backward state (- idx 1)))
+    (values fr fr to)))
+
+
+(fn iter-utf8 [state idx]
+  (when (< idx (length state))
+    (local (fr to) (utf8-forward state (+ idx 1)))
+    (values to (string-sub state fr to))))
+
+
+(fn iter-utf8-reversed [state idx]
+  (when (< 1 idx)
+    (local (fr to) (utf8-backward state (- idx 1)))
+    (values fr (string-sub state fr to))))
+
+
+(fn utf8-pos [text]
+  (if (< 0 (length text))
+    (values iter-utf8-pos text 0)
+    (values empty "" 0)))
+
+
+(fn rutf8-pos [text]
+  (if (< 0 (length text))
+    (values iter-utf8-pos-reversed text (+ (length text) 1))
+    (values empty "" 0)))
+
+
+(fn utf8 [text]
+  (if (< 0 (length text))
+    (values iter-utf8 text 0)
+    (values empty "" 0)))
 
 
 (fn rutf8 [text]
-  (local len (length text))
-  (local pos (vim.str_utf_pos text))
-  (tset pos (+ 1 (length pos)) (+ len 1))
-  (if (= len 0)
-    (values empty nil nil)
-    (values iter-utf8-pos-reversed [pos text] (length pos))))
+  (if (< 0 (length text))
+    (values iter-utf8-reversed text (+ (length text) 1))
+    (values empty "" 0)))
 
+
+(set raw.utf8-pos utf8-pos)
+(set raw.rutf8-pos rutf8-pos)
 
 (set raw.utf8 utf8)
 (set raw.rutf8 rutf8)
+
+(set exports.utf8-pos (fn [text] (new (utf8-pos text))))
+(set exports.rutf8-pos (fn [text] (new (rutf8-pos text))))
 
 (set exports.utf8 (fn [text] (new (utf8 text))))
 (set exports.rutf8 (fn [text] (new (rutf8 text))))
