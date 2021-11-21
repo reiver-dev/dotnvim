@@ -11,6 +11,7 @@
 (local raw {})
 
 (tset exports :raw raw)
+(tset exports :iter raw)
 
 (local iter-ipairs (ipairs []))
 (local iter-pairs (pairs {}))
@@ -114,11 +115,11 @@
   (values iter-rpairs tbl (+ (length tbl) 1)))
 
 
-(fn new-pairs [tbl]
+(fn new-ipairs [tbl]
   (values iter-ipairs tbl 0))
 
 
-(fn new-ipairs [tbl]
+(fn new-pairs [tbl]
   (values iter-pairs tbl nil))
 
 
@@ -165,7 +166,7 @@
 (set exports.pairs (fn [tbl] (new (new-pairs tbl))))
 
 (set exports.new new)
-(set exports.iter make-iter)
+(set exports.go make-iter)
 
 (set exports.empty (fn [] (new empty nil nil)))
 
@@ -738,23 +739,23 @@
   (iter-zip-1 (. state 1) (. state 2) [] idx state))
 
 
-(fn zip-1 [iterfun count nidx nstate dest-state dest-idx iterator ...]
+(fn zip-1 [count nidx nstate dest-state dest-idx iterator ...]
   (if (<= nidx count)
     (if (not= nil iterator)
       (do
         (tset dest-state nstate (v1 iterator))
         (tset dest-state (+ nstate 1) (v2 iterator))
         (tset dest-idx nidx (v3 iterator))
-        (zip-1 iterfun count (+ nidx 1) (+ nstate 2) dest-state dest-idx ...))
+        (zip-1 count (+ nidx 1) (+ nstate 2) dest-state dest-idx ...))
       (error (string.format "Iterator is nil, pos: %d" nidx)))
     (do
       (tset dest-state 1 count)
       (tset dest-state 2 (+ 1 (* count 2)))
-      (values iterfun dest-state (when (length dest-idx) dest-idx)))))
+      (values iter-zip dest-state (when (length dest-idx) dest-idx)))))
 
 
 (fn zip [...]
-  (zip-1 iter-zip (select :# ...) 1 3 [0 0] [] ...))
+  (zip-1 (select :# ...) 1 3 [0 0] [] ...))
 
 
 (do
@@ -769,6 +770,61 @@
      (new (zip self ...)))
 
   (set methods.zip method-zip))
+
+;;; Chain
+
+(var iter-chain-1 nil)
+(var iter-chain-2 nil)
+
+(set iter-chain-2
+     (fn [state state-pos idx]
+       (iter-chain-1 state
+                     state-pos
+                     ((. state (- (* state-pos 3) 2))
+                      (. state (- (* state-pos 3) 1))
+                      idx))))
+
+
+(set iter-chain-1
+     (fn [state state-pos nidx ...]
+       (if (= nidx nil)
+         (when (not= nil (. state (+ (* state-pos 3) 1)))
+           (iter-chain-2
+             state
+             (+ state-pos 1)
+             (. state (* (+ state-pos 1) 3))))
+         (values [state-pos nidx] ...))))
+
+
+(fn iter-chain [state idx]
+  (iter-chain-1 state
+                (. idx 1)
+                ((. state (- (* (. idx 1) 3) 2))
+                 (. state (- (* (. idx 1) 3) 1))
+                 (. idx 2))))
+
+
+(fn chain-1 [state num-iterators i iterator ...]
+  (if (> i num-iterators)
+    (values iter-chain state [1 (. state 3)])
+    (do
+      (tset state (- (* 3 i) 2) (. iterator 1))
+      (tset state (- (* 3 i) 1) (. iterator 2))
+      (tset state (- (* 3 i) 0) (. iterator 3))
+      (chain-1 state num-iterators (+ i 1) ...))))
+
+
+(fn chain [...]
+  (local i (select :# ...))
+  (if
+    (= i 0) (values empty nil nil)
+    (= i 1) (let [it ...] (values (. it 1) (. it 2) (. it 3)))
+    (chain-1 [] i 1 ...)))
+
+
+(set raw.chain chain)
+(fn exports.chain [...] (new (chain ...)))
+(fn methods.chain [...] (new (chain ...)))
 
 
 ;;; String
@@ -896,6 +952,51 @@
 
 (set exports.utf8 (fn [text] (new (utf8 text))))
 (set exports.rutf8 (fn [text] (new (rutf8 text))))
+
+;;; Vararg
+
+(fn vfold-1 [fun i acc val ...]
+  (if (= i 1)
+    (fun acc val)
+    (vfold-1 fun (- i 1) (fun acc val) ...)))
+
+
+(fn vfold [fun acc ...]
+  (local i (select :# ...))
+  (if
+    (= i 0) acc
+    (= i 1) (let [val ...] (fun acc val))
+    (vfold-1 fun i acc ...)))
+
+
+(fn vreduce [fun ...]
+  (local i (select :# ...))
+  (if (<= i 1) ...
+    (vfold-1 fun (- i 1) ...)))
+
+
+(fn vforeach-1 [fun i val ...]
+  (if (= i 1)
+    (fun val)
+    (do
+      (fun val)
+      (vforeach-1 fun (- i 1) ...))))
+
+
+(fn vforeach [fun ...]
+  (local i (select :# ...))
+  (if
+    (= i 0) nil
+    (= i 1) (let [val ...] (fun val))
+    (vforeach-1 fun i ...)))
+
+
+(set raw.vfold vfold)
+(set raw.vreduce vreduce)
+(set raw.vforeach vforeach)
+(set exports.vfold vfold)
+(set exports.vreduce vreduce)
+(set exports.vforeach vforeach)
 
 
 exports
