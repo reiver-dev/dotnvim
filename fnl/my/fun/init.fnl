@@ -849,13 +849,13 @@
       (values len (string-sub (. state 1) idx len)))))
 
 
-(fn string-split [text sep]
+(fn string-split [sep text]
   (if (or (= "" text) (= "" sep))
     (values empty nil nil)
     (values iter-string-split-plain [text sep] 0)))
 
 
-(fn string-split-pattern [text sep]
+(fn string-split-pattern [sep text]
   (if (or (= "" text) (= "" sep))
     (values empty nil nil)
     (values iter-string-split-pattern [text sep] 0)))
@@ -864,8 +864,8 @@
 (set raw.str-split string-split)
 (set raw.str-split-pattern string-split-pattern)
 
-(set exports.str-split (fn [text sep] (new (string-split text sep))))
-(set exports.str-split-pattern (fn [text sep] (new (string-split-pattern text sep))))
+(set exports.str-split (fn [sep text] (new (string-split sep text))))
+(set exports.str-split-pattern (fn [sep text] (new (string-split-pattern sep text))))
 
 
 (fn utf8-forward-step [val]
