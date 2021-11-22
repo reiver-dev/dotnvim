@@ -955,24 +955,23 @@
 
 ;;; Vararg
 
-(fn vfold-1 [fun i acc val ...]
+(fn vfoldl-1 [i fun acc val ...]
   (if (= i 1)
     (fun acc val)
-    (vfold-1 fun (- i 1) (fun acc val) ...)))
+    (vfoldl-1 (- i 1) fun (fun acc val) ...)))
 
 
-(fn vfold [fun acc ...]
+(fn vfoldl [fun acc ...]
   (local i (select :# ...))
-  (if
-    (= i 0) acc
-    (= i 1) (let [val ...] (fun acc val))
-    (vfold-1 fun i acc ...)))
+  (if (= i 0) acc (vfoldl-1 i fun acc ...)))
 
 
-(fn vreduce [fun ...]
-  (local i (select :# ...))
-  (if (<= i 1) ...
-    (vfold-1 fun (- i 1) ...)))
+(fn vfoldr-1 [i fun val ...]
+  (if (= i 0) val (fun val (vfoldr-1 (- i 1) fun ...))))
+
+
+(fn vfoldr [fun val ...]
+  (vfoldr-1 (select :# ...) fun val ...))
 
 
 (fn vforeach-1 [fun i val ...]
@@ -991,11 +990,11 @@
     (vforeach-1 fun i ...)))
 
 
-(set raw.vfold vfold)
-(set raw.vreduce vreduce)
+(set raw.vfoldl vfoldl)
+(set raw.vfoldr vfoldr)
 (set raw.vforeach vforeach)
-(set exports.vfold vfold)
-(set exports.vreduce vreduce)
+(set exports.vfoldl vfoldl)
+(set exports.vfoldr vfoldr)
 (set exports.vforeach vforeach)
 
 
