@@ -15,6 +15,8 @@
            :<C-c> actions.close}}
       :prompt_prefix "❯ "
       :selection_caret " "
+      :sorting_strategy :ascending
+      :results_title false
       :layout_config {:prompt_position :top}
       :borderchars border}})
   (vim.cmd "highlight TelescopeBorder guifg=Grey37")
