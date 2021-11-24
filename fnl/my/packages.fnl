@@ -50,6 +50,17 @@
        :opt true
        :after ["conjure" "cmp"])
 
+  (pkg :name "luasnip"
+       :url "L3MON4D3/LuaSnip"
+       :after ["cmp"]
+       :opt true
+       :config (fn [] (_T :my.pack.luasnip :setup)))
+
+  (pkg :name "cmp-luasnip"
+       :url "saadparwaiz1/cmp_luasnip"
+       :after ["cmp"]
+       :opt true)
+
   ;; end
 
   (pkg :name "fix-cursor-hold"

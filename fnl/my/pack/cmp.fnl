@@ -6,6 +6,7 @@
 (def- sources
   [{:name :nvim_lsp}
    {:name :nvim_lua}
+   {:name :luasnip}
    {:name :conjure}
    {:name :path}
    {:name :buffer}])
@@ -72,6 +73,10 @@
     r))
 
 
+(defn- expand-snippet [param]
+  (_T :luasnip :lsp_expand param.body))
+
+
 (defn setup []
   (cmp.setup {:mapping mapping
               :formatting {:format (lspkind.cmp_format
@@ -79,6 +84,7 @@
                                       :maxwidth 50
                                       :menu source-mapping})}
               :documentation {:border border}
+              :snippet {:expand expand-snippet}
               :experimental {:native_menu false
                              :ghost_text true}
               :sources sources}))
