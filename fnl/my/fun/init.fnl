@@ -956,46 +956,136 @@
 ;;; Vararg
 
 (fn vfoldl-1 [i fun acc val ...]
-  (if (= i 1)
+  (if (= i 0)
     (fun acc val)
     (vfoldl-1 (- i 1) fun (fun acc val) ...)))
 
 
 (fn vfoldl [fun acc ...]
   (local i (select :# ...))
-  (if (= i 0) acc (vfoldl-1 i fun acc ...)))
+  (if (= i 0)
+    acc
+    (vfoldl-1 (- i 1) fun acc ...)))
 
 
 (fn vfoldr-1 [i fun val ...]
-  (if (= i 0) val (fun val (vfoldr-1 (- i 1) fun ...))))
+  (if (= i 0)
+    val
+    (fun val (vfoldr-1 (- i 1) fun ...))))
 
 
 (fn vfoldr [fun val ...]
   (vfoldr-1 (select :# ...) fun val ...))
 
 
-(fn vforeach-1 [fun i val ...]
-  (if (= i 1)
+(fn vforeach-1 [i fun val ...]
+  (if (= i 0)
     (fun val)
     (do
       (fun val)
-      (vforeach-1 fun (- i 1) ...))))
+      (vforeach-1 (- i 1) fun ...))))
 
 
 (fn vforeach [fun ...]
   (local i (select :# ...))
+  (if (= i 0) nil
+    (vforeach-1 (- i 0) fun ...)))
+
+
+(fn vall-1 [i fun val ...]
+  (if (= i 1)
+    (fun val)
+    (if (fun val) (vall-1 (- i 1) fun ...)
+      false)))
+
+
+(fn vany-1 [i fun val ...]
+  (if (= i 1)
+    (fun val)
+    (if (fun val) true
+      (vany-1 (- i 1) fun ...))))
+
+
+(fn vall [fun ...]
+  (local i (select :# ...))
   (if
-    (= i 0) nil
+    (= i 0) false
     (= i 1) (let [val ...] (fun val))
-    (vforeach-1 fun i ...)))
+    (vall-1 i fun ...)))
+
+
+(fn vany [fun ...]
+  (local i (select :# ...))
+  (if
+    (= i 0) false
+    (= i 1) (let [val ...] (fun val))
+    (vany-1 i fun ...)))
+
+
+(fn vefoldl-1 [i n fun acc val ...]
+  (if (= i 0)
+    (fun acc n val)
+    (vefoldl-1 (- i 1) (+ n 1) fun (fun acc n val) ...)))
+
+
+(fn vefoldl [fun acc ...]
+  (local i (select :# ...))
+  (if (= i 0)
+    acc
+    (vefoldl-1 (- i 1) 1 fun acc ...)))
+
+
+(fn vpfoldl-1 [i fun acc val ...]
+  (if (= i 0)
+    (fun acc val)
+    (let [(cont acc) (fun acc val)]
+      (if cont (vpfoldl-1 (- i 1) acc ...)
+        (values false acc)))))
+
+
+(fn vpfoldl [fun acc ...]
+  (local i (select :# ...))
+  (if (= i 0)
+    (values false acc)
+    (vpfoldl-1 (- i 1) 1 fun ...)))
+
+
+(fn vpefoldl-1 [i n fun acc val ...]
+  (if (= i 0)
+    (fun acc n val)
+    (let [(cont acc) (fun acc n val)]
+      (if cont (vpfoldl-1 (- i 1) (+ n 1) fun acc ...)
+        (values false acc)))))
+
+
+(fn vpefoldl [fun acc ...]
+  (local i (select :# ...))
+  (if (= i 0)
+    (values false acc)
+    (vpefoldl-1 (- i 1) 1 fun acc ...)))
 
 
 (set raw.vfoldl vfoldl)
+(set raw.vefoldl vefoldl)
+(set raw.vpfoldl vpfoldl)
+(set raw.vpefoldl vpefoldl)
+
 (set raw.vfoldr vfoldr)
 (set raw.vforeach vforeach)
+
+(set raw.vany vany)
+(set raw.vall vall)
+
 (set exports.vfoldl vfoldl)
+(set exports.vefoldl vefoldl)
+(set exports.vpfoldl vpfoldl)
+(set exports.vpefoldl vpefoldl)
+
 (set exports.vfoldr vfoldr)
 (set exports.vforeach vforeach)
+
+(set exports.vany vany)
+(set exports.vall vall)
 
 
 exports
