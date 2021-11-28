@@ -24,6 +24,7 @@ function M.setup()
     require("bootstrap.trampouline").setup()
     require("bootstrap.reload").setup()
     require("bootstrap.gui").setup()
+    require("bootstrap.eval").setup()
     require("my").setup()
 
 end
