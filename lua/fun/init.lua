@@ -1,4 +1,5 @@
 local _iter = require "fun.iter"
+local _string = require "fun.str"
 local _wrap = require "fun.wrap"
 local _op = require "fun.op"
 local _vararg = require "fun.vararg"
@@ -41,4 +42,5 @@ return {
     compose = _vararg.compose,
 
     raw = _iter,
+    rawstring = _string,
 }

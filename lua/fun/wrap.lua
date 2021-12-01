@@ -28,11 +28,16 @@ local raw_iter = require "fun.iter"
 local raw_str = require "fun.str"
 local raw_range = require "fun.range"
 
-local utf8 = raw_str.utf8
+local _utf8 = raw_str.utf8
+local _stateful = raw_iter.stateful
 
 local function unwrap(it, state, idx)
     if type(it) == "function" then
-        return it, state, idx
+        if state ~= nil then
+            return it, state, idx
+        else
+            return _stateful(it)
+        end
     elseif type(it) == "table" then
         if iterator_mt == getmetatable(it) then
             return it[1], it[2], it[3]
@@ -42,7 +47,25 @@ local function unwrap(it, state, idx)
             return ipairs(it)
         end
     elseif type(it) == "string" then
-        return {utf8(it)}
+        return _utf8(it)
+    end
+    return error("Unsupported iterator type: " .. type(it))
+end
+
+
+local function unwrap_one(it)
+    if type(it) == "function" then
+        return _stateful(it)
+    elseif type(it) == "table" then
+        if iterator_mt == getmetatable(it) then
+            return it[1], it[2], it[3]
+        elseif it[1] == nil then
+            return pairs(it)
+        else
+            return ipairs(it)
+        end
+    elseif type(it) == "string" then
+        return _utf8(it)
     end
     return error("Unsupported iterator type: " .. type(it))
 end
@@ -50,7 +73,11 @@ end
 
 local function wrap(it, state, idx)
     if type(it) == "function" then
-        return {it, state, idx}
+        if state ~= nil then
+            return {it, state, idx}
+        else
+            return {_stateful(it)}
+        end
     elseif type(it) == "table" then
         if iterator_mt == getmetatable(it) then
             return it
@@ -60,7 +87,7 @@ local function wrap(it, state, idx)
             return {ipairs(it)}
         end
     elseif type(it) == "string" then
-        return {utf8(it)}
+        return {_utf8(it)}
     end
     return error("Unsupported iterator type: " .. type(it))
 end
@@ -180,6 +207,7 @@ local _always = raw_iter.always
 local _never = raw_iter.never
 local _ntimes = raw_iter.ntimes
 local _enumerate = raw_iter.enumerate
+local _flatmap = raw_iter.flatmap
 local _chain = raw_iter.chain
 local _zip = raw_iter.zip
 
@@ -528,6 +556,23 @@ end
 function cls:extract(tbl)
     return new(_extract(tbl, self[1], self[2], self[3]))
 end
+
+
+local function _flatmap_adapter(fn)
+    if fn == nil then return unwrap_one end
+    return function(val) return unwrap_one(fn(val)) end
+end
+
+
+function cls:flatmap(fn)
+    return new(_flatmap(_flatmap_adapter(fn), self[1], self[2], self[3]))
+end
+
+
+function cls:flatten()
+    return new(_flatmap(unwrap_one, self[1], self[2], self[3]))
+end
+
 
 --#endregion
 

@@ -571,24 +571,25 @@ end
 
 --#region Stateful
 
-local function iter_stateful_nested(...)
-    if select("#", ...) == nil then
+local function iter_stateful_nested(idx, ...)
+    if select("#", ...) == 0 then
         return nil
     end
-    return true, ...
+    return idx + 1, ...
 end
 
 
-local function iter_stateful(state)
-    iter_stateful_nested(state())
+local function iter_stateful(state, idx)
+    iter_stateful_nested(idx, state())
 end
 
 --- @generic VAL
 --- @param iter fun():VAL
---- @return fun(state: fun():VAL):VAL,VAL
+--- @return fun(state: function, idx: integer):integer,VAL
 --- @return fun():VAL
+--- @return integer index
 local function stateful(iter)
-    return iter_stateful, iter
+    return iter_stateful, iter, 0
 end
 
 --#endregion
@@ -819,40 +820,40 @@ end
 --#region Flatten
 
 
-local iter_flatten_next_val
+local iter_flatmap_next_val
 
 
-local function iter_flatten_next_state(state, idx, ...)
+local function iter_flatmap_next_state(state, idx, ...)
     if idx == nil then
         return nil
     end
     local niter, nstate, nidx = state[1](...)
-    return iter_flatten_next_val(state, idx, niter, nstate, niter(nstate, nidx))
+    return iter_flatmap_next_val(state, idx, niter, nstate, niter(nstate, nidx))
 end
 
 
-local function iter_flatten_next_val(state, state_idx, niter, nstate, idx, ...)
+iter_flatmap_next_val = function(state, state_idx, niter, nstate, idx, ...)
     if idx == nil then
-        return iter_flatten_next_state(state, state[2](state[3], state_idx))
+        return iter_flatmap_next_state(state, state[2](state[3], state_idx))
     end
     return {state_idx, niter, nstate, idx}, ...
 end
 
 
-local function iter_flatten(state, idx)
-    return iter_flatten_next_val(state, idx[1], idx[2], idx[3], idx[2](idx[3], idx[4]))
+local function iter_flatmap(state, idx)
+    return iter_flatmap_next_val(state, idx[1], idx[2], idx[3], idx[2](idx[3], idx[4]))
 end
 
 
-local function flatten_init(fn, iter, state, idx, ...)
+local function flatmap_init(fn, iter, state, idx, ...)
     if idx == nil then return empty end
     local niter, nstate, nidx = fn(...)
-    return iter_flatten, {fn, iter, state}, {idx, niter, nstate, nidx}
+    return iter_flatmap, {fn, iter, state}, {idx, niter, nstate, nidx}
 end
 
 
-local function flatten(fn, iter, state, idx)
-    return flatten_init(fn, iter, state, iter(state, idx))
+local function flatmap(fn, iter, state, idx)
+    return flatmap_init(fn, iter, state, iter(state, idx))
 end
 
 
@@ -948,6 +949,6 @@ return {
     ntimes = ntimes,
     enumerate = enumerate,
     chain = chain,
-    flatten = flatten,
+    flatmap = flatmap,
     zip = zip,
 }
