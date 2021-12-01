@@ -31,12 +31,12 @@ local function iter_map_kv(state, idx)
   return iter_map_kv_1(state, state[2](state[3], idx))
 end
 
---- @generic S, I, V, R, NS
---- @param mapper fun(val: V): R
---- @param iter fun(state: S, idx: I): I, V
---- @param state S
---- @param idx I
---- @return fun(state: NS, idx: I): I, R
+--- @generic STATE, IDX, A, B, NS
+--- @param mapper fun(val: A): B
+--- @param iter fun(state: STATE, idx: IDX): IDX, A
+--- @param state STATE
+--- @param idx IDX
+--- @return fun(state: NS, idx: IDX): IDX, B
 local function map(mapper, iter, state, idx)
   return iter_map, {mapper, iter, state}, idx
 end
@@ -90,7 +90,10 @@ end
 --#region Reduce
 
 local function fold_call(fn, acc, idx, ...)
-    return idx, idx == nil and fn(acc, ...) or acc
+    if idx ~= nil then
+        acc = fn(acc, ...)
+    end
+    return idx, acc
 end
 
 
@@ -103,7 +106,7 @@ end
 local function fold(fn, acc, iter, state, idx)
     repeat
         idx, acc = fold_call(fn, acc, iter(state, idx))
-    until nil ~= idx
+    until nil == idx
     return acc
 end
 
@@ -145,7 +148,7 @@ end
 local function each(fn, iter, state, idx)
     repeat
         idx = apply_next(fn, iter(state, idx))
-    until idx ~= nil
+    until idx == nil
 end
 
 
@@ -156,7 +159,7 @@ end
 local function each_kv(fn, iter, state, idx)
     repeat
         idx = apply_next_kv(fn, iter(state, idx))
-    until idx ~= nil
+    until idx == nil
 end
 
 --#endregion
@@ -165,8 +168,10 @@ end
 
 local function boolean_call(fn, idx, ...)
     if idx ~= nil then
-        return idx, fn(...)
+        local res = fn(...)
+        return idx, res
     end
+    return nil, false
 end
 
 
@@ -179,7 +184,7 @@ local function any(fn, iter, state, idx)
     local cond
     repeat
         idx, cond = boolean_call(fn, iter(state, idx))
-    until idx ~= nil and not cond
+    until idx == nil and cond
     return cond
 end
 
@@ -193,7 +198,7 @@ local function all(fn, iter, state, idx)
     local cond
     repeat
         idx, cond = boolean_call(fn, iter(state, idx))
-    until idx == nil and cond
+    until idx == nil and not cond
     return cond
 end
 
@@ -490,6 +495,35 @@ local function ntimes(n, value)
   end
 end
 
+
+local _inext = ipairs({})
+local _next = pairs({})
+
+
+local function this_pairs(tbl)
+    return _next, tbl, nil
+end
+
+
+local function this_ipairs(tbl)
+    return _inext, tbl, nil
+end
+
+
+local function iter_rpairs(state, idx)
+    idx = idx - 1
+    if idx ~= 0 then
+        return idx, state[idx]
+    end
+    return nil
+end
+
+
+local function rpairs(tbl)
+    return iter_rpairs, tbl, #tbl + 1
+end
+
+
 --#endregion
 
 
@@ -531,6 +565,30 @@ end
 
 local function kv(iter, state, idx)
     return iter_kv, {iter, state}, idx
+end
+
+--#endregion
+
+--#region Stateful
+
+local function iter_stateful_nested(...)
+    if select("#", ...) == nil then
+        return nil
+    end
+    return true, ...
+end
+
+
+local function iter_stateful(state)
+    iter_stateful_nested(state())
+end
+
+--- @generic VAL
+--- @param iter fun():VAL
+--- @return fun(state: fun():VAL):VAL,VAL
+--- @return fun():VAL
+local function stateful(iter)
+    return iter_stateful, iter
 end
 
 --#endregion
@@ -757,6 +815,49 @@ end
 
 --#endregion
 
+
+--#region Flatten
+
+
+local iter_flatten_next_val
+
+
+local function iter_flatten_next_state(state, idx, ...)
+    if idx == nil then
+        return nil
+    end
+    local niter, nstate, nidx = state[1](...)
+    return iter_flatten_next_val(state, idx, niter, nstate, niter(nstate, nidx))
+end
+
+
+local function iter_flatten_next_val(state, state_idx, niter, nstate, idx, ...)
+    if idx == nil then
+        return iter_flatten_next_state(state, state[2](state[3], state_idx))
+    end
+    return {state_idx, niter, nstate, idx}, ...
+end
+
+
+local function iter_flatten(state, idx)
+    return iter_flatten_next_val(state, idx[1], idx[2], idx[3], idx[2](idx[3], idx[4]))
+end
+
+
+local function flatten_init(fn, iter, state, idx, ...)
+    if idx == nil then return empty end
+    local niter, nstate, nidx = fn(...)
+    return iter_flatten, {fn, iter, state}, {idx, niter, nstate, nidx}
+end
+
+
+local function flatten(fn, iter, state, idx)
+    return flatten_init(fn, iter, state, iter(state, idx))
+end
+
+
+--#endregion
+
 --#region Zip
 
 local function nested_iter_zip(i, state_pos, nidx, pidx, state, ...)
@@ -777,6 +878,7 @@ local function iter_zip(state, idx)
   return nested_iter_zip(state[1], state[2], {}, idx, state)
 end
 
+
 local function zip_prepare(count, nidx, dest_state, dest_idx, iterator, ...)
   if (nidx <= count) then
     if (nil ~= iterator) then
@@ -793,6 +895,7 @@ local function zip_prepare(count, nidx, dest_state, dest_idx, iterator, ...)
     return iter_zip, dest_state, (#dest_idx and dest_idx)
   end
 end
+
 
 local function zip(...)
   return zip_prepare(select("#", ...), 1, {0, 0}, {}, ...)
@@ -824,6 +927,10 @@ return {
     take_while = take_while,
     take_while_kv = take_while_kv,
     kv = kv,
+    pairs = pairs,
+    ipairs = ipairs,
+    rpairs = rpairs,
+    stateful = stateful,
     find = find,
     find_kv = find_kv,
     extract = extract,
@@ -841,5 +948,6 @@ return {
     ntimes = ntimes,
     enumerate = enumerate,
     chain = chain,
+    flatten = flatten,
     zip = zip,
 }
