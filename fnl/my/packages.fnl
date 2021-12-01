@@ -17,6 +17,9 @@
        :ft ["fennel"]
        :opt true)
 
+  (pkg :name :lua-dev.nvim
+       :url "folke/lua-dev.nvim")
+
   ;; completion with nvim-cmp
   (pkg :name "cmp"
        :url "hrsh7th/nvim-cmp"
