@@ -181,8 +181,8 @@ end
 function M.setup()
     M.ensure_modules()
     -- M.compile()
-    table.insert(package.loaders, 2, module_searcher)
-    table.insert(package.loaders, 1, expedite_cached_searcher)
+    table.insert(package.loaders, 3, module_searcher)
+    table.insert(package.loaders, 2, expedite_cached_searcher)
     M.init()
 end
 
