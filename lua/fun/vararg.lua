@@ -6,6 +6,14 @@ local string_format = string.format
 local string_rep = string.rep
 local table_concat = table.concat
 local table_move = table.move
+local loadstring,tostring,error,select = loadstring,tostring,error,select
+local setmetatable = setmetatable
+local unpack = _G.unpack or table.unpack
+
+local band = bit.band
+local bor = bit.bor
+local brshift = bit.rshift
+local blshift = bit.lshift
 
 
 --- @generic V
@@ -269,12 +277,6 @@ local partial_cache = setmetatable({
         return f
     end
 })
-
-
-local band = bit.band
-local bor = bit.bor
-local brshift = bit.rshift
-local blshift = bit.lshift
 
 
 local function partial_n_arg_pack(outer, inner)
