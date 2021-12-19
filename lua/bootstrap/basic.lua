@@ -6,11 +6,10 @@ local M = {}
 local is_win = vim.fn.has("win32") == 1
 
 
-local function fserror(fname, err)
-    return error(string.format("At file `%s`: %s", fname, err), 1)
-end
-
-
+--- Read file contents entrely as text
+--- @param path string
+--- @return string
+--- @nodiscard
 function M.slurp(path)
     local stream = assert(io.open(path, "r"))
     local ok, result = pcall(stream.read, stream, "*all")
@@ -21,7 +20,9 @@ function M.slurp(path)
     return result
 end
 
-
+--- Write text to file, create parent directory
+--- @param path string
+--- @param data string
 function M.spew(path, data)
     local stream, err, errno = io.open(path, "wb")
 
@@ -41,77 +42,82 @@ function M.spew(path, data)
     if not ok then
         error(result)
     end
-
-    return result
 end
 
 
-local function chdir_command()
-    if vim.fn.haslocaldir() == 1 then
-        return "lcd"
-    elseif vim.fn.haslocaldir(-1, 0) == 1 then
-        return "tcd"
-    else
-        return "cd"
-    end
-end
-
-
-function M.rmdir(path)
-    local stat = vim.loop.fs_stat(path)
-    if stat and stat.type == "directory" then
-        if is_win then
+--- Remove directory using shell command
+--- @param path string
+--- @see os.execute
+local rmdir
+if is_win then
+    rmdir = function(path)
+        local stat = vim.loop.fs_stat(path)
+        if stat and stat.type == "directory" then
             local p = string.gsub(path, "/", "\\")
-            p = vim.fn.fnameescape(p)
-            os.execute("rmdir /S /Q " .. p)
+            os.execute("rmdir /S /Q " .. vim.fn.fnameescape(p))
+        end
+    end
+else
+    rmdir = function(path)
+        local stat = vim.loop.fs_stat(path)
+        if stat and stat.type == "directory" then
+            os.execute("rm -rf " .. vim.fn.fnameescape(path))
+        end
+    end
+end
+M.rmdir = rmdir
+
+
+--- Make directory with parents using shell command
+--- @param path string
+local mkdir
+if is_win then
+    mkdir = function(path)
+        local stat = vim.loop.fs_stat(path)
+        if stat ~= nil then
+            if stat.type ~= "directory" then
+                error("Path is not directory: " .. path)
+            end
         else
-            local p = vim.fn.fnameescape(path)
-            os.execute("rm -rf " .. p)
+            vim.fn.mkdir(string.gsub(path, "/", "\\"), "p", 448)
+        end
+    end
+else
+    mkdir = function(path)
+        local stat = vim.loop.fs_stat(path)
+        if stat ~= nil then
+            if stat.type ~= "directory" then
+                error("Path is not directory: " .. path)
+            end
+        else
+            vim.fn.mkdir(path, "p", 448)
         end
     end
 end
+M.mkdir = mkdir
 
 
-function M.mkdir(path)
-    local stat, err, code = vim.loop.fs_stat(path)
-    if stat ~= nil then
-        if stat.type ~= "directory" then
-            error("Path is not directory: " .. path)
-        end
-    elseif is_win then
-        vim.fn.mkdir(string.gsub(path, "/", "\\"), "p", 448)
-    else
-        vim.fn.mkdir(path, "p", 448)
-    end
-end
-
-
-function M.with_dir(dir, func)
-    local chdir = chdir_command()
-    local cwd = vim.fn.getcwd()
-    local t = "silent %s %s"
-    vim.cmd(t:format(chdir, vim.fn.fnameescape(dir)))
-    local ok, res = xpcall(func, debug.traceback)
-    vim.cmd(t:format(chdir, vim.fn.fnameescape(cwd)))
-    if not ok then
-        error(res)
-    end
-    return res
-end
-
-
+--- Check if path is directory
+--- @param path string
+--- @return boolean
+--- @nodiscard
 function M.is_dir(path)
     local stat = vim.loop.fs_stat(path)
     return stat and stat.mode and bit.band(stat.mode, 0x4000) ~= 0
 end
 
 
+--- Find one of paths in runtime
+--- @param paths string[]
+--- @return string|nil
+--- @nodiscard
+local runtime
 if vim.api.nvim__get_runtime then
-    function M.runtime(paths)
+    runtime = function(paths)
         return vim.api.nvim__get_runtime(paths, false, {is_lua = false})[1]
     end
 else
-    function M.runtime(paths)
+    runtime = function(paths)
         local get = vim.api.nvim_get_runtime_file
         for _, p in ipairs(paths) do
             local found = get(p, false)[1]
@@ -122,6 +128,7 @@ else
 	return nil
     end
 end
+M.runtime = runtime
 
 
 return M

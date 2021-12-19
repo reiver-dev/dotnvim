@@ -20,7 +20,7 @@
   (if (or (and (> step 0) (< start stop))
           (and (< step 0) (< stop start)))
     (ceil (/ (abs (- stop start))
-              (abs step)))
+             (abs step)))
     0))
 
 

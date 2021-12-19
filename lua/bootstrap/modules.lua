@@ -55,7 +55,7 @@ end
 
 
 local function load_single_package(name)
-    plugins = _G.packer_plugins
+    local plugins = _G.packer_plugins
     if plugins and next(plugins) then
         local plugin = plugins[name]
         if plugin then
@@ -67,7 +67,7 @@ end
 
 
 local function load_many_packages(...)
-    plugins = _G.packer_plugins
+    local plugins = _G.packer_plugins
     if plugins and next(plugins) then
         local managed, direct = partition_packages(plugins, ...)
         if #direct > 0 then
@@ -94,7 +94,7 @@ local function load_package(...)
 end
 
 
-local function complete_package(arg, line, pos)
+local function complete_package()
     local plugins = _G.packer_plugins
     local loadable = {}
     if plugins then
@@ -121,10 +121,10 @@ local function setup()
 end
 
 
-return { 
+return {
     setup = setup,
     load_package = load_package,
-    complete_package = complete_packages
+    complete_package = complete_package
 }
 
 --- modules.lua ends here

@@ -13,8 +13,10 @@ local function setup()
 end
 
 
-function __complete_lua(arg, line, pos)
-    return require"bootstrap.eval.lua_eval".complete(arg, pos)
+local function complete_lua(arg, _, _)
+    return require"bootstrap.eval.lua_eval".complete(arg)
 end
 
-return { setup = setup }
+_G.__complete_lua = complete_lua
+
+return { setup = setup, complete_lua = complete_lua }

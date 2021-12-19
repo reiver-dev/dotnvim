@@ -189,7 +189,7 @@ local function set_local(reg, bufnr, ...)
         local n = select("#", ...)
         local initial = ...
         if n == 1 and initial == nil then
-            delete_buffer_state(bufnr)
+            delete_buffer_state(reg, bufnr)
         end
         return set_local_1(reg.state, n, id, ...)
     end

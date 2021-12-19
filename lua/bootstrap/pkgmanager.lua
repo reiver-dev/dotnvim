@@ -38,7 +38,7 @@ local function call_on_load()
 end
 
 
-function maybe_call(func)
+local function maybe_call(func)
     if func ~= nil then
         func()
     end

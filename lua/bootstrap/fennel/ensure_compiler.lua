@@ -9,7 +9,7 @@ local basic = require("bootstrap.basic")
 
 local function compile(fennel, src, dst, env)
     local options = {
-        filename = path,
+        filename = src,
         requireAsInclude = false,
         useMetadata = false,
         compilerEnv = env,
@@ -33,7 +33,7 @@ local function gather_files(root, force)
     local getftime = vim.fn.getftime
     for _, srcpath in ipairs(sources) do
         if not srcpath:match(".*macros.fnl$") then
-            local srcpath = srcpath:gsub("\\", "/")
+            srcpath = srcpath:gsub("\\", "/")
             local suffix = srcpath:sub(prefixlen + 1)
             local dstpath = dstdir .. suffix:sub(1, -4) .. "lua"
             if force or getftime(srcpath) > getftime(dstpath) then
@@ -45,13 +45,13 @@ local function gather_files(root, force)
 end
 
 
-local function ensure_global(t, k)
+local function ensure_global(_, k)
     local msg = string.format("Attempt to get key: %s", k)
     error(msg)
 end
 
 
-local function forbid_new_global(t, k, v)
+local function forbid_new_global(_, k, v)
     local msg = string.format("Attempt to set value: %s := %s",
                               k, vim.inspect(v))
     error(msg)
@@ -120,7 +120,6 @@ local function make_compiler_env(environ)
         return m
     end
 
-    local baseenv
     local baseenv = {
         _VERSION = _VERSION,
         package = _package,

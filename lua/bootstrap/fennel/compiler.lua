@@ -6,7 +6,11 @@ local M = {}
 local fennel = require "fennel"
 local basic = require "bootstrap.basic"
 
-
+--- @param state function
+--- @param idx number
+--- @return number
+--- @return string
+--- @return any
 local function upvalues_iter(state, idx)
     idx = idx + 1
     local name, value = debug.getupvalue(state, idx)
@@ -16,16 +20,18 @@ local function upvalues_iter(state, idx)
 end
 
 
+--- @param func function
+--- @return fun(function, number), function, number
 local function upvalues(func)
     return upvalues_iter, func, 0
 end
 
-
-local function extract_sourcemap(mod)
-    for i, name, value in upvalues(fennel.traceback) do
+--- @return table
+local function extract_sourcemap()
+    for _, name, value in upvalues(fennel.traceback) do
         if name == "traceback_frame" then
-            for i, name, value in upvalues(value) do
-                if name == "fennel_sourcemap" then
+            for _, name, value in upvalues(value) do
+                if name == "sourcemap" then
                     return value
                 end
             end
@@ -35,7 +41,7 @@ local function extract_sourcemap(mod)
 end
 
 
-M.sourcemap = extract_sourcemap(fennel)
+M.sourcemap = extract_sourcemap()
 
 
 local function compile_source(text, opts)
@@ -84,7 +90,7 @@ function M.compile_file(src, dst, opts)
 end
 
 
-local function find_macro(basename)
+local function find_macro(name)
     local basename = string.gsub(name, "%.", "/")
 
     local f = string.format
@@ -210,12 +216,12 @@ local ALLOWED_GLOBALS = setmetatable({
 }, {__newindex = function() error("Allowed globals insert attempt") end})
 
 
-local function macro_loader(modname, fname)
+local function macro_loader(_, fname)
     return fennel.dofile(fname, {env = "_COMPILER", compilerEnv = MACRO_ENV})
 end
 
 
-local function lua_macro_loader(modname, fname)
+local function lua_macro_loader(_, fname)
     local data = basic.slurp(fname)
     return fennel['load-code'](data, fennel['make-compiler-env'], fname)
 end
@@ -230,32 +236,6 @@ function M.allowed_globals()
     return ALLOWED_GLOBALS
 end
 
-
-function M.module_searcher(name)
-    M.initialize()
-
-    local basename = string.gsub(name, "%.", "/")
-
-    local f = string.format
-    local paths = {
-        f("fnl/%s.fnl", basename),
-        f("fnl/%s/init.fnl", basename),
-    }
-
-    local found = basic.runtime(paths)
-    if found then
-        local code, err = ensure_cached(name, found)
-        if code then
-            local f, err = loadstring(code, name)
-            if err then
-                return err
-            end
-            return f
-        else
-            return function() error(err) end
-        end
-    end
-end
 
 local function macro_searcher(name)
     local basename = string.gsub(name, "%.", "/")
@@ -307,15 +287,18 @@ function M.resolve_path()
     })
 
     local newpath = {fnl_base}
+    local len = 1
 
     local paths = vim.api.nvim_get_runtime_file("fnl/", true)
-    for i, path in ipairs(paths) do
-        newpath[#newpath + 1] = path .. fnl_tail
+    for _, path in ipairs(paths) do
+        len = len + 1
+        newpath[len] = path .. fnl_tail
     end
 
     local aniseed_path = vim.api.nvim_get_runtime_file("lua/conjure/aniseed/macros.fnl", false)[1]
     if aniseed_path then
-        newpath[#newpath + 1] = aniseed_path
+        len = len + 1
+        newpath[len] = aniseed_path
     end
 
     return table.concat(newpath, ";")

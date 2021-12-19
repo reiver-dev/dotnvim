@@ -66,8 +66,8 @@ end
 
 
 local function setup()
-    _trampouline = trampouline
-    _T = trampouline
+    _G._trampouline = trampouline
+    _G._T = trampouline
 end
 
 

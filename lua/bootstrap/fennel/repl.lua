@@ -243,7 +243,7 @@ end
 
 function M.repl(opts, env)
     local options = {
-        env = setmetatable({ _A = opts }, {__index = env or _ENV or _G})
+        env = setmetatable({ _A = opts }, {__index = env or _G})
     }
     return fennel.repl(options)
 end

@@ -40,7 +40,7 @@ end
 
 
 local function signal()
-    return = {
+    return {
         _normal = {},
         _weak = {},
         _once = {},
