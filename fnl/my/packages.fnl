@@ -103,6 +103,18 @@
        :run #(_T :my.pack.parinfer :compile-library)
        :config #(_T :my.pack.parinfer :setup))
 
+  (pkg :name :neorg
+       :url "nvim-neorg/neorg"
+       :opt true
+       :cmd [:NeorgStart]
+       :ft "norg"
+       :config (fn [name pkginfo]
+                 (_T :my.pack.neorg :setup name pkginfo)
+                 (let [bufnr (tonumber (vim.fn.expand "<abuf>"))
+                       ft (vim.api.nvim_buf_get_option bufnr :filetype)]
+                   (when (= ft "norg")
+                     (vim.api.nvim_buf_call
+                       bufnr #(vim.cmd "doautocmd <nomodeline> FileType terminal"))))))
 
   (pkg :name :fzf
        :url "junegunn/fzf"

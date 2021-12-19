@@ -26,4 +26,6 @@
 
 
 (defn setup []
+  (when _G.packer_plugins.neorg
+    (_T :my.pack.neorg.treesitter :setup))
   (configure))

@@ -8,6 +8,7 @@
    {:name :nvim_lua}
    {:name :luasnip}
    {:name :conjure}
+   {:name :neorg}
    {:name :path}
    {:name :buffer}])
 
@@ -87,5 +88,7 @@
               :snippet {:expand expand-snippet}
               :experimental {:native_menu false
                              :ghost_text true}
-              :sources sources}))
+              :sources sources})
+  (when _G.packer_plugins.neorg
+    (_T :my.pack.neorg.cmp :setup)))
 
