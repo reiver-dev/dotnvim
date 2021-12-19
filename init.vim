@@ -2,12 +2,13 @@
 """
 
 lua <<EOL
-    local mods = {}
+    local mods
     do
         local fs_scandir = vim.loop.fs_scandir
         local fs_next = vim.loop.fs_scandir_next
         local sep = vim.fn.has("win32") == 1 and "\\" or "/"
-        local function scandir(prefix, path)
+
+        local function scandir(mods, ext, dirmod, prefix, path)
             local fd, _err = fs_scandir(path)
             if fd == nil then error(err) end
             while true do
@@ -15,18 +16,29 @@ lua <<EOL
                 if name == nil then
                     break
                 elseif fstype == "directory" then
-                    scandir(prefix .. name .. ".", path .. sep .. name)
-                elseif name == "init.lua" then
+                    scandir(mods, ext, dirmod,
+                            prefix .. name .. ".",
+                            path .. sep .. name)
+                elseif name == dirmod then
                     if prefix ~= "" and mods[prefix:sub(1, -2)] == nil then
-                        mods[prefix:sub(1, -2)] = path .. sep .. "init.lua"
+                        mods[prefix:sub(1, -2)] = path .. sep .. dirmod
                     end
-                elseif name:sub(-4, -1) == ".lua" then
+                elseif name:sub(-4, -1) == ext then
                     mods[prefix .. name:sub(1, -5)] = path .. sep .. name
                 end
             end
         end
 
-        scandir("", vim.fn.stdpath("config") .. sep .. "lua")
+        -- Remember as global
+        function SCAN_MODULES(path)
+            local mods = {}
+            local ext = ".lua"
+            local dirmod = "init.lua"
+            scandir(mods, ext, dirmod, "", path)
+            return mods
+        end
+
+        mods = SCAN_MODULES(vim.fn.stdpath("config") .. sep .. "lua")
     end
 
     local function private_loader(name)
