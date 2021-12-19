@@ -40,7 +40,7 @@
       (fun)
       (set i (- i 1)))
     (let [end (clock)]
-      (log "Bench" :name name :time (- end begin)))))
+      (LOG "Bench" :name name :time (- end begin)))))
 
 
 (defn- cycle-iter [state param a b c]

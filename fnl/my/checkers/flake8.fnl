@@ -64,7 +64,7 @@
   (let [res (j.execute-command
               bufnr (python.module-command bufnr "flake8" "-") nil
               (fn [jobid result]
-                (log "Flake8 Finished" :jobid jobid :result result)
+                (LOG "Flake8 Finished" :jobid jobid :result result)
                 (report-fn (parse-output result.stdout))))]
     (j.send-buffer res bufnr)
     res))

@@ -15,7 +15,7 @@
 (defn execute-command [bufnr command cwd callback]
   (vim.validate {:bufnr [bufnr :n]
                  :callback [callback :f]})
-  (log "Executing job" :command command)
+  (LOG "Executing job" :command command)
   (let [result {:bufnr bufnr :cwd cwd}
         handler (fn [jobid data event]
                   (match event

@@ -202,7 +202,7 @@ local ALLOWED_GLOBALS = setmetatable({
     "_G",
     -- globals
     "vim",
-    "log",
+    "LOG",
     "_T",
     "_trampouline",
     "LOAD_PACKAGE",

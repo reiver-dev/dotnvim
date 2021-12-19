@@ -24,8 +24,8 @@ local function execute_hook(hook, arg)
             errors[name] = msg
         end
     end
-    if log then
-        log("Failed to run after gui hook", "errors", errors)
+    if LOG then
+        LOG("Failed to run after gui hook", "errors", errors)
     end
 end
 

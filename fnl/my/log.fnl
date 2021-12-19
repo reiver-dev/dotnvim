@@ -79,6 +79,7 @@
 
 
 (fn setup []
+  (tset _G :LOG log)
   (let [file (. state :file)]
     (when file (fs_close file)))
   (let [p (vim.fn.stdpath "cache")
@@ -87,8 +88,6 @@
     (tset state :path l)
     (tset state :file (fs_open l "a+" 438))))
 
-
-(tset _G :log log)
 
 {:_state state
  : setup

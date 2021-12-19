@@ -75,7 +75,7 @@
   (cleanup-fn)
   (let [entries (parse-output result.stdout)]
     (report-fn entries))
-  (log "Mypy Finished" :jobid jobid :result result))
+  (LOG "Mypy Finished" :jobid jobid :result result))
 
 
 (def- default-configuration
@@ -118,7 +118,7 @@
 
 (defn run [bufnr report-fn]
   (let [directory (mypy-directory bufnr)
-        _ (log "Mypy directory" :dir directory)
+        _ (LOG "Mypy directory" :dir directory)
         has-config (not= nil (b.get-local bufnr :python :mypy :config))
         current (relative-path (b.get-local bufnr :file) directory)
         tmpname (j.backup-buffer bufnr)
@@ -139,7 +139,7 @@
     (when (not ok)
       (cleanup-fn)
       (error res))
-    (log "Mypy Started" :bufnr bufnr :jobid res)
+    (LOG "Mypy Started" :bufnr bufnr :jobid res)
     res))
 
 

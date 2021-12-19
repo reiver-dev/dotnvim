@@ -25,13 +25,13 @@
 
 
 (defn- execute-checkers [bufnr]
-  (log "Execute checkers"
+  (LOG "Execute checkers"
        :bufnr bufnr
        :checkers (b.get-local bufnr :enabled-checkers))
   (let [enabled-checkers (b.get-local bufnr :enabled-checkers)]
     (when enabled-checkers
       (each [name client-id (pairs enabled-checkers)]
-        (log "Launching checker" :bufnr bufnr :name name)
+        (LOG "Launching checker" :bufnr bufnr :name name)
         (reg.run name bufnr
                  (fn [entries]
                    (publish client-id bufnr entries)))))))
