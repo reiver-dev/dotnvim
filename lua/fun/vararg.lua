@@ -5,8 +5,10 @@ local MODULE = ...
 local string_format = string.format
 local string_rep = string.rep
 local table_concat = table.concat
-local table_move = table.move
-local loadstring,tostring,error,select = loadstring,tostring,error,select
+local loadstring = loadstring
+local tostring = tostring
+local error = error
+local select = select
 local setmetatable = setmetatable
 local unpack = _G.unpack or table.unpack
 
@@ -18,12 +20,15 @@ local blshift = bit.lshift
 
 --- @generic V
 --- @param ... V
---- @returns V[]
+--- @return V[]
 local function pack(...)
     return {n = select("#", ...), ...}
 end
 
-
+--- Load lua code with name as debug info
+--- @param template string
+--- @param name string
+--- @return function
 local function compile_template(template, name)
     local res, err = loadstring(template, name)
     if res then
@@ -48,6 +53,10 @@ local function argtable(fmt, n)
 end
 
 
+--- Format lua custom chunkname
+--- @param name string
+--- @param n integer
+--- @return string
 local function _chunkname(name, n)
     return string_format("=%s.%s(%d)", MODULE, name, n)
 end
@@ -62,6 +71,20 @@ local function prepare_fallback_unpack(n)
     return function(tbl) fallback_unpack(n, tbl) end
 end
 
+
+--- @param tbl  table
+--- @param start integer
+--- @param stop integer
+--- @param dst integer
+--- @param ntbl table
+--- @return table a2
+local function table_move(tbl, start, stop, dst, ntbl)
+    for i = start,stop,1 do
+        ntbl[dst] = tbl[i]
+        dst = dst + 1
+    end
+    return ntbl
+end
 
 
 local function fallback_unpack_add(n, tbl, tail)
@@ -226,6 +249,7 @@ local function nothing()
 end
 
 
+--- Funciton composition, left to right: a, b, c => c(b(a()))
 --- @param ... fun(...)
 --- @return fun(...)
 local function compose_left(...)
@@ -235,6 +259,7 @@ local function compose_left(...)
 end
 
 
+--- Funciton composition, right to left: a, b, c => a(b(c()))
 --- @param ... fun(...)
 --- @return fun(...)
 local function compose_right(...)
@@ -330,6 +355,7 @@ local partial_n_cache = setmetatable({}, {
 })
 
 
+--- Generate partial function application with arguments
 --- @param fn function
 --- @param ... any
 --- @return function
@@ -340,6 +366,7 @@ local function partial(fn, ...)
 end
 
 
+--- Generate fixed arity partial function application with arguments
 --- @param n integer
 --- @param fn function
 --- @param ... any
