@@ -62,6 +62,16 @@ local function _chunkname(name, n)
 end
 
 
+--- Format lua custom chunkname
+--- @param name string
+--- @param a integer
+--- @param b integer
+--- @return string
+local function _chunkname2(name, a, b)
+    return string_format("=%s.%s(%d,%d)", MODULE, name, a, b)
+end
+
+
 local function fallback_unpack(n, tbl)
     return unpack(tbl, 1, n)
 end
@@ -297,7 +307,7 @@ local partial_cache = setmetatable({
             tbl[i] = "arg" .. tostring(i)
         end
         local arglist = table_concat(tbl, ",")
-        local f = compile_template(string_format(template, arglist, arglist))
+        local f = compile_template(string_format(template, arglist, arglist), _chunkname("partial", n))
         t[n] = f
         return f
     end
@@ -347,8 +357,7 @@ local partial_n_cache = setmetatable({}, {
                                  outer_arglist, delim, inner_arglist)
         end
 
-        local chunkname = string_format("=%s.partial(%d,%d)", MODULE, outer, inner)
-        local f = compile_template(code, chunkname)
+        local f = compile_template(code, _chunkname2("partial", outer, inner))
         t[key] = f
         return f
     end
