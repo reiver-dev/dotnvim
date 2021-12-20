@@ -16,7 +16,7 @@ augroup END
 let s:id = expand('<SID>')
 
 function! s:BufferRegistryStateId(expr) abort
-    let l:State = getbufvar(a:expr, "__buffer_state_ref_holder__", v:null)
+    let l:State = getbufvar(a:expr, "__buffer_registry_state_ref_holder__", v:null)
     if l:State != v:null
         return l:State()
     else

@@ -36,15 +36,15 @@ end
 --- @param reg Registry
 --- @param front_id integer
 local function claim_id(reg, front_id)
-    local id = next(reg.free_ids)
-    if id then
-        reg.free_ids[id] = nil
+    local back_id = next(reg.free_ids)
+    if back_id then
+        reg.free_ids[back_id] = nil
     else
-        id = reg.top_id + 1
-        reg.top_id = id
+        back_id = reg.top_id + 1
+        reg.top_id = back_id
     end
-    reg.mapping[front_id] = id
-    return id
+    reg.mapping[front_id] = back_id
+    return back_id
 end
 
 
@@ -129,7 +129,7 @@ end
 --- @param ... any
 --- @return any
 local function set_local_1(map, n, key, ...)
-    if n > 1 then
+    if n ~= 0 then
         local nested = map[key]
         if not nested then
             nested = {}
@@ -150,7 +150,7 @@ end
 --- @return any
 local function get_local_1(map, n, key, ...)
     local nested = map[key]
-    if nested and n > 0 then
+    if nested and n ~= 0 then
         return get_local_1(nested, n - 1, ...)
     end
     return nested
@@ -163,7 +163,7 @@ end
 --- @param ... any
 --- @return any
 local function upd_local_1(map, n, key, ...)
-    if n > 1 then
+    if n ~= 0 then
         local nested = map[key]
         if not nested then
             nested = {}
@@ -171,8 +171,7 @@ local function upd_local_1(map, n, key, ...)
         end
         return upd_local_1(nested, n - 1, ...)
     end
-    local func = ...
-    local result = func(map[key])
+    local result = select(1, ...)(map[key])
     map[key] = result
     return result
 end
@@ -183,15 +182,18 @@ end
 --- @param ... any
 --- @return any
 local function set_local(reg, bufnr, ...)
-    local bufnr = buffer_id(bufnr)
+    local n = select("#", ...)
+    if n == 0 then
+        return
+    end
+    bufnr = buffer_id(bufnr)
     local id = reg.mapping[bufnr] or ensure_state(reg, bufnr)
     if id then
-        local n = select("#", ...)
-        local initial = ...
-        if n == 1 and initial == nil then
-            delete_buffer_state(reg, bufnr)
+        if n == 1 and select(1, ...) == nil then
+            return delete_buffer_state(reg, bufnr)
+        else
+            return set_local_1(reg.state, n - 1, id, ...)
         end
-        return set_local_1(reg.state, n, id, ...)
     end
 end
 
@@ -201,10 +203,11 @@ end
 --- @param ... any
 --- @return any
 local function get_local(reg, bufnr, ...)
-    local bufnr = buffer_id(bufnr)
+    bufnr = buffer_id(bufnr)
     local id = reg.mapping[bufnr]
     if id then
-        return get_local_1(reg.state, select("#", ...), id, ...)
+        local n = select("#", ...)
+        return get_local_1(reg.state, n, id, ...)
     end
 end
 
@@ -214,14 +217,17 @@ end
 --- @param ... any
 --- @return any
 local function upd_local(reg, bufnr, ...)
-    local bufnr = buffer_id(bufnr)
-    local id = reg.mapping[bufnr] or ensure_state(reg, bufnr)
-    local initial = ...
-    if initial == nil then
+    local n = select("#", ...)
+    if n < 2 then
+        return
+    end
+    if select(1, ...) == nil then
         error("First key must not be nil")
     end
+    bufnr = buffer_id(bufnr)
+    local id = reg.mapping[bufnr] or ensure_state(reg, bufnr)
     if id then
-        return upd_local_1(reg.state, select("#", ...), id, ...)
+        return upd_local_1(reg.state, n, id, ...)
     end
 end
 
