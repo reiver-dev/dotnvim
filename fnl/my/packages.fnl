@@ -154,6 +154,8 @@
 
   (pkg :name :lsptrouble
        :url "folke/lsp-trouble.nvim"
+       :event ["DiagnosticChanged"]
+       :cmd ["Trouble" "TroubleToggle" "TroubleRefresh" "TroubleClose"]
        :config #(_T :my.pack.lsptrouble :setup))
 
   (pkg :name :lspcolors
