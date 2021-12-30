@@ -80,6 +80,7 @@
 
 (defn setup []
   (cmp.setup {:mapping mapping
+              :autocomplete false
               :formatting {:format (lspkind.cmp_format
                                      {:with_text true
                                       :maxwidth 50
