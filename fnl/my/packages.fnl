@@ -152,6 +152,12 @@
        :cmd [:LspInfo :LspStart :LspStop :LspRestart]
        :opt true)
 
+  (pkg :name :null-ls
+       :url "jose-elias-alvarez/null-ls.nvim"
+       :opt true
+       :cmd ["NullLsLog" "NullLsInfo"]
+       :module ["null-ls"])
+
   (pkg :name :lsptrouble
        :url "folke/lsp-trouble.nvim"
        :event ["DiagnosticChanged"]
