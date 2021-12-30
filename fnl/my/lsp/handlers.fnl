@@ -5,7 +5,7 @@
 
 
 (def- base vim.lsp.buf)
-(def- base-diag vim.lsp.diagnostic)
+(def- base-diag vim.diagnostic)
 
 
 (defn- telescope [name fallback]
@@ -85,7 +85,7 @@
 
 
 (defn line-diagnostic []
-  (base-diag.show_line_diagnostics))
+  (base-diag.open_float))
 
 
 (defn signature-help []
