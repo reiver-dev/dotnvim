@@ -242,10 +242,23 @@
   ;; Telescope
   (pkg :name "telescope"
        :url "nvim-telescope/telescope.nvim"
+       :opt true
+       :cmd ["Telescope"]
+       :module ["telescope"]
+       :keys [["n" "<C-x>b"]]
        :config #(_T :my.pack.telescope :setup))
+
+  (pkg :name "telescope-file-browser"
+       :url "nvim-telescope/telescope-file-browser.nvim"
+       :opt true
+       :after ["telescope"]
+       :keys [["n" "<C-x>f"]]
+       :config #(_T :my.pack.telescope-file-browser :setup))
 
   (pkg :name "telescope-fzy-native"
        :url "nvim-telescope/telescope-fzy-native.nvim"
+       :opt true
+       :after ["telescope"]
        :config #(_T :my.pack.telescope-fzy-native :setup))
 
   ;; FileTree
