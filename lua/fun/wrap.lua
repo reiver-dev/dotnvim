@@ -1,5 +1,10 @@
 --- Iterator class
 
+local raw_iter = require "fun.iter"
+local raw_str = require "fun.str"
+local raw_range = require "fun.range"
+
+
 local function to_string()
   return "<iterator>"
 end
@@ -23,10 +28,6 @@ local iterator_mt = {
     __call = self_iterate,
     __tostring = to_string,
 }
-
-local raw_iter = require "fun.iter"
-local raw_str = require "fun.str"
-local raw_range = require "fun.range"
 
 local _utf8 = raw_str.utf8
 local _stateful = raw_iter.stateful

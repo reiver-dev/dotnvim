@@ -113,7 +113,8 @@ end
 
 --- @generic V, S, I
 --- @param fn fun(acc: V, ...: V)
---- @param iter fun(state: S, idx: I): V
+--- @param iter fun(state: S, idx: I): I, V
+--- @param state S
 --- @param idx I
 --- @return V
 local function reduce(fn, iter, state, idx)
@@ -521,7 +522,7 @@ end
 
 
 local function this_ipairs(tbl)
-    return _inext, tbl, nil
+    return _inext, tbl, 0
 end
 
 
