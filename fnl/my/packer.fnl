@@ -1,7 +1,9 @@
 (module my.packer)
 
 (defn- packer-config []
+  (local pj (. (require "packer.util") :join_paths))
   {:display {:open_cmd "vertical botright new [packer]"}
+   :compile_path (pj (vim.fn.stdpath :data) "packer_compiled.lua")
    :disable_commands true})
 
 
