@@ -97,11 +97,14 @@
   (pkg :name :plenary
        :url "nvim-lua/plenary.nvim")
 
-  (pkg :name :parinfer
-       :url "eraserhd/parinfer-rust"
-       :ft (_T :my.pack.parinfer :filetypes)
-       :run #(_T :my.pack.parinfer :compile-library)
-       :config #(_T :my.pack.parinfer :setup))
+  ;; (pkg :name :parinfer
+  ;;      :url "eraserhd/parinfer-rust"
+  ;;      :ft (_T :my.pack.parinfer :filetypes)
+  ;;      :run #(_T :my.pack.parinfer :compile-library)
+  ;;      :config #(_T :my.pack.parinfer :setup))
+
+  (pkg :name :parinfer-lua
+       :url "gpanders/nvim-parinfer")
 
   (pkg :name :neorg
        :url "nvim-neorg/neorg"
