@@ -82,7 +82,7 @@ local function ensure_cached(modname, srcfile)
     local needcompile
     if dststat == nil then
         if dsterr:gsub(":.*", "") ~= "ENOENT" then
-            error(string.format("Fail to compile %s into %s:",
+            error(string.format("Fail to compile %s into %s: %s",
                                 srcfile, dstfile, dsterr))
         end
         needcompile = true
