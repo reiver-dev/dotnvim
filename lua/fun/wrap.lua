@@ -174,6 +174,7 @@ local _map = raw_iter.map
 local _map_kv = raw_iter.map_kv
 local _fold = raw_iter.fold
 local _reduce = raw_iter.reduce
+local _count = raw_iter.count
 local _any = raw_iter.any
 local _all = raw_iter.all
 local _each = raw_iter.each
@@ -391,6 +392,13 @@ end
 --- @return VAL
 function cls:reduce(fn)
     return _reduce(fn, self[1], self[2], self[3])
+end
+
+
+--- @param self Iterator<any, any>
+--- @return integer
+function cls:count()
+    return _count(self[1], self[2], self[3])
 end
 
 

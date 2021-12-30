@@ -125,6 +125,21 @@ local function reduce(fn, iter, state, idx)
     return acc
 end
 
+--- @generic S, I
+--- @param iter fun(state: S, idx: I): I, ...
+--- @param state S
+--- @param idx I
+--- @return integer
+local function count(iter, state, idx)
+    local i = 0
+    local idx = iter(state, idx)
+    while idx ~= nil do
+        idx = iter(state, idx)
+        i = i + 1
+    end
+    return i
+end
+
 
 local function apply_next(fn, idx, ...)
     if idx ~= nil then
@@ -909,6 +924,7 @@ return {
     map_kv = map_kv,
     fold = fold,
     reduce = reduce,
+    count = count,
     any = any,
     all = all,
     each = each,

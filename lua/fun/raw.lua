@@ -12,6 +12,7 @@ return {
     reduce = _iter.reduce,
     any = _iter.any,
     all = _iter.all,
+    count = _iter.count,
 
     foreach = _iter.foreach,
     foreach_kv = _iter.foreach_kv,
