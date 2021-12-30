@@ -129,7 +129,11 @@
        :requires ["fzf"])
 
   (pkg :name :diffview
-       :url "sindrets/diffview.nvim")
+       :url "sindrets/diffview.nvim"
+       :opt true
+       :cmd (icollect [_ v (ipairs [:Open :Close :Refresh
+                                    :Log :FocusFiles :ToggleFiles])]
+              (.. :Diffview v)))
 
   (pkg :name :which-key
        :url "folke/which-key.nvim"
