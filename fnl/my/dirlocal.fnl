@@ -57,7 +57,7 @@
         target-match (vim.fn.expand "<amatch>")
         target-dir (vim.fn.fnamemodify target-match ":h")
         target-name (vim.fn.fnamemodify target-match ":p:t")
-        target-bufnr (vim.fn.expand "<abuf>")]
+        target-bufnr (tonumber (vim.fn.expand "<abuf>"))]
     {:dir target-dir
      :file target-file
      :name target-name
