@@ -8,7 +8,6 @@
    "my.bufreg"
    "my.options"
    "my.packer"
-   "my.dirlocal"
    "my.terminal"
    "my.indent"
    "my.editing"
