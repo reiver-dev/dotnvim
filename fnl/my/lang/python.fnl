@@ -42,8 +42,12 @@
     result))
 
 
+(defn run-module-arg [modname]
+  (string.format runmodule-template modname))
+
+
 (defn module-command [bufnr modname ...]
-  (join (executable bufnr) "-c" (runmodule-template:format modname) ...))
+  (join (executable bufnr) "-c" (run-module-arg modname) ...))
 
 
 (defn- strip [path]

@@ -130,9 +130,9 @@
                                     :Log :FocusFiles :ToggleFiles])]
               (.. :Diffview v)))
 
-  (pkg :name :which-key
-       :url "folke/which-key.nvim"
-       :config #(_T :which-key :setup {}))
+  ;; (pkg :name :which-key
+  ;;      :url "folke/which-key.nvim"
+  ;;      :config #(_T :which-key :setup {}))
 
   (pkg :name "readline.vim"
        :url "ryvnf/readline.vim"
