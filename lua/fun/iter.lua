@@ -371,6 +371,86 @@ end
 
 --#endregion
 
+--#region FilterMap
+
+local iter_filtermap
+local iter_filtermap_kv
+
+
+local function continue_iter_filtermap(state, idx, ...)
+    if select(1, ...) then
+        return idx, ...
+    else
+        return iter_filtermap(state, idx)
+    end
+end
+
+
+local function continue_iter_filtermap_kv(state, idx, ...)
+    if select(1, ...) then
+        return idx, ...
+    else
+        return iter_filtermap_kv(state, idx)
+    end
+end
+
+
+local function nested_iter_filtermap(state, idx, ...)
+    if idx ~= nil then
+        return continue_iter_filtermap(state, idx, state[1](...))
+    else
+        return nil
+    end
+end
+
+
+local function nested_iter_filtermap_kv(state, idx, ...)
+    if idx ~= nil then
+        return continue_iter_filtermap_kv(state, idx, state[1](idx, ...))
+    else
+        return nil
+    end
+end
+
+
+iter_filtermap = function(state, idx)
+    return nested_iter_filtermap(state, state[2](state[3], idx))
+end
+
+
+iter_filtermap_kv = function(state, idx)
+    return nested_iter_filtermap_kv(state, state[2](state[3], idx))
+end
+
+
+--- Apply funcion to every value, filter out falsy values
+--- @generic A, B, STATE, IDX, NS
+--- @param func fun(val: A): B?
+--- @param iter fun(state: STATE, idx: IDX): IDX, A
+--- @param state STATE
+--- @param idx? IDX
+--- @return fun(state: NS, idx: IDX): IDX, B Iterator
+--- @return NS Newstate
+--- @return IDX Index
+local function filtermap(func, iter, state, idx)
+    return iter_filtermap, {func, iter, state}, idx
+end
+
+--- Apply funcion to every keys and values, filter out falsy values
+--- @generic A, B, STATE, IDX, NS
+--- @param func fun(idx: IDX, val: A): B?
+--- @param iter fun(state: STATE, idx: IDX): IDX, A
+--- @param state STATE
+--- @param idx? IDX
+--- @return fun(state: NS, idx: IDX): IDX, B Iterator
+--- @return NS New state
+--- @return IDX Index
+local function filtermap_enum(func, iter, state, idx)
+    return iter_filtermap_kv, {func, iter, state}, idx
+end
+
+--#endregion
+
 --#region Take
 
 
@@ -512,8 +592,8 @@ local function ntimes(n, value)
 end
 
 
-local _inext = ipairs({})
-local _next = pairs({})
+local _inext = ipairs({1})
+local _next = pairs({ a = 1 })
 
 
 local function this_pairs(tbl)
@@ -539,6 +619,33 @@ local function rpairs(tbl)
     return iter_rpairs, tbl, #tbl + 1
 end
 
+
+local function iter_pairs_kv(state, idx)
+    local val
+    idx, val = _next(state, idx)
+    if idx ~= nil then
+        return idx, idx, val
+    end
+end
+
+
+local function pairs_kv(tbl)
+    return iter_pairs_kv, tbl, nil
+end
+
+
+local function iter_ipairs_kv(state, idx)
+    local val
+    idx, val = _inext(state, idx)
+    if idx ~= nil then
+        return idx, idx, val
+    end
+end
+
+
+local function ipairs_kv(tbl)
+    return iter_ipairs_kv, tbl, 0
+end
 
 --#endregion
 
@@ -940,13 +1047,17 @@ return {
     reject1 = reject1,
     reject_kv = reject_kv,
     reject1_kv = reject1_kv,
+    filtermap = filtermap,
+    filtermap_emum = filtermap_enum,
     take = take,
     take_one = take_one,
     take_while = take_while,
     take_while_kv = take_while_kv,
     kv = kv,
-    pairs = pairs,
-    ipairs = ipairs,
+    pairs = this_pairs,
+    ipairs = this_ipairs,
+    pairs_kv = pairs_kv,
+    ipairs_kv = ipairs_kv,
     rpairs = rpairs,
     stateful = stateful,
     find = find,

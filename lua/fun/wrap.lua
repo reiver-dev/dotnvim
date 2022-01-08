@@ -188,6 +188,8 @@ local _reject = raw_iter.reject
 local _reject1 = raw_iter.reject1
 local _reject_kv = raw_iter.reject_kv
 local _reject1_kv = raw_iter.reject1_kv
+local _filtermap = raw_iter.filtermap
+local _filtermap_kv = raw_iter.filtermap_kv
 local _take = raw_iter.take
 local _take_one = raw_iter.take_one
 local _take_while = raw_iter.take_while
@@ -506,6 +508,24 @@ end
 --- @return T
 function cls:reject1_kv(fn)
     return new(_reject1_kv(fn, self[1], self[2], self[3]))
+end
+
+
+--- @generic A, B, IDX
+--- @param self Iterator<IDX, A>
+--- @param fn fun(val: A): B?
+--- @return Iterator<IDX, B>
+function cls:filtermap(fn)
+    return new(_filtermap(fn, self[1], self[2], self[3]))
+end
+
+
+--- @generic A, B, IDX
+--- @param self Iterator<IDX, A>
+--- @param fn fun(idx: IDX, val: A): B?
+--- @return Iterator<IDX, B>
+function cls:filtermap_kv(fn)
+    return new(_filtermap_kv(fn, self[1], self[2], self[3]))
 end
 
 

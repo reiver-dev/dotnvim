@@ -8,6 +8,8 @@ return {
 
     map = _iter.map,
     map_kv = _iter.map_kv,
+    ["map-kv"] = _iter.map_kv,
+
     fold = _iter.fold,
     reduce = _iter.reduce,
     any = _iter.any,
@@ -31,6 +33,10 @@ return {
     reject1_kv = _iter.reject1_kv,
     ["reject-kv"] = _iter.reject_kv,
     ["reject1-kv"] = _iter.reject1_kv,
+
+    filtermap = _iter.filtermap,
+    filtermap_kv = _iter.filtermap_kv,
+    ["filtermap-kv"] = _iter.filtermap_kv,
 
     take = _iter.take,
     take_one = _iter.take_one,
