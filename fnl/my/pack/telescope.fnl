@@ -26,10 +26,20 @@
 (defn buffers []
   (let [builtin (require :telescope.builtin)
         themes (require :telescope.themes)]
-    (builtin.buffers (themes.get_ivy {:previewer false}))))
+    (builtin.buffers (themes.get_ivy {:previewer false
+                                      :results_title false}))))
+
+
+(defn history []
+  (let [builtin (require :telescope.builtin)
+        themes (require :telescope.themes)]
+    (builtin.oldfiles (themes.get_ivy {:previewer false
+                                       :results_title false}))))
 
 
 (defn setup []
   (configure)
   (vim.api.nvim_set_keymap
-    :n "<C-x>b" "<cmd>lua _T('my.pack.telescope', 'buffers')<CR>" {:noremap true}))
+    :n "<C-x>b" "<cmd>lua _T('my.pack.telescope', 'buffers')<CR>" {:noremap true})
+  (vim.api.nvim_set_keymap
+    :n "<C-x>r" "<cmd>lua _T('my.pack.telescope', 'history')<CR>" {:noremap true}))

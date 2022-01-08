@@ -251,7 +251,7 @@
        :opt true
        :cmd ["Telescope"]
        :module ["telescope"]
-       :keys [["n" "<C-x>b"]]
+       :keys [["n" "<C-x>b"] ["n" "<C-x>r"]]
        :config #(_T :my.pack.telescope :setup))
 
   (pkg :name "telescope-file-browser"
