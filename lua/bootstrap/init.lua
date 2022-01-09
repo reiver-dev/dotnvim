@@ -18,7 +18,7 @@ function M.setup()
     require("bootstrap.fennel").setup()
     require("bootstrap.trampouline").setup()
     require("bootstrap.reload").setup()
-    require("bootstrap.gui").setup()
+    -- require("bootstrap.gui").setup()
     require("bootstrap.eval").setup()
     require("my").setup()
 

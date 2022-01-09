@@ -1,5 +1,4 @@
-(module my.lang.cpp
-  {require {pkg bootstrap.pkgmanager}})
+(module my.lang.cpp)
 
 
 (defn setup [])
