@@ -15,10 +15,6 @@ local os_is_win = {
     MINGW32_NT = true,
 }
 
-local os_feature = {
-    macunix = "Darwin",
-    unix = "Unix",
-}
 
 local osname
 
