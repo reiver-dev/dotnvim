@@ -53,7 +53,7 @@
   (let [output (vim.api.nvim_exec command true)]
     (vim.cmd (string.format empty-preview-template :text "Verbose"))
     (vim.cmd "wincmd P")
-    (let [bufnr vim.api.nvim_get_cuttent_buf]
+    (let [bufnr (vim.api.nvim_get_current_buf)]
       (vim.api.nvim_paste output 0 -1)
       (vim.api.nvim_buf_set_keymap bufnr :n "q" ":bd<CR>" {:noremap true}))))
 
