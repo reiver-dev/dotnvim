@@ -1,9 +1,22 @@
+local OS = vim.loop.os_uname()
+local iswin = OS.sysname:match("^Windows")
+local sep = iswin and "\\" or "/"
+
+
+if iswin then
+    pcall(function()
+        os.setlocale(".utf8", "all")
+        os.setlocale("C", "numeric")
+    end)
+    vim.api.nvim_set_option("completeslash", "slash")
+end
+
+
 if os.getenv("AK_PROFILER") then
     vim.cmd "packadd profiler"
     require("profiler")
 end
 
-local sep = vim.fn.has("win32") == 1 and "\\" or "/"
 
 local mods
 do
