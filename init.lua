@@ -73,5 +73,4 @@ for modname, _ in pairs(mods) do
     package.preload[modname] = private_loader
 end
 
-local mod = require("bootstrap")
-mod.setup()
+require("bootstrap").setup()
