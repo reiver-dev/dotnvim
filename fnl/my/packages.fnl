@@ -66,10 +66,6 @@
 
   ;; end
 
-  (pkg :name "fix-cursor-hold"
-       :url "antoinemadec/FixCursorHold.nvim"
-       :config #(set vim.g.cursorhold_updatetime 1000))
-
   (pkg :name :colorizer
        :url "norcalli/nvim-colorizer.lua"
        :config #(_T :colorizer :setup))

@@ -12,6 +12,7 @@ function M.setup()
         endfunction
     ]]
 
+    require("bootstrap.idle").setup()
     -- Download package manager and friends
     require("bootstrap.basedeps").setup()
     require("bootstrap.modules").setup()
