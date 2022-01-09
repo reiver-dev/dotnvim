@@ -124,12 +124,11 @@
   Happens when buffer is not special and is loaded
   and buffer's file has not changed."
   (let [bufnr (tonumber (vim.fn.expand "<abuf>"))]
-    (when (and (let [bt (vim.api.nvim_buf_get_option bufnr :buftype)]
-                 (= bt ""))
+    (when (and (= (vim.api.nvim_buf_get_option bufnr :buftype) "")
                (vim.api.nvim_buf_is_loaded bufnr))
       (let [file (vim.fn.expand "<afile>:p")
             oldfile (b.get-local bufnr :file)]
-        (when (or (= oldfile nil) (~= file oldfile))
+        (when (or (= oldfile nil) (not= file oldfile))
           (b.set-local bufnr :file file)
           (apply-default-directory bufnr))))))
 
