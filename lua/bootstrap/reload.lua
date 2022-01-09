@@ -101,22 +101,37 @@ local function reload_modules(...)
 end
 
 
-local function complete_module()
-    local loaded = vim.tbl_keys(package.loaded)
-    table.sort(loaded)
-    return table.concat(loaded, "\n")
+local function complete_module(arg)
+    local len = #arg
+    if len == 0 then
+        return vim.tbl_keys(package.loaded)
+    end
+
+    local loaded = {}
+    local sub = string.sub
+    local i = 1
+    for name in pairs(package.loaded) do
+        if sub(name, 1, len) == arg then
+            loaded[i] = name
+            i = i + 1
+        end
+    end
+
+    return loaded
 end
-
-
-local COMMAND = [[
-command! -nargs=+ -complete=custom,v:lua.__complete_module ReloadModule lua RELOAD(<f-args>)
-]]
 
 
 local function setup()
     _G.RELOAD = reload_modules
-    _G.__complete_module = complete_module
-    vim.api.nvim_exec(COMMAND, false)
+    vim.api.nvim_add_user_command(
+        "ReloadModule",
+        reload_modules,
+        {
+            desc = "bootstrap.reload::reload_modules",
+            nargs = "+",
+            complete = complete_module
+        }
+    )
 end
 
 

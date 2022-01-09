@@ -37,7 +37,8 @@ end
 local function compile_and_load(srcfile, dstfile)
     local text = basic.slurp(srcfile)
 
-    local compiler = require("bootstrap.fennel.compiler")
+    local mod = "bootstrap.fennel.compiler"
+    local compiler = package.loaded[mod] or require(mod)
     compiler.initialize()
 
     local opts = {
@@ -153,36 +154,21 @@ local function module_searcher(modname)
 end
 
 
-function M.init()
-    local interop = require"bootstrap.interop"
-
-    local def = interop.command{
-        name = "EvalExpr",
-        nargs = 1,
-        complete = "customlist,v:lua.__complete_fennel",
-        modname = "bootstrap.fennel.repl",
-        funcname = "eval_print"
-    }
-    _G.__complete_fennel = complete_fennel
-    vim.api.nvim_command(def)
-
-    def = interop.command{
-        name = "InitRecompile",
-        nargs = "*",
-        modname = "bootstrap.fennel",
-        funcname = "compile",
-        bang = "!",
-    }
-    vim.api.nvim_command(def)
-end
-
-
 function M.setup()
     M.ensure_modules()
-    -- M.compile()
+
     table.insert(package.loaders, 3, module_searcher)
     table.insert(package.loaders, 2, expedite_cached_searcher)
-    M.init()
+
+    vim.api.nvim_add_user_command(
+        "EvalExpr",
+        function(...) require("bootstrap.fennel.repl").eval_print(...) end,
+        {
+            desc = "bootstrap.fennel.repl::eval_print",
+            complete = complete_fennel,
+            nargs = 1,
+        }
+    )
 end
 
 return M

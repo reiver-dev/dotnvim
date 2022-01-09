@@ -1,14 +1,52 @@
 --- Module routines
 --
 
+local runtimepath
+if vim.fn.has("win32") then
+    runtimepath = function()
+        return vim.api.nvim_get_option("runtimepath"):gsub("\\", "/")
+    end
+else
+    runtimepath = function()
+        return vim.api.nvim_get_option("runtimepath")
+    end
+end
+
+
 local function loaded_packages()
-    local rtp = vim.o.runtimepath
+    local rtp = runtimepath()
     local pattern = "/pack/[^/]+/opt/([^/,]+)"
     local loaded = {}
     for name in rtp:gmatch(pattern) do
         loaded[name] = true
     end
     return loaded
+end
+
+
+local function is_in_rtp(name)
+    local rtp = runtimepath()
+    local pname = vim.pesc(name)
+    local pattern = "/pack/[^/]+/([^/]+)/" .. pname .. "[,/$]"
+    for kind in rtp:gmatch(pattern) do
+        return kind
+    end
+    return nil
+end
+
+
+local function is_loaded(name)
+    local packer_plugins = _G.packer_plugins
+    if packer_plugins then
+        local pack = packer_plugins[name]
+        if pack then return pack.loaded end
+    end
+    return is_in_rtp(name) ~= nil
+end
+
+
+local function packadd_cmd(name)
+    return string.format("packadd %s | lua __after_load_hook(%q)", name, name)
 end
 
 
@@ -20,7 +58,7 @@ local function load_direct_packages(names)
     local commands = {}
     for _, name in ipairs(names) do
         if not loaded[name] then
-            commands[#commands + 1] = "packadd " .. name
+            commands[#commands + 1] = packadd_cmd(name)
         end
     end
     if #commands > 0 then
@@ -62,7 +100,7 @@ local function load_single_package(name)
             return plugin.loaded or load_packer_packages({name}, plugins)
         end
     end
-    vim.cmd("packadd " .. name)
+    vim.cmd(packadd_cmd(name))
 end
 
 
@@ -94,30 +132,86 @@ local function load_package(...)
 end
 
 
-local function complete_package()
+local function complete_package(arg)
     local plugins = _G.packer_plugins
+    local loadable_list = {}
     local loadable = {}
+    local i = 1
+
     if plugins then
         for name, plugin in pairs(plugins) do
             if not plugin.loaded then
-                loadable[#loadable + 1] = name
+                loadable_list[i] = name
+                loadable[name] = true
+                i = i + 1
             end
         end
     end
-    table.sort(loadable)
-    return table.concat(loadable, "\n")
+
+    do
+        local direct = vim.fn.getcompletion("", "packadd", 0)
+        local loaded = loaded_packages()
+        for _, name in ipairs(direct) do
+            if loadable[name] == nil and loaded[name] == nil then
+                loadable_list[i] = name
+                i = i + 1
+            end
+        end
+    end
+
+    if #arg > 0 then
+        local len = #arg
+        local sub = string.sub
+        loadable_list = vim.tbl_filter(function(name)
+            return sub(name, 1, len) == arg
+        end, loadable_list)
+    end
+
+    return loadable_list
 end
 
 
-local COMMAND = [[
-command! -nargs=+ -complete=custom,v:lua.__complete_package LoadPackage lua LOAD_PACKAGE(<f-args>)
-]]
+local after_load_hook = {}
+
+
+local function eval_after_load(name, func)
+    if is_loaded(name) then
+        func(name)
+    end
+    local hooks = after_load_hook[name]
+    if hooks == nil then
+        after_load_hook[name] = {func}
+    else
+        hooks[#hooks + 1] = func
+    end
+end
+
+
+local function call_after_load(name, ...)
+    local hooks = after_load_hook[name]
+    if hooks == nil then
+        return
+    end
+    for _, hook in ipairs(hooks) do
+        hook(name, ...)
+    end
+    after_load_hook[name] = nil
+end
 
 
 local function setup()
     _G.LOAD_PACKAGE = load_package
-    _G.__complete_package = complete_package
-    vim.api.nvim_exec(COMMAND, false)
+    _G.EVAL_AFTER_LOAD = eval_after_load
+    _G.__after_load_hook = call_after_load
+    vim.api.nvim_add_user_command(
+        "LoadPackage",
+        load_package,
+        {
+            desc = "bootstrap.modules::load_package",
+            nargs = "+",
+            complete = complete_package,
+        }
+    )
 end
 
 

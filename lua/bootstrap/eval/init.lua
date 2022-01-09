@@ -1,22 +1,21 @@
-
-local function setup()
-    local interop = require "bootstrap.interop"
-    local def = interop.command{
-        name = "Eval",
-        nargs = 1,
-        -- complete = "lua",
-        complete = "customlist,v:lua.__complete_lua",
-        modname = "bootstrap.eval.lua_eval",
-        funcname = "eval"
-    }
-    vim.cmd(def)
-end
-
+--- Better lua eval
 
 local function complete_lua(arg, _, _)
     return require"bootstrap.eval.lua_eval".complete(arg)
 end
 
-_G.__complete_lua = complete_lua
+
+local function setup()
+    vim.api.nvim_add_user_command(
+        "Eval",
+        function(...) require "bootstrap.eval.lua_eval".eval(...) end,
+        {
+            desc = "bootstrap.eval.lua_eval::eval",
+            complete = complete_lua,
+            nargs = 1,
+        }
+    )
+end
+
 
 return { setup = setup, complete_lua = complete_lua }

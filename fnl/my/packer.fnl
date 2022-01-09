@@ -27,6 +27,11 @@
   (tset opts 1 opts.url)
   (set opts.name nil)
   (set opts.url nil)
+  (when opts.opt
+    (set opts.config
+         (if opts.config
+           [opts.config #(_G.__after_load_hook $...)]
+           [#(_G.__after_load_hook $...)])))
   opts)
 
 

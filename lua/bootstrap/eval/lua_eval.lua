@@ -65,7 +65,7 @@ end
 
 
 local function eval(opts, env)
-    local text = opts.rawargs
+    local text = opts.rawargs or opts.args
     local env = exec_environ(opts, env)
     local template
     local kind
@@ -76,7 +76,7 @@ local function eval(opts, env)
         template = template_expr
         kind = "=EvalExpression"
     end
-    local program = template:format(opts.rawargs)
+    local program = template:format(text)
     local f, err = loadstring(program, kind)
     if f == nil then
         error(err)

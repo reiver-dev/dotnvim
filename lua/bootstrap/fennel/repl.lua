@@ -48,7 +48,8 @@ function M.eval(opts, env)
         useMetadata = true,
         allowedGlobals = allowedGlobals,
     }
-    return fennel.eval(opts.rawargs, options)
+    local text = opts.rawargs or opts.args
+    return fennel.eval(text, options)
 end
 
 
