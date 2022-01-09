@@ -4,8 +4,7 @@
 
 
 (def- modules
-  ["my.log"
-   "my.bufreg"
+  ["my.bufreg"
    "my.options"
    "my.packer"
    "my.terminal"

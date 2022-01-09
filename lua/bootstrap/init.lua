@@ -8,6 +8,7 @@ local function setup()
         endfunction
     ]]
 
+    require("bootstrap.log").setup()
     require("bootstrap.idle").setup()
     -- Download package manager and friends
     require("bootstrap.basedeps").setup()
