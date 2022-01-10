@@ -46,11 +46,14 @@ local keywords = {
     ["if"] = true,
     ["elseif"] = true,
     ["else"] = true,
+    ["then"] = true,
+    ["in"] = true,
     ["function"] = true,
     ["local"] = true,
     ["for"] = true,
     ["while"] = true,
     ["repeat"] = true,
+    ["until"] = true,
     ["return"] = true,
 }
 
