@@ -7,5 +7,6 @@
 !ginit.vim
 !pack
 !pack/local
+!plugin
 !lua
 !fnl
