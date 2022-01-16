@@ -10,24 +10,7 @@
   (string.format "<cmd>lua _T(%q, %q)<CR>" mod fun))
 
 
-(defn- rangecall [mod fun]
-  (string.format "<cmd>lua _T(%q, %q)<CR>" mod fun))
-
-
-(defn- termcall [mod fun]
-  (string.format "<C-\\><C-n>:lua _T(%q, %q)<CR>" mod fun))
-
-
-(defn- F [fun]
-  (simplecall handler fun))
-
-
-(defn- R [fun]
-  (rangecall handler fun))
-
-
-(defn- T [fun]
-  (termcall handler fun))
+(defn- F [fun] fun)
 
 
 (def keymap
@@ -69,7 +52,7 @@
        :<leader>q (F :line-diagnostic)
        :<C-K> (F :signature-help)
        :<leader>h (F :hover)}
-   :v {:<leader>a (R :range-code-action)
+   :v {:<leader>a (F :range-code-action)
        :<leader>f (F :format-region)
        :<leader>F (F :format-region)}})
 
@@ -128,6 +111,7 @@
   (pcall LOAD_PACKAGE "lsptrouble")
   (each [mode keys (pairs keymap-extra)]
     (each [key action (pairs keys)]
-      (vim.api.nvim_set_keymap mode key action {:noremap true}))))
+      (vim.keymap.set mode key #(_T "my.lsp.handlers" action)
+                      {:desc (.. "my.lsp.handlers::" action)}))))
 
 ;;; lsp ends here
