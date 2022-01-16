@@ -225,6 +225,12 @@
        :url "numToStr/Comment.nvim"
        :config #(_T "Comment" :setup))
 
+  (pkg :name "neogen"
+       :url "danymat/neogen"
+       :opt true
+       :keys [[:n "<leader>nf"]]
+       :config #(_T :my.pack.neogen :setup))
+
   (pkg :name "far.vim"
        :url "brooth/far.vim"
        :cmd ["Farr" "Farf"]
