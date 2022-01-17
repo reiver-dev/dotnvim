@@ -238,9 +238,22 @@
       :highlight [colors.fg colors.bg :NONE])
 
 
+(local HOME
+  (let [sep (if (= "\\" (package.config:sub 1 1))
+              "[\\/]+" "/+")]
+    (.. "^" (-> vim.env.HOME
+                vim.pesc
+                (string.gsub sep sep)))))
+
+
+(fn replacehome [path]
+  (string.gsub path HOME "~"))
+
+
 (left :Directory
-      :provider #(let [dir (get-local :directory)]
-                   (if dir (vim.fn.fnamemodify dir ":~") ""))
+      :provider #(match (get-local :directory)
+                   nil ""
+                   dir (replacehome dir))
       :separator " "
       :separator_highlight [:NONE colors.bg]
       :highlight [colors.fg colors.bg :nocombine])
@@ -282,8 +295,9 @@
 
 
 (right :Project
-       :provider #(let [dir (get-local :project :root)]
-                    (and dir (vim.fn.fnamemodify dir ":~")))
+       :provider #(match (get-local :project :root)
+                    nil ""
+                    dir (replacehome dir))
        :separator " "
        :separator_highlight [:NONE colors.bg]
        :highlight [colors.fg colors.bg])

@@ -1,37 +1,46 @@
-(module my.directory
-  {require {b my.bufreg}})
+(local b (require "my.bufreg"))
 
-(def- hook {})
+(local hook {})
 
-(defn add-hook [name fun]
+(fn add-hook [name fun]
   (tset hook name fun))
 
 
-(defn remove-hook [name]
+(fn remove-hook [name]
   (tset hook name nil))
 
 
-(defn call-hook [bufnr directory]
+(fn call-hook [bufnr directory]
   (each [name fun (pairs hook)]
     (fun bufnr directory)))
 
 
-(defn- current-buffer-dir []
+(local normalize
+  (if (= "\\" (package.config:sub 1 1))
+    (fn [path] (string.gsub path "\\" "/"))
+    (fn [path] path)))
+
+
+(fn getcwd []
+  (normalize (vim.fn.getcwd)))
+
+
+(fn current-buffer-dir []
   "Find directory path for current buffer."
-  (vim.fn.expand "%:p:h" 1))
+  (normalize (vim.fn.expand "%:p:h" 1)))
 
 
-(defn- empty? [str]
+(fn empty? [str]
   "Check if STR string is nil or empty."
   (or (= nil str) (= "" str)))
 
 
-(defn- non-empty? [str]
+(fn non-empty? [str]
   "Check if string exists and has characters."
   (and str (~= "" str)))
 
 
-(defn- directory? [path]
+(fn directory? [path]
   "Check if PATH is existing directory."
   (if (non-empty? path)
     (let [(res msg code) (vim.loop.fs_stat path)]
@@ -39,7 +48,8 @@
     false))
 
 
-(def- autocmd
+
+(local autocmd
   "augroup projectile
   autocmd!
   autocmd VimEnter,BufNew,BufNewFile,BufReadPre * lua _T('my.directory', 'on-file-open')
@@ -50,26 +60,26 @@
   ")
 
 
-(defn- getbufvar [bufnr name]
+(fn getbufvar [bufnr name]
   "Get buffer-local variable for BUFNR buffer by variable NAME."
   (match (pcall
            (fn []
              (vim.api.nvim_buf_get_var (or bufnr 0) name)))
     (true res) res
     _ ""))
-  
 
-(defn- setbufvar [bufnr name value]
+
+(fn setbufvar [bufnr name value]
   "Assign buffer-local variable for BUFNR buffer by variable NAME to VALUE."
   (vim.api.nvim_buf_set_var (or bufnr 0) name value))
 
 
-(defn- set-default-directory [bufnr path]
+(fn set-default-directory [bufnr path]
   (b.set-local bufnr :directory path)
   (setbufvar bufnr :default_directory path))
   
 
-(defn default-directory [bufnr]
+(fn default-directory [bufnr]
   "Provide directory path for BUFNR buffer."
   (let [dd (b.get-local bufnr :directory)]
     (if dd
@@ -77,30 +87,30 @@
       (getbufvar bufnr :default_directory))))
 
 
-(defn- fire-user-event [bufnr event]
+(fn fire-user-event [bufnr event]
   "Execute autocmd user event for BUFNR buffer by EVENT name."
   (when (vim.fn.exists (string.format "#User#%s" event))
     (let [cmd (string.format "doautocmd <nomodeline> User %s" event)]
       (vim.api.nvim_buf_call bufnr (fn [] (vim.cmd cmd))))))
 
 
-(defn- fire-default-directory-updated [bufnr dir]
+(fn fire-default-directory-updated [bufnr dir]
   "Execute autocmd DefaultDirectory for BUFNR buffer."
   (call-hook bufnr dir)
   (fire-user-event bufnr "DefaultDirectory"))
 
 
-(defn- apply-default-directory [bufnr]
+(fn apply-default-directory [bufnr]
   "Attempt to update default-directory for BUFNR buffer."
   (let [dd (default-directory bufnr)]
     (vim.api.nvim_buf_call
-      bufnr #(let [dir (or (current-buffer-dir) (vim.fn.getcwd))]
+      bufnr #(let [dir (or (current-buffer-dir) (getcwd))]
                (set-default-directory bufnr dir)
                (when (~= dir dd)
                  (fire-default-directory-updated bufnr dir))))))
 
 
-(defn force-default-directory [bufnr directory]
+(fn force-default-directory [bufnr directory]
   "Make default-directory for BUFNR buffern to become DIRECTORY."
   (let [dd (default-directory bufnr)]
     (vim.api.nvim_buf_call
@@ -110,38 +120,50 @@
                 (fire-default-directory-updated bufnr directory))))))
 
 
-(defn on-file-enter []
+(fn on-file-enter []
   "Ensure local current directory is default-directory for current buffer."
   (when (empty? vim.bo.buftype)
     (let [bufnr (tonumber (vim.fn.expand "<abuf>"))
-          dd (default-directory bufnr)]
-      (when (directory? dd)
+          dd (default-directory bufnr)
+          cwd (getcwd)]
+      (when (and (not= dd cwd) (directory? dd))
         (vim.cmd (.. "lcd " dd))))))
 
 
-(defn on-file-open []
+(fn on-file-open []
   "Update default-directory for current buffer.
   Happens when buffer is not special and is loaded
   and buffer's file has not changed."
   (let [bufnr (tonumber (vim.fn.expand "<abuf>"))]
-    (when (and (= (vim.api.nvim_buf_get_option bufnr :buftype) "")
+    (when (and (empty? (vim.api.nvim_buf_get_option bufnr :buftype))
                (vim.api.nvim_buf_is_loaded bufnr))
-      (let [file (vim.fn.expand "<afile>:p")
+      (let [file (normalize (vim.fn.expand "<afile>:p"))
             oldfile (b.get-local bufnr :file)]
         (when (or (= oldfile nil) (not= file oldfile))
           (b.set-local bufnr :file file)
           (apply-default-directory bufnr))))))
 
 
-(defn on-file-write []
+(fn on-file-write []
   (on-file-open)
   (on-file-enter))
 
 
-(defn on-file-rename []
+(fn on-file-rename []
   (on-file-open)
   (on-file-enter))
 
 
-(defn setup []
+(fn setup []
   (vim.api.nvim_exec autocmd false))
+
+
+{: setup
+ : on-file-enter
+ : on-file-open
+ : on-file-write
+ : on-file-rename
+ : force-default-directory
+ : default-directory
+ : add-hook
+ : remove-hook}
