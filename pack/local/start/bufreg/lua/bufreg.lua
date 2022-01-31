@@ -227,7 +227,7 @@ local function upd_local(reg, bufnr, ...)
     bufnr = buffer_id(bufnr)
     local id = reg.mapping[bufnr] or ensure_state(reg, bufnr)
     if id then
-        return upd_local_1(reg.state, n, id, ...)
+        return upd_local_1(reg.state, n - 1, id, ...)
     end
 end
 
