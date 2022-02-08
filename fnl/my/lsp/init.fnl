@@ -6,55 +6,33 @@
 (def- handler "my.lsp.handlers")
 
 
-(defn- simplecall [mod fun]
-  (string.format "<cmd>lua _T(%q, %q)<CR>" mod fun))
+(def- keymap
+  {:n {"<C-]>" :jump-definition
+       "<M-]>" :jump-declaration
+       :<leader>gi :jump-implementation
+       :<leader>gt :jump-type-definition
 
+       "[e" :diagnostic-prev
+       "]e" :diagnostic-next
 
-(defn- F [fun] fun)
+       :<leader>d :preview-definition
 
+       :<leader>a :code-action
+       :<leader>r :rename
+       :<leader>f :format-line
+       :<leader>F :format-buffer
 
-(def keymap
-  {:gd "<cmd>lua vim.lsp.buf.declaration()<CR>"
-   "<C-]>" "<cmd>lua vim.lsp.buf.definition()<CR>"
-   :1gD "<cmd>lua vim.lsp.buf.type_definition()<CR>"
-   :gD "<cmd>lua vim.lsp.buf.implementation()<CR>"
-   :K "<cmd>lua vim.lsp.buf.hover()<CR>"
-   :<C-K> "<cmd>lua vim.lsp.buf.signature_help()<CR>"
-   :gr "<cmd>lua vim.lsp.buf.references()<CR>"
-   :g0 "<cmd>lua vim.lsp.buf.document_symbol()<CR>"
-   :gW "<cmd>lua vim.lsp.buf.workspace_symbol()<CR>"
-   :<leader>F "<cmd>lua vim.lsp.buf.formatting()<CR>"
-   :<leader>f "<cmd>lua _trampouline('my.lsp', 'format-line')<CR>"
-   :<leader>d "<cmd>lua vim.lsp.diagnostic.show_line_diagnostics()<CR>"})
+       :<leader>sf :symbol-find
+       :<leader>sr :symbol-references
+       :<leader>sd :symbol-in-document
+       :<leader>sw :symbol-in-workspace
 
-
-(def- keymap-extra
-  {:n {"<C-]>" (F :jump-definition)
-       "<M-]>" (F :jump-declaration)
-       :<leader>gi (F :jump-implementation)
-       :<leader>gt (F :jump-type-definition)
-
-       "[e" (F :diagnostic-prev)
-       "]e" (F :diagnostic-next)
-
-       :<leader>d (F :preview-definition)
-
-       :<leader>a (F :code-action)
-       :<leader>r (F :rename)
-       :<leader>f (F :format-line)
-       :<leader>F (F :format-buffer)
-
-       :<leader>sf (F :symbol-find)
-       :<leader>sr (F :symbol-references)
-       :<leader>sd (F :symbol-in-document)
-       :<leader>sw (F :symbol-in-workspace)
-
-       :<leader>q (F :line-diagnostic)
-       :<C-K> (F :signature-help)
-       :<leader>h (F :hover)}
-   :v {:<leader>a (F :range-code-action)
-       :<leader>f (F :format-region)
-       :<leader>F (F :format-region)}})
+       :<leader>q :line-diagnostic
+       :<C-K> :signature-help
+       :<leader>h :hover}
+   :v {:<leader>a :range-code-action
+       :<leader>f :format-region
+       :<leader>F :format-region}})
 
 
 
@@ -108,10 +86,10 @@
 
 
 (defn setup []
-  (pcall LOAD_PACKAGE "lsptrouble")
-  (each [mode keys (pairs keymap-extra)]
+  (each [mode keys (pairs keymap)]
     (each [key action (pairs keys)]
-      (vim.keymap.set mode key #(_T "my.lsp.handlers" action)
+      (vim.keymap.set mode key
+                      #(_T "my.lsp.handlers" action)
                       {:desc (.. "my.lsp.handlers::" action)}))))
 
 ;;; lsp ends here
