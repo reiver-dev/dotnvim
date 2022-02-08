@@ -1,4 +1,17 @@
-(local b (require "my.bufreg"))
+(local {: get-local : set-local} (require "my.bufreg"))
+
+(local vim-simplify vim.fn.simplify)
+(local vim-expand vim.fn.expand)
+(local vim-getcwd vim.fn.getcwd)
+(local vim-exists vim.fn.exists)
+
+(local nvim_buf_get_option vim.api.nvim_buf_get_option)
+(local nvim_buf_is_loaded vim.api.nvim_buf_is_loaded)
+(local nvim_buf_get_var vim.api.nvim_buf_get_var)
+(local nvim_buf_set_var vim.api.nvim_buf_set_var)
+(local nvim_buf_call vim.api.nvim_buf_call)
+(local nvim_exec vim.api.nvim_exec)
+
 
 (local hook {})
 
@@ -17,17 +30,17 @@
 
 (local normalize
   (if (= "\\" (package.config:sub 1 1))
-    (fn [path] (string.gsub path "\\" "/"))
-    (fn [path] path)))
+    (fn [path] (string.gsub (vim-simplify path) "\\" "/"))
+    (fn [path] (vim-simplify path))))
 
 
 (fn getcwd []
-  (normalize (vim.fn.getcwd)))
+  (normalize (vim-getcwd)))
 
 
 (fn current-buffer-dir []
   "Find directory path for current buffer."
-  (normalize (vim.fn.expand "%:p:h" 1)))
+  (normalize (vim-expand "%:p:h" 1)))
 
 
 (fn empty? [str]
@@ -64,24 +77,24 @@
   "Get buffer-local variable for BUFNR buffer by variable NAME."
   (match (pcall
            (fn []
-             (vim.api.nvim_buf_get_var (or bufnr 0) name)))
+             (nvim_buf_get_var (or bufnr 0) name)))
     (true res) res
     _ ""))
 
 
 (fn setbufvar [bufnr name value]
   "Assign buffer-local variable for BUFNR buffer by variable NAME to VALUE."
-  (vim.api.nvim_buf_set_var (or bufnr 0) name value))
+  (nvim_buf_set_var (or bufnr 0) name value))
 
 
 (fn set-default-directory [bufnr path]
-  (b.set-local bufnr :directory path)
+  (set-local bufnr :directory path)
   (setbufvar bufnr :default_directory path))
-  
+
 
 (fn default-directory [bufnr]
   "Provide directory path for BUFNR buffer."
-  (let [dd (b.get-local bufnr :directory)]
+  (let [dd (get-local bufnr :directory)]
     (if dd
       dd
       (getbufvar bufnr :default_directory))))
@@ -89,9 +102,9 @@
 
 (fn fire-user-event [bufnr event]
   "Execute autocmd user event for BUFNR buffer by EVENT name."
-  (when (vim.fn.exists (string.format "#User#%s" event))
+  (when (vim-exists (string.format "#User#%s" event))
     (let [cmd (string.format "doautocmd <nomodeline> User %s" event)]
-      (vim.api.nvim_buf_call bufnr (fn [] (vim.cmd cmd))))))
+      (nvim_buf_call bufnr #(vim.cmd cmd)))))
 
 
 (fn fire-default-directory-updated [bufnr dir]
@@ -103,7 +116,7 @@
 (fn apply-default-directory [bufnr]
   "Attempt to update default-directory for BUFNR buffer."
   (let [dd (default-directory bufnr)]
-    (vim.api.nvim_buf_call
+    (nvim_buf_call
       bufnr #(let [dir (or (current-buffer-dir) (getcwd))]
                (set-default-directory bufnr dir)
                (when (~= dir dd)
@@ -113,7 +126,7 @@
 (fn force-default-directory [bufnr directory]
   "Make default-directory for BUFNR buffern to become DIRECTORY."
   (let [dd (default-directory bufnr)]
-    (vim.api.nvim_buf_call
+    (nvim_buf_call
       bufnr (fn []
               (set-default-directory bufnr directory)
               (when (not= directory dd)
@@ -123,7 +136,7 @@
 (fn on-file-enter []
   "Ensure local current directory is default-directory for current buffer."
   (when (empty? vim.bo.buftype)
-    (let [bufnr (tonumber (vim.fn.expand "<abuf>"))
+    (let [bufnr (tonumber (vim-expand "<abuf>"))
           dd (default-directory bufnr)
           cwd (getcwd)]
       (when (and (not= dd cwd) (directory? dd))
@@ -134,13 +147,13 @@
   "Update default-directory for current buffer.
   Happens when buffer is not special and is loaded
   and buffer's file has not changed."
-  (let [bufnr (tonumber (vim.fn.expand "<abuf>"))]
-    (when (and (empty? (vim.api.nvim_buf_get_option bufnr :buftype))
-               (vim.api.nvim_buf_is_loaded bufnr))
-      (let [file (normalize (vim.fn.expand "<afile>:p"))
-            oldfile (b.get-local bufnr :file)]
+  (let [bufnr (tonumber (vim-expand "<abuf>"))]
+    (when (and (= "" (nvim_buf_get_option bufnr :buftype))
+               (nvim_buf_is_loaded bufnr))
+      (let [file (normalize (vim-expand "<afile>:p"))
+            oldfile (get-local bufnr :file)]
         (when (or (= oldfile nil) (not= file oldfile))
-          (b.set-local bufnr :file file)
+          (set-local bufnr :file file)
           (apply-default-directory bufnr))))))
 
 
