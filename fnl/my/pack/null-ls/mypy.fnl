@@ -1,5 +1,6 @@
 (local python (require "my.lang.python"))
 (local b (require "my.bufreg"))
+(local fun (require "fun.raw"))
 
 (fn table-concat [...]
   (local result {})
@@ -54,23 +55,24 @@
 (local line-pattern "([^:]+):(%d+):(%d+): ([^:]+): (.*)")
 
 
-(fn parse-line [line]
-  (print "PARSING:" line)
-  (let [(name line col severity msg) (string.match line line-pattern)]
-    (print "MATCH" name line col severity msg)
-    (when name
-      {:source "mypy"
-       :row line
-       :col col
-       :severity (match severity
-                   :error 1
-                   :warning 2
-                   :note 3
-                   _ 4)
-       :message msg})))
-
-
-(fn prepare-args [{: bufnr : bufname : temp_path}])
+(fn mypy-parse [{: output : cwd}]
+  (local call vim.api.nvim_call_function)
+  (icollect [_ line (fun.str-split "\n" output)]
+    (do
+      (local (name row col sev message) (string.match line line-pattern))
+      (when name
+        (local bufnr (call "bufadd" [(.. cwd "/" name)]))
+        (local severity (match sev
+                          :error 1
+                          :warning 2
+                          :note 3
+                          _ 4))
+        {:source "mypy"
+         : bufnr
+         : row
+         : col
+         : severity
+         : message}))))
 
 
 (local mypy-launcher
@@ -84,9 +86,11 @@
                          ["--shadow-file" params.bufname params.temp_path
                           params.bufname]))
    :to_temp_file true
+   :multiple_files true
    :check_exit_code (fn [code] (<= code 2))
-   :format :line
-   :on_output parse-line})
+   :on_output (fn [params done]
+                (LOG "Mypy done" :data params)
+                (done (mypy-parse params)))})
 
 
 (fn setup []
