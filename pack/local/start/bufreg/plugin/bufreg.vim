@@ -13,22 +13,6 @@ autocmd BufNew,BufNewFile * lua require("bufreg")._autocmd_new()
 autocmd BufReadPre * lua require("bufreg")._autocmd_new()
 augroup END
 
-let s:id = expand('<SID>')
-
-function! s:BufferRegistryStateId(expr) abort
-    let l:State = getbufvar(a:expr, "__buffer_registry_state_ref_holder__", v:null)
-    if l:State != v:null
-        return l:State()
-    else
-        return v:null
-    endif
-endfunction
-
-let s:opts = {
-            \ 'varname': '__buffer_registry_state_ref_holder__',
-            \ 'funcname': s:id . 'BufferRegistryStateId'
-            \}
-
-call luaeval('require("bufreg")._setup(_A)', s:opts)
+lua require("bufreg")._setup({varname='__buffer_registry_state_ref_holder__'})
 
 " bufreg.vim ends here

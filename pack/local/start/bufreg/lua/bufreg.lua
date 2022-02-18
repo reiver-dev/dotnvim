@@ -1,13 +1,9 @@
 --- Buffer registry
 
---- @type fun(boolean): userdata
-local newproxy = newproxy
-local error = error
-local next = next
-
 local current_buffer = vim.api.nvim_get_current_buf
-local call = vim.call
-local setbufvar = vim.fn.setbufvar
+local setbufvar = vim.api.nvim_buf_set_var
+local getbufvar = vim.api.nvim_buf_get_var
+local delbufvar = vim.api.nvim_buf_del_var
 local expand = vim.fn.expand
 
 --- @class Registry
@@ -23,12 +19,11 @@ local expand = vim.fn.expand
 --- @return Registry
 local function new_registry(varname, funcname)
     return {
-        state = setmetatable({}, {__mode = "v"}),
+        state = {},
         mapping = {},
         free_ids = {},
         top_id = 0,
         varname = varname,
-        funcname = funcname
     }
 end
 
@@ -56,6 +51,7 @@ local function return_id(reg, front_id, back_id)
     if current_back_id == back_id then
         reg.mapping[front_id] = nil
     end
+    reg.state[back_id] = nil
     reg.free_ids[back_id] = true
 end
 
@@ -63,38 +59,38 @@ end
 --- @param reg Registry
 --- @param front_id integer
 --- @param back_id integer
---- @param obj table
---- @return table
-local function make_anchor(reg, front_id, back_id, obj)
+--- @return userdata Anchor
+local function make_anchor(reg, front_id, back_id)
     local proxy = newproxy(true)
     local metatable = getmetatable(proxy)
     metatable.__gc = function() return_id(reg, front_id, back_id) end
-    setmetatable(obj, {__anchor = proxy})
-    return obj
-end
-
-
---- @param reg Registry
---- @param front_id integer
-local function new_state(reg, front_id)
-    local back_id = claim_id(reg, front_id)
-    local nstate = make_anchor(reg, front_id, back_id, {})
-    reg.state[back_id] = nstate
-    return back_id, nstate
+    return proxy
 end
 
 
 --- @param reg Registry
 --- @param bufnr integer
+--- @return integer State id
 local function ensure_state(reg, bufnr)
-    local id = call(reg.funcname, bufnr)
-    if id == vim.NIL then
-        local state
-        id, state = new_state(reg, bufnr)
-        state.bufnr = bufnr
-        state.id = id
-        setbufvar(bufnr, reg.varname, function() return state.id end)
+    local exists, func = pcall(getbufvar, bufnr, reg.varname)
+    if exists then
+        return func()
     end
+
+    local id = claim_id(reg, bufnr)
+
+    reg.state[id] = {
+        id = id,
+        bufnr = bufnr,
+    }
+
+    local wrap = {
+        id = id,
+        anchor = make_anchor(reg, bufnr, id)
+    }
+
+    setbufvar(bufnr, reg.varname, function() return wrap.id end)
+
     return id
 end
 
@@ -102,7 +98,7 @@ end
 --- @param reg Registry
 --- @param bufnr integer
 local function delete_buffer_state(reg, bufnr)
-    vim.api.nvim_buf_del_var(bufnr, reg.varname)
+    delbufvar(bufnr, reg.varname)
 end
 
 --- Validate buffer handle value, query current buffer handle
@@ -273,7 +269,7 @@ end
 --- @param opts Options
 local function setup(opts)
     if not _BUFFER_REGISTRY then
-        local reg = new_registry(opts.varname, opts.funcname)
+        local reg = new_registry(opts.varname)
         _BUFFER_REGISTRY = function()
             return reg
         end
