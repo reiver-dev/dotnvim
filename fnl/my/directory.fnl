@@ -4,6 +4,7 @@
 (local vim-expand vim.fn.expand)
 (local vim-getcwd vim.fn.getcwd)
 (local vim-exists vim.fn.exists)
+(local vim-fnameescape vim.fn.fnameescape)
 
 (local nvim_buf_get_option vim.api.nvim_buf_get_option)
 (local nvim_buf_is_loaded vim.api.nvim_buf_is_loaded)
@@ -140,7 +141,7 @@
           dd (default-directory bufnr)
           cwd (getcwd)]
       (when (and (not= dd cwd) (directory? dd))
-        (vim.cmd (.. "lcd " dd))))))
+        (vim.cmd (.. "lcd " (vim-fnameescape dd)))))))
 
 
 (fn on-file-open []
