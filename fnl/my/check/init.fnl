@@ -24,17 +24,19 @@
       (vim.diagnostic.set id bufnr entries))))
 
 
-(defn- execute-checkers [bufnr]
+(defn- execute-checkers [bufnr event]
   (LOG "Execute checkers"
        :bufnr bufnr
+       :event event
        :checkers (b.get-local bufnr :enabled-checkers))
   (let [enabled-checkers (b.get-local bufnr :enabled-checkers)]
     (when enabled-checkers
       (each [name client-id (pairs enabled-checkers)]
         (LOG "Launching checker" :bufnr bufnr :name name)
-        (reg.run name bufnr
-                 (fn [entries]
-                   (publish client-id bufnr entries)))))))
+        (vim.schedule
+          #(reg.run name bufnr
+                    (fn [entries]
+                      (publish client-id bufnr entries))))))))
 
 
 (defn register [name run cancel]
@@ -47,3 +49,9 @@
   (var bufnr (buffer bufnr))
   (b.set-local bufnr :enabled-checkers name (. client-ids name))
   (evt.enable bufnr execute-checkers))
+
+
+(defn disable [bufnr]
+  (var bufnr (buffer bufnr))
+  (b.set-local bufnr :enabled-checkers {})
+  (evt.disable bufnr))
