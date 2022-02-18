@@ -264,7 +264,6 @@ end
 
 --- @class Options
 --- @field varname string
---- @field funcname string
 
 --- @param opts Options
 local function setup(opts)
