@@ -160,9 +160,6 @@
        :cmd ["Trouble" "TroubleToggle" "TroubleRefresh" "TroubleClose"]
        :config #(_T :my.pack.lsptrouble :setup))
 
-  (pkg :name :lspcolors
-       :url "folke/lsp-colors.nvim")
-
   (pkg :name :vista
        :url "liuchengxu/vista.vim"
        :cmd ["Vista"])
@@ -328,9 +325,6 @@
   (pkg :name "doom-one-theme"
        :url "NTBBloodbath/doom-one.nvim")
 
-  (pkg :name "catppuccino-theme"
-       :url "Pocco81/Catppuccino.nvim")
-
   (pkg :name "darcula-solid-theme"
        :url "briones-gabriel/darcula-solid.nvim")
 
@@ -348,9 +342,6 @@
 
   (pkg :name "zenbones-theme"
        :url "mcchrish/zenbones.nvim")
-
-  (pkg :name "zephyr-theme"
-       :url "glepnir/zephyr-nvim")
 
   (pkg :name "modus-theme"
        :url "ishan9299/modus-theme-vim")
