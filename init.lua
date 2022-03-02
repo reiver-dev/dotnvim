@@ -18,6 +18,10 @@ if os.getenv("AK_PROFILER") then
 end
 
 
+vim.g.do_filetype_lua = 1
+vim.g.did_load_filetypes = 0
+
+
 local mods
 do
     local fs_scandir = vim.loop.fs_scandir
