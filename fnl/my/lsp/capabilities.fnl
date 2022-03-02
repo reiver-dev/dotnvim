@@ -2,6 +2,7 @@
 
 
 (defonce- capabilities-state {})
+(defonce- capabilities-update-hook {})
 
 
 (defn- update-table [old new]
@@ -18,12 +19,18 @@
 
 
 (defn update [new-capabilities]
-  (update-table (capabilities) new-capabilities))
+  (update-table (capabilities) new-capabilities)
+  (each [_ hook (pairs capabilities-update-hook)]
+    (hook capabilities-state)))
 
 
 (defn update-with [func]
   (let [caps (capabilities)]
     (update caps (func caps))))
+
+
+(defn hook [name func]
+  (tset capabilities-update-hook name func))
 
 
 (defn get []

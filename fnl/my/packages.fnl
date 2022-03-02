@@ -146,6 +146,8 @@
        :url "neovim/nvim-lspconfig"
        :module ["lspconfig"]
        :cmd [:LspInfo :LspStart :LspStop :LspRestart]
+       :requires ["cmp-lsp"]
+       :config #(_T :my.pack.lspconfig :setup)
        :opt true)
 
   (pkg :name :null-ls
