@@ -293,12 +293,6 @@
        :url "kyazdani42/nvim-web-devicons"
        :config #(_T :nvim-web-devicons :setup))
 
-  (pkg :name :galaxyline
-       :url "NTBBloodbath/galaxyline.nvim"
-       :branch "main"
-       :requires [:devicons]
-       :config #(require "my.ui.galaxyline"))
-
   (pkg :name :better-whitespace
        :url "ntpeters/vim-better-whitespace"
        :config #(set vim.g.better_whitespace_filetypes_blacklist
