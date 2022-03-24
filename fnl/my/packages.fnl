@@ -315,29 +315,20 @@
        :url "rktjmp/lush.nvim")
 
   ;; Themes
-  (pkg :name "jellybeans-theme"
-       :url "metalelf0/jellybeans-nvim")
-
-  (pkg :name "doom-one-theme"
-       :url "NTBBloodbath/doom-one.nvim")
-
   (pkg :name "darcula-solid-theme"
        :url "briones-gabriel/darcula-solid.nvim")
-
-  (pkg :name "one-theme"
-       :url "rakr/vim-one")
 
   (pkg :name "edge-theme"
        :url "sainnhe/edge")
 
+  (pkg :name "kanagawa-theme"
+       :url "rebelot/kanagawa.nvim")
+
+  (pkg :name "inspired-github-theme"
+       :url "mvpopuk/inspired-github.vim")
+
   (pkg :name "papercolor-theme"
        :url "NLKNguyen/papercolor-theme")
-
-  (pkg :name "limestone-theme"
-       :url "tsbohc/limestone")
-
-  (pkg :name "zenbones-theme"
-       :url "mcchrish/zenbones.nvim")
 
   (pkg :name "modus-theme"
        :url "ishan9299/modus-theme-vim")
@@ -349,10 +340,7 @@
        :url "https://gitlab.com/yorickpeterse/nvim-grey")
 
   (pkg :name "paper-theme"
-       :url "https://gitlab.com/yorickpeterse/vim-paper")
-
-  (pkg :name "nvcode-theme"
-       :url "ChristianChiarulli/nvcode-color-schemes.vim"))
+       :url "https://gitlab.com/yorickpeterse/vim-paper"))
 
 
 configure-packages
