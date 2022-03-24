@@ -212,6 +212,6 @@ vim.api.nvim_create_autocmd("ColorScheme", { callback = setup_highlights, group 
 
 
 vim.o.tabline = "%!v:lua.__Tabline()"
-vim.o.statusline = "%t %m%r%=%-14.(%l,%c%V%) %P"
+vim.o.statusline = "W:%-4{winnr()} B:%-4{bufnr()} %t %m%r%=%-14.(%l,%c%V%) %P"
 
 --- tabline.lua ends here
