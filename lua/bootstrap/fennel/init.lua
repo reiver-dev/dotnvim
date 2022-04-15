@@ -160,7 +160,7 @@ function M.setup()
     table.insert(package.loaders, 3, module_searcher)
     table.insert(package.loaders, 2, expedite_cached_searcher)
 
-    vim.api.nvim_add_user_command(
+    vim.api.nvim_create_user_command(
         "EvalExpr",
         function(...) require("bootstrap.fennel.repl").eval_print(...) end,
         {

@@ -203,7 +203,7 @@ local function setup()
     _G.LOAD_PACKAGE = load_package
     _G.EVAL_AFTER_LOAD = eval_after_load
     _G.__after_load_hook = call_after_load
-    vim.api.nvim_add_user_command(
+    vim.api.nvim_create_user_command(
         "LoadPackage",
         load_package,
         {

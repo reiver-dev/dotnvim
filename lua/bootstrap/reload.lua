@@ -123,7 +123,7 @@ end
 
 local function setup()
     _G.RELOAD = reload_modules
-    vim.api.nvim_add_user_command(
+    vim.api.nvim_create_user_command(
         "ReloadModule",
         reload_modules,
         {

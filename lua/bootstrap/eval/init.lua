@@ -6,7 +6,7 @@ end
 
 
 local function setup()
-    vim.api.nvim_add_user_command(
+    vim.api.nvim_create_user_command(
         "Eval",
         function(...) require "bootstrap.eval.lua_eval".eval(...) end,
         {
