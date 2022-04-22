@@ -67,13 +67,6 @@
             :select true})})
 
 
-(def- border
-  (let [r []]
-    (for [i 1 8]
-      (tset r i [" " :FloatShadow]))
-    r))
-
-
 (defn- expand-snippet [param]
   (_T :luasnip :lsp_expand param.body))
 
@@ -85,7 +78,6 @@
                                      {:with_text true
                                       :maxwidth 50
                                       :menu source-mapping})}
-              :documentation {:border border}
               :snippet {:expand expand-snippet}
               :experimental {:native_menu false
                              :ghost_text true}
