@@ -24,6 +24,7 @@ end
 
 
 local function setup_highlights()
+    local sethl = vim.api.nvim_set_hl
     local base = vim.api.nvim_get_hl_by_name("StatusLine", true)
     local colors = require "statusline.colors"
     local modes = {
@@ -38,17 +39,17 @@ local function setup_highlights()
         ["Shell"] = colors.default.red,
     }
     for mode, bg in pairs(modes) do
-        vim.api.nvim_set_hl(0, "StatusMode" .. mode, { fg = "Black", bg = bg })
+        sethl(0, "StatusMode" .. mode, { fg = "Black", bg = bg })
     end
     for _, hl in ipairs({"Error", "Warn", "Info", "Hint"}) do
         local dhl = vim.api.nvim_get_hl_by_name("DiagnosticSign" .. hl, true)
-        vim.api.nvim_set_hl(0, "StatusDiagnostic" .. hl, { fg = dhl.foreground, bg = base.background })
+        sethl(0, "StatusDiagnostic" .. hl, { fg = dhl.foreground, bg = base.background })
     end
     local colors_ex = vim.o.background == "dark" and colors.dark or colors.light
-    vim.api.nvim_set_hl(0, "StatusVcs", {fg = colors_ex.magenta, bg = base.background})
-    vim.api.nvim_set_hl(0, "StatusDiffAdd", {fg = colors_ex.green, bg = base.background})
-    vim.api.nvim_set_hl(0, "StatusDiffModify", {fg = colors_ex.orange, bg = base.background})
-    vim.api.nvim_set_hl(0, "StatusDiffRemove", {fg = colors_ex.red, bg = base.background})
+    sethl(0, "StatusVcs", {fg = colors_ex.magenta, bg = base.background})
+    sethl(0, "StatusDiffAdd", {fg = colors_ex.green, bg = base.background})
+    sethl(0, "StatusDiffModify", {fg = colors_ex.orange, bg = base.background})
+    sethl(0, "StatusDiffRemove", {fg = colors_ex.red, bg = base.background})
 end
 
 
@@ -110,12 +111,13 @@ local statusline_right = {
     {
         fn = function(bufnr)
             local client_names = {}
-            for _, client in ipairs(vim.lsp.buf_get_clients(bufnr)) do
+            for _, client in pairs(vim.lsp.buf_get_clients(bufnr)) do
                 client_names[#client_names+1] = string.format("%s(%d)", client.name, client.id)
             end
             if #client_names == 0 then
                 return ""
             end
+            table.sort(client_names)
             return string.format("LSP: %s", table.concat(client_names, ", "))
         end
     },
