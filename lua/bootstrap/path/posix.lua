@@ -103,11 +103,11 @@ local function normalize(path)
     if n == 0 then
         normparts = {}
     elseif n == 1 then
-        normparts = {""}
+        normparts = { "" }
     elseif n == 2 then
-        normparts = {"", ""}
+        normparts = { "", "" }
     elseif n == 3 then
-        normparts = {""}
+        normparts = { "" }
     end
 
     local b = #normparts + 1
@@ -187,8 +187,8 @@ local function parents(path, opts)
             rootpos = left_trim(path, issep, rootpos, len)
             rootpos = left_trim(path, notsep, rootpos, len)
         end
-    -- Absolute
     elseif opts.exclude_root then
+        -- Absolute
         rootpos = left_trim(path, notsep, rootpos, len)
     end
 
@@ -199,7 +199,7 @@ local function parents(path, opts)
     else
         iterator = iter_parents
     end
-    return iterator, {path, rootpos}, len
+    return iterator, { path, rootpos }, len
 end
 
 

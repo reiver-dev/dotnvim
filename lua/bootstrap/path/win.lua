@@ -58,21 +58,21 @@ local function splitroot_pos(s)
     -- A:
     if is_driveletter(v1) and v2 == 58 then
         return left_trim(s, issep, 2, #s)
-    -- Relative path
     elseif notsep(v1) then
+        -- Relative path
         return 0
-    -- //
     elseif issep(v1) and issep(v2) then
-        -- //./ or //?/
+        -- //
         if (v3 == 63 or v3 == 46) and issep(v4) then
+            -- //./ or //?/
             return left_trim(s, issep, 4, #s)
         elseif notsep(v3) then
             -- //host/share
             return plain_unc(s)
         end
         return 0
-    -- \??\
     elseif v1 == 92 and v2 == 63 and v3 == 63 and v4 == 92 then
+        -- \??\
         return 5
     else
         return 0
@@ -87,7 +87,7 @@ local function ensure_cwd(path)
     elseif issep(a) then
         return "." .. path
     else
-        return "./" ..  path
+        return "./" .. path
     end
 end
 
@@ -141,6 +141,7 @@ local function namedir(path)
     return path
 end
 
+
 local function split(s)
     local parts = {}
     local i = 1
@@ -175,9 +176,9 @@ local function normalize(path, shellshash)
         return path
     end
     local parts = split(tail)
-    local normparts = {namefile(root):gsub("[\\/]", slash)}
+    local normparts = { namefile(root):gsub("[\\/]", slash) }
     local n = 2
-    for i = 1,#parts do
+    for i = 1, #parts do
         local part = parts[i]
         if part == ".." then
             if n == 2 then
@@ -257,7 +258,7 @@ local function parents(path, opts)
         iterator = iter_parents
     end
 
-    return iterator, {path, rootpos}, len
+    return iterator, { path, rootpos }, len
 end
 
 

@@ -10,10 +10,11 @@ local function fserror(fname, err)
     return error(string.format("At file `%s`: %s", fname, err), 1)
 end
 
+
 --- @param path string
 local function mkdir(path)
     local numstack = 1
-    local stack = {path}
+    local stack = { path }
 
     do
         local head, tail = splitpath(path)
