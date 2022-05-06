@@ -31,7 +31,6 @@
   (setb :softtabstop 4)
   (setb :shiftwidth 4)
   (setb :expandtab true)
-  (setb :autoindent true)
   (setb :smartindent true)
   (setb :lispwords (.. vim.o.lispwords ",module,collect,icollect")))
 
