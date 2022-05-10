@@ -108,7 +108,7 @@ local statusline_right = {
             for _, ii in ipairs(icons) do
                 local count = counts[ii[1]]
                 if count > 0 then
-                    parts[#parts + 1] = highlighted(ii[3], ii[2] .. tostring(count))
+                    parts[#parts + 1] = highlighted(ii[3], ii[2] .. fmt("%-2d", count))
                 end
             end
             return table.concat(parts, " ")
@@ -145,9 +145,9 @@ local statusline_right = {
             if stats[1] == -1 and stats[2] == -1 and stats[3] == -1 then
                 return ""
             end
-            return highlighted("StatusDiffAdd", " " .. tostring(stats[1]))
-                .. highlighted("StatusDiffModify", "  " .. tostring(stats[2]))
-                .. highlighted("StatusDiffRemove", "  " .. tostring(stats[3]))
+            return highlighted("StatusDiffAdd", " " .. fmt("%-2d", stats[1]))
+                .. highlighted("StatusDiffModify", "  " .. fmt("%-2d", stats[2]))
+                .. highlighted("StatusDiffRemove", "  " .. fmt("%-2d", stats[3]))
         end
     }
 }
