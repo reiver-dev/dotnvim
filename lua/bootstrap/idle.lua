@@ -107,7 +107,7 @@ end
 
 --- Initialize idle hook and CursorHold'I passing
 local function setup()
-    eventignore:append({"CursorHold", "CursorHoldI"})
+    eventignore:append({ "CursorHold", "CursorHoldI" })
     exec(COMMAND)
     _G.__on_idle_break = on_idle_break
 end
