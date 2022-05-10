@@ -153,7 +153,7 @@ local statusline_right = {
 }
 
 
-local function __Tablabel(tabid)
+local function tablabel(tabid)
     local windows = api.nvim_tabpage_list_wins(tabid)
     local window_count = 0
     local diff_count = 0
@@ -176,10 +176,9 @@ local function __Tablabel(tabid)
 end
 
 
-function __Tabline()
+local function tabsegment()
     local tabpages = api.nvim_list_tabpages()
     local current_tabpage = api.nvim_get_current_tabpage()
-    local bufnr = api.nvim_get_current_buf()
     local tabs = {}
     for i, tabpagenum in ipairs(tabpages) do
         local hl
@@ -188,9 +187,15 @@ function __Tabline()
         else
             hl = "%#TabLine#"
         end
-        local label = fmt(" %%%dT%s%%T ", i, __Tablabel(tabpagenum))
+        local label = fmt(" %%%dT%s%%T ", i, tablabel(tabpagenum))
         tabs[i] = fmt("%s%s", hl, label)
     end
+    return tabs
+end
+
+
+function __Tabline()
+    local bufnr = api.nvim_get_current_buf()
     local sl = {}
     for i = 1, #statusline_left do
         local v = statusline_left[i].fn(bufnr)
@@ -205,6 +210,7 @@ function __Tabline()
             sr[#sr + 1] = v
         end
     end
+    local tabs = tabsegment()
     return "%#StatusLine#"
             .. current_mode()
             .. " "
