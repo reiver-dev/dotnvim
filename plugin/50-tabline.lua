@@ -17,6 +17,11 @@ local function highlighted(hl, body)
 end
 
 
+local function highlighted_prefix(hl, body)
+    return fmt("%%#%s#%s", hl, body)
+end
+
+
 local function current_mode()
     local m = require "statusline.mode"
     local mode = api.nvim_get_mode().mode
@@ -108,10 +113,15 @@ local statusline_right = {
             for _, ii in ipairs(icons) do
                 local count = counts[ii[1]]
                 if count > 0 then
-                    parts[#parts + 1] = highlighted(ii[3], ii[2] .. fmt("%-2d", count))
+                    parts[#parts + 1] = highlighted_prefix(ii[3], ii[2] .. fmt("%-2d", count))
                 end
             end
-            return table.concat(parts, " ")
+            if #parts then
+                parts[#parts] = parts[#parts] .. "%#StatusLine#"
+                return table.concat(parts, " ")
+            else
+                return ""
+            end
         end
     },
     {
@@ -145,8 +155,8 @@ local statusline_right = {
             if stats[1] == -1 and stats[2] == -1 and stats[3] == -1 then
                 return ""
             end
-            return highlighted("StatusDiffAdd", " " .. fmt("%-2d", stats[1]))
-                .. highlighted("StatusDiffModify", "  " .. fmt("%-2d", stats[2]))
+            return highlighted_prefix("StatusDiffAdd", " " .. fmt("%-2d", stats[1]))
+                .. highlighted_prefix("StatusDiffModify", "  " .. fmt("%-2d", stats[2]))
                 .. highlighted("StatusDiffRemove", "  " .. fmt("%-2d", stats[3]))
         end
     }
@@ -211,8 +221,7 @@ function __Tabline()
         end
     end
     local tabs = tabsegment()
-    return "%#StatusLine#"
-            .. current_mode()
+    return current_mode()
             .. " "
             .. table.concat(sl, " | ")
             .. "%="
