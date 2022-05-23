@@ -13,17 +13,6 @@ else
 end
 
 
-local function loaded_packages()
-    local rtp = runtimepath()
-    local pattern = "/pack/[^/]+/opt/([^/,]+)"
-    local loaded = {}
-    for name in rtp:gmatch(pattern) do
-        loaded[name] = true
-    end
-    return loaded
-end
-
-
 local function is_in_rtp(name)
     local rtp = runtimepath()
     local pname = vim.pesc(name)
@@ -33,6 +22,9 @@ local function is_in_rtp(name)
     end
     return nil
 end
+
+
+local after_load_hook = {}
 
 
 local function is_loaded(name)
@@ -45,8 +37,39 @@ local function is_loaded(name)
 end
 
 
-local function packadd_cmd(name)
-    return string.format("packadd %s | lua __after_load_hook(%q)", name, name)
+local function eval_after_load(name, func)
+    if is_loaded(name) then
+        func(name)
+    end
+    local hooks = after_load_hook[name]
+    if hooks == nil then
+        after_load_hook[name] = {func}
+    else
+        hooks[#hooks + 1] = func
+    end
+end
+
+
+local function call_after_load(name, ...)
+    local hooks = after_load_hook[name]
+    if hooks == nil then
+        return
+    end
+    for _, hook in ipairs(hooks) do
+        hook(name, ...)
+    end
+    after_load_hook[name] = nil
+end
+
+
+local function loaded_packages()
+    local rtp = runtimepath()
+    local pattern = "/pack/[^/]+/opt/([^/,]+)"
+    local loaded = {}
+    for name in rtp:gmatch(pattern) do
+        loaded[name] = true
+    end
+    return loaded
 end
 
 
@@ -54,15 +77,23 @@ local function load_direct_packages(names)
     if not (names and next(names)) then
         return
     end
+
     local loaded = loaded_packages()
-    local commands = {}
+
+    local non_loaded_names = {}
     for _, name in ipairs(names) do
         if not loaded[name] then
-            commands[#commands + 1] = packadd_cmd(name)
+            non_loaded_names[#non_loaded_names + 1] = name
         end
     end
-    if #commands > 0 then
-        vim.api.nvim_exec(table.concat(commands, "\n"), false)
+
+    if #non_loaded_names > 0 then
+        local cmddef = { cmd = "packadd", args = { "" } }
+        for _, name in ipairs(non_loaded_names) do
+            cmddef.args[1] = name
+            vim.cmd(cmddef)
+            call_after_load(name)
+        end
     end
 end
 
@@ -100,7 +131,7 @@ local function load_single_package(name)
             return plugin.loaded or load_packer_packages({name}, plugins)
         end
     end
-    vim.cmd(packadd_cmd(name))
+    load_direct_packages { name }
 end
 
 
@@ -171,34 +202,6 @@ local function complete_package(arg)
 end
 
 
-local after_load_hook = {}
-
-
-local function eval_after_load(name, func)
-    if is_loaded(name) then
-        func(name)
-    end
-    local hooks = after_load_hook[name]
-    if hooks == nil then
-        after_load_hook[name] = {func}
-    else
-        hooks[#hooks + 1] = func
-    end
-end
-
-
-local function call_after_load(name, ...)
-    local hooks = after_load_hook[name]
-    if hooks == nil then
-        return
-    end
-    for _, hook in ipairs(hooks) do
-        hook(name, ...)
-    end
-    after_load_hook[name] = nil
-end
-
-
 local function setup()
     _G.LOAD_PACKAGE = load_package
     _G.EVAL_AFTER_LOAD = eval_after_load
@@ -218,7 +221,8 @@ end
 return {
     setup = setup,
     load_package = load_package,
-    complete_package = complete_package
+    complete_package = complete_package,
+    call_after_load = call_after_load,
 }
 
 --- modules.lua ends here
