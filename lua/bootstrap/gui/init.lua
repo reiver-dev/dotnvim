@@ -4,8 +4,8 @@
 local au = [[
 augroup BootstrapUi
 autocmd!
-autocmd UIEnter * call v:lua._trampouline("bootstrap.gui", "enter", v:event['chan'])
-autocmd UILeave * call v:lua._trampouline("bootstrap.gui", "leave", v:event['chan'])
+autocmd UIEnter * call v:lua._T("bootstrap.gui", "enter", v:event['chan'])
+autocmd UILeave * call v:lua._T("bootstrap.gui", "leave", v:event['chan'])
 augroup END
 ]]
 

@@ -210,7 +210,6 @@ local ALLOWED_GLOBALS = setmetatable({
     "vim",
     "LOG",
     "_T",
-    "_trampouline",
     "LOAD_PACKAGE",
     "RELOAD",
 }, {__newindex = function() error("Allowed globals insert attempt") end})

@@ -1,23 +1,6 @@
 --- Global trampouline function
 --
 
-local function accept(status, ...)
-    if status then
-        return ...
-    end
-    error(...)
-end
-
-
-local function error_handler(modname, funcname)
-    return function (msg)
-        local t = debug.traceback(msg) --:gsub("\n", "\n")
-        local res = ("\nTrampoiline %s::%s => %s\n"):format(modname, funcname, t)
-        return res:gsub("\t", "    ")
-    end
-end
-
-
 local function tget(tbl, key)
     return tbl[key]
 end
@@ -58,15 +41,11 @@ end
 
 
 local function trampouline(modname, funcname, ...)
-    -- return accept(xpcall(find(modname, funcname),
-    --                      error_handler(modname, funcname),
-    --                      ...))
     return find(modname, funcname)(...)
 end
 
 
 local function setup()
-    _G._trampouline = trampouline
     _G._T = trampouline
 end
 

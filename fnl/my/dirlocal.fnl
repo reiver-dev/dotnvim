@@ -95,8 +95,8 @@
 (def- command
   "augroup dirlocal
   autocmd!
-  autocmd BufReadPost * call v:lua._trampouline('my.dirlocal', 'prepare')
-  autocmd BufWinEnter * call v:lua._trampouline('my.dirlocal', 'execute')
+  autocmd BufReadPost * call v:lua._T('my.dirlocal', 'prepare')
+  autocmd BufWinEnter * call v:lua._T('my.dirlocal', 'execute')
   augroup END")
 
 
