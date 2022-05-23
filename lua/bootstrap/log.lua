@@ -94,9 +94,9 @@ local function setup()
     if file then
         file:close()
     end
-    local cache_dir = vim.fn.stdpath("cache")
-    local filename = cache_dir .. "/my.log"
-    vim.fn.mkdir(cache_dir, "p")
+    local log_dir = vim.fn.stdpath("log")
+    local filename = log_dir .. "/my.log"
+    vim.fn.mkdir(log_dir, "p")
     file = io.open(filename, "ab")
     _G.LOG = log
 end
