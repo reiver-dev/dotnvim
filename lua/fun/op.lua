@@ -52,7 +52,7 @@ end
 
 local function make_strcat_template(arity)
     local base = [[return function(%s) return %s end]]
-    local tbl_args = argtable(arg, arity)
+    local tbl_args = argtable(_arg, arity)
     local tbl_str = argtable(_tostring, arity)
     local arguments = table_concat(tbl_args, ",", 1, arity)
     local expression = table_concat(tbl_str, "..", 1, arity)
@@ -62,7 +62,7 @@ end
 
 local function make_strjoin_template(arity)
     local base = [[return function(sep,%s) return %s end]]
-    local tbl_args = argtable(arg, arity)
+    local tbl_args = argtable(_arg, arity)
     local tbl_str = argtable(_tostring, arity)
     local arguments = table_concat(tbl_args, ",", 1, arity)
     local expression = table_concat(tbl_str, "..sep..", 1, arity)
@@ -140,7 +140,7 @@ local _div = MakeOperator("_div", partial1(make_operator_template, "/"))
 local _mod = MakeOperator("_mod", partial1(make_operator_template, "%"))
 local _and = MakeOperator("_and", partial1(make_operator_template, "and"))
 local _or = MakeOperator("_or", partial1(make_operator_template, "or"))
-local _concat MakeOperator("_concat", partial1(make_operator_template, ".."))
+local _concat = MakeOperator("_concat", partial1(make_operator_template, ".."))
 local _join = MakeOperator("_join", make_joinsep_template)
 
 local _strcat = MakeOperator("_strcat", make_strcat_template, {tostring})

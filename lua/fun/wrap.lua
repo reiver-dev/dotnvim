@@ -259,7 +259,7 @@ end
 --- @param val VAL
 --- @return Iterator<any, VAL>
 local function ntimes(n, val)
-    return new(_ntimes(n))
+    return new(_ntimes(n, val))
 end
 
 
