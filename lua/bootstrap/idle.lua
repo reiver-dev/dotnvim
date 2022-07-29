@@ -83,6 +83,12 @@ local function on_idle_break(is_insert)
 end
 
 
+local function destroy()
+    timer:stop()
+    timer:close()
+end
+
+
 --- Add idle hook
 ---@param name string
 ---@param func fun(is_insert: boolean)
@@ -123,6 +129,12 @@ local function setup()
         callback = function()
             on_idle_break(true)
         end
+    })
+
+    vim.api.nvim_create_autocmd("VimLeavePre", {
+        group = ag,
+        desc = "bootstrap.idle::destroy",
+        callback = destroy,
     })
 end
 
