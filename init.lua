@@ -9,6 +9,8 @@ if iswin then
         os.setlocale("C", "numeric")
     end)
     vim.api.nvim_set_option("completeslash", "slash")
+    vim.o.shellslash = true
+    require "normalize_shellslash".setup()
 end
 
 
