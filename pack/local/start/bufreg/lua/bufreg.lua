@@ -4,7 +4,6 @@ local current_buffer = vim.api.nvim_get_current_buf
 local setbufvar = vim.api.nvim_buf_set_var
 local getbufvar = vim.api.nvim_buf_get_var
 local delbufvar = vim.api.nvim_buf_del_var
-local expand = vim.fn.expand
 
 --- @class Registry
 --- @field state table<integer, table<string, any>>
@@ -257,8 +256,8 @@ local function updlocal(bufnr, ...)
 end
 
 
-local function autocmd_new()
-    ensure_state(_BUFFER_REGISTRY(), tonumber(expand("<abuf>")))
+local function autocmd_new(opts)
+    ensure_state(_BUFFER_REGISTRY(), opts.buf)
 end
 
 
