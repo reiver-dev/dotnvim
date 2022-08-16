@@ -293,13 +293,6 @@
        :url "kyazdani42/nvim-web-devicons"
        :config #(_T :nvim-web-devicons :setup))
 
-  (pkg :name :better-whitespace
-       :url "ntpeters/vim-better-whitespace"
-       :config #(set vim.g.better_whitespace_filetypes_blacklist
-                     (vim.tbl_flatten
-                       [["packer"]
-                        vim.g.better_whitespace_filetypes_blacklist])))
-
   (pkg :name "prettier-quickfix"
        :url "https://gitlab.com/yorickpeterse/nvim-pqf"
        :config #(_T :pqf :setup))
