@@ -37,7 +37,7 @@
 (fn find-file []
   (local telescope (require "telescope"))
   (local themes (require "telescope.themes"))
-  (local em (if (vim.fn.has "win32") (shellslash-entry-maker) nil))
+  (local em (if (not= 0 (vim.fn.has "win32")) (shellslash-entry-maker) nil))
   (telescope.extensions.file_browser.file_browser
     (themes.get_ivy {:previewer false
                      :entry_maker em})))
