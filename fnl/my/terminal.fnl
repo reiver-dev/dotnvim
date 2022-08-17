@@ -187,19 +187,52 @@
             _ lines))))
 
 
-(defn send-region [range line1 line2 dst-expr ...]
-  (local bufnr (or (tonumber dst-expr) (vim.fn.bufnr dst-expr)))
-  (local chan-id (vim.api.nvim_buf_get_var bufnr "terminal_job_id"))
-  (local lines (selection range line1 line2))
-  (local text (let [numlines (length lines)]
-                (if
-                  (= 0 numlines) "\n"
-                  (= 1 numlines) (.. (. lines 1) "\n")
-                  (do
-                    (tset lines (+ 1 numlines) "\n")
-                    (table.concat lines "\n")))))
-  (vim.api.nvim_chan_send chan-id text))
+(defn- getbuf [expr]
+  (or (tonumber expr) (vim.fn.bufnr expr)))
+  
 
+(defn- terminal-job-id [bufnr]
+  (vim.api.nvim_buf_get_var bufnr "terminal_job_id"))
+
+
+(defn- terminal-newline [bufnr]
+  (if (= :dos (vim.api.nvim_buf_get_option bufnr "fileformat"))
+    "\n\r"
+    "\n"))
+
+
+(defn- join-lines [lines newline]
+  (local numlines (length lines))
+  (if
+    (= 0 numlines) newline
+    (= 1 numlines) (.. (. lines 1) newline)
+    (do
+      (tset lines (+ 1 numlines) newline)
+      (table.concat lines newline))))
+
+
+(defn- join-lines-paste [lines newline]
+  (local numlines (length lines))
+  (if 
+    (= 0 numlines) newline
+    (= 1 numlines) (.. (. lines 1) newline)
+    (.. "\27[200~" (table.concat lines newline) newline "\27[201~" newline)))
+
+  
+(defn send-region [range line1 line2 dst-expr]
+  (local bufnr (getbuf dst-expr))
+  (vim.api.nvim_chan_send (terminal-job-id bufnr)
+                          (join-lines 
+                            (selection range line1 line2)
+                            (terminal-newline bufnr))))
+
+
+(defn paste-region [range line1 line2 dst-expr]
+  (local bufnr (getbuf dst-expr))
+  (vim.api.nvim_chan_send (terminal-job-id bufnr)
+                          (join-lines-paste
+                            (selection range line1 line2)
+                            (terminal-newline bufnr))))
 
 
 (defn send-visual []
@@ -207,25 +240,25 @@
   (print (table.concat (selection 0 0 0) "\n")))
 
 
-(def- autocmd
-  "augroup boostrap_terminal
-  autocmd!
-  autocmd TermOpen * setlocal nonumber norelativenumber
-  augroup end
-  ")
-
-
-
-(def- commands
-  (.. "command! -range -nargs=1 -complete=buffer TermSendRegion "
-      "call v:lua._T('my.terminal', 'send-region', <range>, <line1>, <line2>, <q-args>)"))
-
-
 (defn setup []
   (setup-bindings)
-  (vim.api.nvim_exec autocmd false)
-  (vim.api.nvim_set_keymap :v "<leader>x"
-                           "<Cmd>lua _T('my.terminal', 'send-visual')<CR>"
-                           {:noremap true})
-  (vim.cmd commands))
+  (vim.api.nvim_create_autocmd 
+    :TermOpen
+    {:group (vim.api.nvim_create_augroup :boostrap_terminal {:clear true})
+     :command "setlocal nonumber norelativenumber"})
+  (vim.api.nvim_set_keymap :v "<leader>x" ""
+                           {:noremap true
+                            :callback send-visual})
+  (vim.api.nvim_create_user_command
+    :TermSendRegion
+    (fn [opts] (send-region opts.range opts.line1 opts.line2 opts.args))
+    {:range true
+     :nargs 1
+     :complete "buffer"})
+  (vim.api.nvim_create_user_command
+    :TermPasteRegion
+    (fn [opts] (paste-region opts.range opts.line1 opts.line2 opts.args))
+    {:range true
+     :nargs 1
+     :complete "buffer"}))
 
