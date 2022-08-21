@@ -18,6 +18,7 @@ local function setup()
     require("bootstrap.reload").setup()
     -- require("bootstrap.gui").setup()
     require("bootstrap.eval").setup()
+    require("bootstrap.packer").setup()
     require("my").setup()
 end
 

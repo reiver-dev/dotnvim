@@ -6,7 +6,7 @@
 (def- modules
   ["my.bufreg"
    "my.options"
-   "my.packer"
+   ;; "my.packer"
    "my.terminal"
    "my.indent"
    "my.editing"
