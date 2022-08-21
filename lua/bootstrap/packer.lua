@@ -155,6 +155,19 @@ local function setup()
     end, {nargs = "*"})
     command("PackerStatus", make_command("status"), none)
     command("PackerProfile", make_command("profile"), none)
+
+    if vim.fn.exists("&shellslash") == 1 then
+        vim.api.nvim_create_autocmd("OptionSet", {
+            pattern = 'shellslash',
+            group = vim.api.nvim_create_augroup("boostrap-packer", { clear = true, }),
+            callback = function()
+                local pu = package.loaded['packer.util']
+                if pu then
+                    pu.use_shellslash = vim.o.shellslash
+                end
+            end
+        })
+    end
 end
 
 

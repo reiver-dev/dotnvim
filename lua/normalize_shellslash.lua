@@ -40,6 +40,7 @@ local function setup()
         })
     end
     vim.api.nvim_create_autocmd("OptionSet", {
+        pattern = 'shellslash',
         group = g,
         callback = normalize_shellslash,
     })

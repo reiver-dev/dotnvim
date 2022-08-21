@@ -11,7 +11,21 @@
        (_T :nvim-treesitter.query query-checker lang)))
 
 
+(defn- shellslash-normalize [str ...]
+  (if str
+    (values (string.gsub str "/" "\\") ...)
+    (values str ...)))
+
+
+(defn- shellslash-patch []
+  (local utils (require "nvim-treesitter.utils"))
+  (each [_ name (ipairs [:get_package_path :get_site_dir :get_cache_dir])]
+    (let [func (. utils name)]
+      (tset utils name (fn [] (shellslash-normalize (func)))))))
+
+
 (defn- configure []
+  (when (= 1 (vim.fn.has "win32")) (shellslash-patch))
   (ts.setup
     {:highlight {:enable true
                  :is_supported (partial supported :has_highlights)
