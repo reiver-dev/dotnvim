@@ -101,6 +101,18 @@ local function reload_modules(...)
 end
 
 
+local function reload_modules_cmd(opts)
+    local errors = {}
+    for _, n in ipairs(opts.fargs) do
+        local _, err = hotswap(n)
+        table.insert(errors, err)
+    end
+    if #errors > 0 then
+        error(table.concat(errors, '\n'))
+    end
+end
+
+
 local function complete_module(arg)
     local len = #arg
     if len == 0 then
@@ -125,7 +137,7 @@ local function setup()
     _G.RELOAD = reload_modules
     vim.api.nvim_create_user_command(
         "ReloadModule",
-        reload_modules,
+        reload_modules_cmd,
         {
             desc = "bootstrap.reload::reload_modules",
             nargs = "+",
