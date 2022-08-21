@@ -3,8 +3,9 @@ local select_block = string.char(19) -- ^S
 
 
 local mode_groups = {
-    normal = { "n", "nt", "niI", "niR", "niV" },
+    normal = { "n", "niI", "niR", "niV" },
     normal_operator = { "no", "nov", "noV", "no" .. visual_block },
+    normal_terminal = { "nt", "ntT" },
     visual = { "v", "V", visual_block },
     select = { "s", "S", select_block },
     insert = { "i", "ic", "ix" },
@@ -20,6 +21,7 @@ local mode_groups = {
 local mode_symbols = {
     normal = {"Normal", "N"},
     normal_operator = {"Normal", "N"},
+    normal_terminal = {"Normal", "N"},
     visual = {"Visual", "V"},
     insert = {"Insert", "I"},
     command = {"Command", "C"},
