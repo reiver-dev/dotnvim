@@ -22,9 +22,17 @@ local name = uv.os_uname().sysname
 if name ~= nil and os_is_posix[name] ~= nil then
     osname = name
 else
-    local has = vim.fn.has
+    local has
+    do
+        local _has = vim.fn.has
+        function has(arg)
+            return _has(arg) == 1
+        end
+    end
     if has("macunix") then
         osname = "Darwin"
+    elseif has("Linux") then
+        osname = "Linux"
     elseif has("unix") then
         osname = "Unix"
     elseif has("win32") then
