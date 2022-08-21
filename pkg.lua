@@ -372,16 +372,22 @@ pkg {
     config = function() _T("my.pack.telescope-file-browser", "setup") end
 }
 
-if vim.fn.executable("cmake") then
-    pkg {
-        name = "telescope-fzf-native",
-        url = "nvim-telescope/telescope-fzf-native.nvim",
-        opt = true,
-        after = { "telescope" },
-        run = [[cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release && cmake --install build --prefix build]],
-        config = function() _T("my.pack.telescope-fzf-native", "setup") end,
-    }
-end
+pkg {
+    name = "telescope-fzf-native",
+    url = "nvim-telescope/telescope-fzf-native.nvim",
+    opt = true,
+    after = { "telescope" },
+    run = (function()
+        if vim.fn.has("win32") == 1 then
+            return [[cmake -S. -B.bld && cmake --build .bld --config Release && cmake --install .bld --prefix build]]
+        elseif vim.fn.executable("cmake") == 1 then
+            return [[cmake -S. -B.bld -DCMAKE_BUILD_TYPE=Release && cmake --build .bld && cmake --install .bld --prefix build]]
+        else
+            return "make"
+        end
+    end)(),
+    config = function() _T("my.pack.telescope-fzf-native", "setup") end,
+}
 
 -- FileTree
 pkg {
