@@ -160,4 +160,5 @@ end
 
 return {
     setup = setup,
+    hook = package_hook_set,
 }
