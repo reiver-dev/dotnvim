@@ -52,11 +52,6 @@ end
 M.compile_source = compile_source
 
 
-local FIX_ANISEED_MACROS = ""
-.. "(macro defonce- [name value] `(def- ,name (or (. *module-locals* ,(tostring name)) ,value)))"
-.. "(macro defonce [name value] `(def ,name (or (. *module-locals* ,(tostring name)) ,value)))"
-
-
 function M.compile_module_source(text, opts)
     local file
     if opts.filename == nil then
@@ -65,7 +60,7 @@ function M.compile_module_source(text, opts)
         file = string.format("%q", opts.filename)
     end
     local filevar = string.format([[(local *file* %s)]], file)
-    local code = filevar .. "(require-macros \"aniseed.macros\")" .. FIX_ANISEED_MACROS .. text
+    local code = filevar .. "(require-macros \"aniseed.macros\")" .. text
     local delete_pat = "\n[^\n]-\"ANISEED_DELETE_ME\".-"
     _G.ANISEED_STATIC_MODULES = true
     local ok, res, sm = compile_source(code, opts)
