@@ -57,7 +57,7 @@ local function splitroot_pos(s)
     end
     -- A:
     if is_driveletter(v1) and v2 == 58 then
-        return left_trim(s, issep, 2, #s)
+        return left_trim(s, issep, 3, #s)
     elseif notsep(v1) then
         -- Relative path
         return 0
@@ -200,7 +200,7 @@ end
 local sub = string.sub
 
 
-local function iter_parents(state, idx)
+local function iter_parent_nodes(state, idx)
     if state[2] < idx then
         local path = state[1]
         local b = state[2]
@@ -255,7 +255,7 @@ local function parents(path, opts)
     if opts.keep_separator then
         iterator = iter_parent_dirs
     else
-        iterator = iter_parents
+        iterator = iter_parent_nodes
     end
 
     return iterator, { path, rootpos }, len

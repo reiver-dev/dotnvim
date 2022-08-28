@@ -1,20 +1,16 @@
 -- Makedir with parents
 
-local MODULE = ...
-local pathmod = require(MODULE:gsub("%.[^.]*$", ""))
-local splitpath, is_dir = pathmod.splitpath, pathmod.is_dir
-local uv = vim.loop
-
-
 local function fserror(fname, err)
     return error(string.format("At file `%s`: %s", fname, err), 1)
 end
 
 
 --- @param path string
-local function mkdir(path)
+local function mkdir(path, pathmod)
     local numstack = 1
     local stack = { path }
+    local splitpath, is_dir = pathmod.splitpath, pathmod.is_dir
+    local fs_mkdir = vim.loop.fs_mkdir
 
     do
         local head, tail = splitpath(path)
@@ -27,7 +23,7 @@ local function mkdir(path)
 
     while numstack > 0 do
         local name = stack[numstack]
-        local success, err = uv.fs_mkdir(name, 448)
+        local success, err = fs_mkdir(name, 448)
         if success or is_dir(name) then
             stack[numstack] = nil
             numstack = numstack - 1
