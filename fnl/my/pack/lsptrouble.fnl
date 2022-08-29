@@ -1,5 +1,4 @@
-(module my.pack.lsptrouble)
-
-
-(defn setup []
+(fn setup []
   (_T :trouble :setup))
+
+{: setup}

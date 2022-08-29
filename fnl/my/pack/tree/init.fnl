@@ -1,11 +1,11 @@
-(module my.pack.tree)
-
-(def- config
+(local config
   {:disable_netrw false
    :hijack_netrw false})
 
 
-(defn setup []
+(fn setup []
   (local tree (require "nvim-tree"))
   (tree.setup config))
 
+
+{: setup}

@@ -1,37 +1,36 @@
-(module my.pack.netrw
-  {require {b my.bufreg
-            p my.project}})
+(local b (require :my.bufreg))
+(local p (require :my.project))
 
 
-(def- autocmd-init
+(local autocmd-init
   "augroup my_netrw
   autocmd!
   autocmd FileType netrw lua _T('my.pack.netrw', 'initialize')
   augroup END")
 
 
-(def- autocmd-enable
+(local autocmd-enable
   "augroup my_netrw_local
   autocmd! * <buffer>
   autocmd BufEnter <buffer> lua _T('my.pack.netrw', 'keep-initialized')
   augroup END")
 
 
-(def- autocmd-disable
+(local autocmd-disable
   "augroup my_netrw_local
   autocmd! * <buffer>
   augroup END")
 
 
-(defn- enable []
+(fn enable []
   (vim.api.nvim_exec autocmd-enable false))
 
 
-(defn- disable []
+(fn disable []
   (vim.api.nvim_exec autocmd-disable false))
 
 
-(defn- configure [bufnr]
+(fn configure [bufnr]
   (let [netrw-dir (vim.api.nvim_buf_get_var bufnr :netrw_curdir)
         dd (b.get-local bufnr :directory)]
     (when (~= dd netrw-dir)
@@ -39,7 +38,7 @@
       (p.defer-project-search bufnr netrw-dir))))
 
 
-(defn keep-initialized []
+(fn keep-initialized []
   (let [bufnr (tonumber (vim.fn.expand "<abuf>"))
         ft (vim.api.nvim_buf_get_option bufnr :filetype)]
     (if (= ft "netrw")
@@ -47,12 +46,17 @@
       (disable))))
 
 
-(defn initialize []
+(fn initialize []
   (let [bufnr (tonumber (vim.fn.expand "<abuf>"))]
     (configure bufnr)
     (enable)))
   
 
-(defn setup []
+(fn setup []
   (vim.api.nvim_exec autocmd-init false)
   (set vim.g.netrw_keepdir 0))
+
+
+{: setup
+ : initialize
+ : keep-initialized}
