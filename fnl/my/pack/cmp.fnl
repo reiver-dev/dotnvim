@@ -65,7 +65,7 @@
    :<C-y> (cmp.mapping.confirm {:select false})
    :<CR> (cmp.mapping.confirm
            {:behavior cmp.ConfirmBehavior.Replace
-            :select true})})
+            :select false})})
 
 
 (defn- expand-snippet [param]
@@ -74,7 +74,7 @@
 
 (defn setup []
   (cmp.setup {:mapping mapping
-              :autocomplete false
+              :completion {:autocomplete false}
               :formatting {:format (lspkind.cmp_format
                                      {:with_text true
                                       :maxwidth 50

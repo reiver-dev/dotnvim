@@ -38,9 +38,9 @@ pkg {
 pkg {
     name = "cmp",
     url = "hrsh7th/nvim-cmp",
-    event = {"InsertEnter"},
+    keys = { {"i", "<C-x><C-x>"}, },
     opt = true,
-    config = function() _F("my.pack.cmp", "setup") end,
+    config = function() _T("my.pack.cmp", "setup") end,
 }
 
 pkg {
