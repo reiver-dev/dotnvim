@@ -44,7 +44,13 @@
            :<C-p> actions.move_selection_previous
            :q actions.close}
        :i {:<C-g> actions.close
-           :<C-c> actions.close}}
+           :<C-c> actions.close
+           :<C-d> false
+           :<C-u> false
+           :<C-e> false
+           :<C-h> false
+           :<M-u> actions.preview_scrolling_up
+           :<M-d> actions.preview_scrolling_down}}
       :prompt_prefix "❯ "
       :selection_caret " "
       :sorting_strategy :ascending
