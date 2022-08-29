@@ -1,6 +1,6 @@
-(module my.pack.telescope)
+;; Telescope main configuration
 
-(defn- make-path-display-shellslash []
+(fn make-path-display-shellslash []
   (local base-func (. (require :telescope.utils) :transform_path))
   (local P (require "plenary.path"))
   (local base-opts {:path_display {}})
@@ -32,7 +32,7 @@
       path)))
 
 
-(defn configure []
+(fn configure []
   (local telescope (require :telescope))
   (local actions (require :telescope.actions))
   (local border ["─" "│" "─" "│" "┌" "┐" "┘" "└"])
@@ -63,23 +63,28 @@
   (_T :telescope :load_extension :my))
 
 
-(defn buffers []
+(fn buffers []
   (let [builtin (require :telescope.builtin)
         themes (require :telescope.themes)]
     (builtin.buffers (themes.get_ivy {:previewer false
                                       :results_title false}))))
 
 
-(defn history []
+(fn history []
   (let [builtin (require :telescope.builtin)
         themes (require :telescope.themes)]
     (builtin.oldfiles (themes.get_ivy {:previewer false
                                        :results_title false}))))
 
 
-(defn setup []
+(fn setup []
   (configure)
   (vim.api.nvim_set_keymap
     :n "<C-x>b" "<cmd>lua _T('my.pack.telescope', 'buffers')<CR>" {:noremap true})
   (vim.api.nvim_set_keymap
     :n "<C-x>r" "<cmd>lua _T('my.pack.telescope', 'history')<CR>" {:noremap true}))
+
+
+{: setup
+ : buffers
+ : history}
