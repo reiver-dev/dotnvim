@@ -14,11 +14,6 @@ if iswin then
 end
 
 
-if os.getenv("AK_PROFILER") then
-    vim.cmd "packadd profiler"
-    require("profiler")
-end
-
 local mods
 do
     local fs_scandir = vim.loop.fs_scandir

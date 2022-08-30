@@ -118,14 +118,6 @@ pkg {
     end,
 }
 
-
-pkg {
-    name = "profiler",
-    url = "norcalli/profiler.nvim",
-    opt = true,
-    module = "profiler",
-}
-
 pkg {
     name = "popup",
     url = "nvim-lua/popup.nvim",
