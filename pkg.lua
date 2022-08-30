@@ -353,7 +353,7 @@ pkg {
     opt = true,
     cmd = {"Telescope"},
     module = {"telescope"},
-    keys = {{"n", "<C-x>b"}, {"n", "<C-x>r"}},
+    setup = function() _T("my.pack.telescope-init", "setup") end,
     config = function() _T("my.pack.telescope", "setup") end,
 }
 

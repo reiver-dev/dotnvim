@@ -63,28 +63,16 @@
   (_T :telescope :load_extension :my))
 
 
-(fn buffers []
-  (let [builtin (require :telescope.builtin)
-        themes (require :telescope.themes)]
-    (builtin.buffers (themes.get_ivy {:previewer false
-                                      :results_title false}))))
-
-
-(fn history []
-  (let [builtin (require :telescope.builtin)
-        themes (require :telescope.themes)]
-    (builtin.oldfiles (themes.get_ivy {:previewer false
-                                       :results_title false}))))
+(fn files [opts]
+  (local builtin (require :telescope.builtin))
+  (local topts {:search_file opts.args
+                :hidden opts.bang
+                :no_ignore opts.bang})
+  (builtin.find_files topts))
 
 
 (fn setup []
-  (configure)
-  (vim.api.nvim_set_keymap
-    :n "<C-x>b" "<cmd>lua _T('my.pack.telescope', 'buffers')<CR>" {:noremap true})
-  (vim.api.nvim_set_keymap
-    :n "<C-x>r" "<cmd>lua _T('my.pack.telescope', 'history')<CR>" {:noremap true}))
+  (configure))
 
 
-{: setup
- : buffers
- : history}
+{: setup}
