@@ -8,9 +8,6 @@ if iswin then
         os.setlocale(".utf8", "all")
         os.setlocale("C", "numeric")
     end)
-    vim.api.nvim_set_option("completeslash", "slash")
-    vim.o.shellslash = true
-    require "normalize_shellslash".setup()
 end
 
 
@@ -68,5 +65,12 @@ end
 for modname, _ in pairs(mods) do
     package.preload[modname] = private_loader
 end
+
+
+if iswin then
+    vim.o.shellslash = true
+    require "normalize_shellslash".setup()
+end
+
 
 require("bootstrap").setup()
