@@ -1,17 +1,15 @@
 (local {: get-local : set-local} (require "my.bufreg"))
 
-(local vim-simplify vim.fn.simplify)
-(local vim-expand vim.fn.expand)
 (local vim-getcwd vim.fn.getcwd)
-(local vim-exists vim.fn.exists)
-(local vim-fnameescape vim.fn.fnameescape)
+(local vim-fnamemodify vim.fn.fnamemodify)
+(local str-match string.match)
+(local str-gsub string.gsub)
 
 (local nvim_buf_get_option vim.api.nvim_buf_get_option)
 (local nvim_buf_is_loaded vim.api.nvim_buf_is_loaded)
 (local nvim_buf_get_var vim.api.nvim_buf_get_var)
 (local nvim_buf_set_var vim.api.nvim_buf_set_var)
 (local nvim_buf_call vim.api.nvim_buf_call)
-(local nvim_exec vim.api.nvim_exec)
 
 
 (local hook {})
@@ -31,17 +29,47 @@
 
 (local normalize
   (if (= "\\" (package.config:sub 1 1))
-    (fn [path] (string.gsub (vim-simplify path) "\\" "/"))
-    (fn [path] (vim-simplify path))))
+    (fn [path] (str-gsub path "\\" "/"))
+    (fn [path] path)))
 
 
 (fn getcwd []
   (normalize (vim-getcwd)))
 
 
-(fn current-buffer-dir []
-  "Find directory path for current buffer."
-  (normalize (vim-expand "%:p:h" 1)))
+(fn fs-dirname [name]
+  (vim.fs.dirname name))
+
+
+(fn term-dirname [name]
+  (-> name
+      (str-match "^[a-z][a-z]+://(.+)//[0-9]+:")
+      (vim-fnamemodify ":p")
+      (normalize)))
+
+
+(fn fugitive-dirname [name]
+  (-> name
+      (str-gsub "^fugitive://(.+)//.*$" "file://%1")
+      (vim.uri_to_fname)
+      (vim.fs.dirname)
+      (normalize)))
+
+
+(fn uri-dirname [name]
+  (-> name
+      (vim.uri_to_fname)
+      (vim.fs.dirnamel)
+      (normalize)))
+
+
+(fn extract-dirname [name]
+  (local scheme (str-match name "^[a-z][a-z]+:"))
+  (if
+    (not scheme) (fs-dirname name) 
+    (= scheme "term:") (term-dirname name)
+    (= scheme "fugitive:") (fugitive-dirname name)
+    (uri-dirname name)))
 
 
 (fn empty? [str]
@@ -62,23 +90,9 @@
     false))
 
 
-
-(local autocmd
-  "augroup projectile
-  autocmd!
-  autocmd VimEnter,BufNew,BufNewFile,BufReadPre * lua _T('my.directory', 'on-file-open')
-  autocmd BufEnter * lua _T('my.directory', 'on-file-enter')
-  autocmd BufWritePost * lua _T('my.directory', 'on-file-write')
-  autocmd BufFilePost * lua _T('my.directory', 'on-file-rename')
-  augroup END
-  ")
-
-
 (fn getbufvar [bufnr name]
   "Get buffer-local variable for BUFNR buffer by variable NAME."
-  (match (pcall
-           (fn []
-             (nvim_buf_get_var (or bufnr 0) name)))
+  (match (pcall nvim_buf_get_var (or bufnr 0) name)
     (true res) res
     _ ""))
 
@@ -101,27 +115,28 @@
       (getbufvar bufnr :default_directory))))
 
 
-(fn fire-user-event [bufnr event]
+(fn fire-user-event [bufnr event data]
   "Execute autocmd user event for BUFNR buffer by EVENT name."
-  (when (vim-exists (string.format "#User#%s" event))
-    (let [cmd (string.format "doautocmd <nomodeline> User %s" event)]
-      (nvim_buf_call bufnr #(vim.cmd cmd)))))
+  (vim.api.nvim_exec_autocmds
+    "User" {:pattern event
+            :modeline false
+            :data data}))
 
 
-(fn fire-default-directory-updated [bufnr dir]
+(fn fire-default-directory-updated [bufnr new old]
   "Execute autocmd DefaultDirectory for BUFNR buffer."
-  (call-hook bufnr dir)
-  (fire-user-event bufnr "DefaultDirectory"))
+  (call-hook bufnr new)
+  (fire-user-event bufnr "DefaultDirectory" {:buf bufnr :new new :old old}))
 
 
-(fn apply-default-directory [bufnr]
+(fn apply-default-directory [bufnr dirname]
   "Attempt to update default-directory for BUFNR buffer."
   (let [dd (default-directory bufnr)]
     (nvim_buf_call
-      bufnr #(let [dir (or (current-buffer-dir) (getcwd))]
+      bufnr #(let [dir (or dirname (getcwd))]
                (set-default-directory bufnr dir)
                (when (~= dir dd)
-                 (fire-default-directory-updated bufnr dir))))))
+                 (fire-default-directory-updated bufnr dir dd))))))
 
 
 (fn force-default-directory [bufnr directory]
@@ -134,42 +149,56 @@
                 (fire-default-directory-updated bufnr directory))))))
 
 
-(fn on-file-enter []
+(fn on-file-enter [opts]
   "Ensure local current directory is default-directory for current buffer."
-  (when (empty? vim.bo.buftype)
-    (let [bufnr (tonumber (vim-expand "<abuf>"))
-          dd (default-directory bufnr)
-          cwd (getcwd)]
-      (when (and (not= dd cwd) (directory? dd))
-        (vim.cmd (.. "lcd " (vim-fnameescape dd)))))))
+  (local dd (default-directory opts.buf))
+  (when dd
+    (local cwd (getcwd))
+    (when (and (not= dd cwd) (directory? dd))
+      (vim.cmd.lcd dd))))
 
 
-(fn on-file-open []
+(fn on-file-open [opts]
   "Update default-directory for current buffer.
   Happens when buffer is not special and is loaded
   and buffer's file has not changed."
-  (let [bufnr (tonumber (vim-expand "<abuf>"))]
-    (when (and (= "" (nvim_buf_get_option bufnr :buftype))
-               (nvim_buf_is_loaded bufnr))
-      (let [file (normalize (vim-expand "<afile>:p"))
-            oldfile (get-local bufnr :file)]
-        (when (or (= oldfile nil) (not= file oldfile))
-          (set-local bufnr :file file)
-          (apply-default-directory bufnr))))))
+  (when (and opts
+             (= "" (nvim_buf_get_option opts.buf :buftype))
+             (nvim_buf_is_loaded opts.buf))
+    (let [bufnr opts.buf
+          file (normalize opts.match)
+          oldfile (get-local bufnr :file)]
+      (when (or (= oldfile nil) (not= file oldfile))
+        (set-local bufnr :file file)
+        (apply-default-directory bufnr (if (= "" file) nil
+                                         (extract-dirname file)))))))
 
 
-(fn on-file-write []
-  (on-file-open)
-  (on-file-enter))
+(fn on-file-write [opts]
+  (on-file-open opts)
+  (on-file-enter opts))
 
 
-(fn on-file-rename []
-  (on-file-open)
-  (on-file-enter))
+(fn on-file-rename [opts]
+  (on-file-open opts)
+  (on-file-enter opts))
 
 
 (fn setup []
-  (vim.api.nvim_exec autocmd false))
+  (local g (vim.api.nvim_create_augroup :projectile {:clear true}))
+  (local au vim.api.nvim_create_autocmd)
+  (au [:VimEnter :BufNew :BufNewFile :BufReadPre]
+      {:group g
+       :callback on-file-open})
+  (au :BufEnter
+       {:group g
+        :callback on-file-enter})
+  (au :BufWritePost
+      {:group g
+       :callback on-file-write})
+  (au :BufFilePost
+      {:group g
+       :callback on-file-rename}))
 
 
 {: setup
