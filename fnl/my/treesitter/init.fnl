@@ -6,9 +6,8 @@
   (+ (vim.fn.line2byte "$") (- (vim.fn.col "$") 1)))
 
 
-(defn- supported [query-checker lang]
-  (and (or (not= lang "cpp") (<= (current-size) 5_000_000))
-       (_T :nvim-treesitter.query query-checker lang)))
+(defn- current-size-buf [bufnr]
+  (vim.api.nvim_buf_call bufnr current-size))
 
 
 (defn- shellslash-normalize [str ...]
@@ -24,12 +23,29 @@
       (tset utils name (fn [] (shellslash-normalize (func)))))))
 
 
+(def- disabled-langs
+  {:css true})
+
+
+(def- size-limit-langs
+  {:cpp 5_000_000})
+
+
+(defn- too-big? [lang bufnr]
+  (local sz (. size-limit-langs lang))
+  (and sz (< 0 sz) (< sz (current-size-buf bufnr))))
+
+
+(defn- disable-highlight? [lang bufnr]
+  (and (not (. disabled-langs lang))
+       (not (too-big? lang bufnr))))
+
+
 (defn- configure []
   (when (= 1 (vim.fn.has "win32")) (shellslash-patch))
   (ts.setup
     {:highlight {:enable true
-                 :is_supported (partial supported :has_highlights)
-                 :disable [:css]}
+                 :disable disable-highlight?}
      :playground {:enable true
                   :disable {}
                   :updatetime 25
