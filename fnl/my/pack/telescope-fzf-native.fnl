@@ -36,8 +36,7 @@
 
     (= 1 (vim.fn.executable :cmake))
     [["cmake" "-S." "-Bbuild" "-DCMAKE_BUILD_TYPE=Release"]
-     ["cmake" "--build" "build"]
-     ["cmake" "--install" "build" "--prefix" "build"]]
+     ["cmake" "--build" "build"]]
 
     [["make"]]))
 
