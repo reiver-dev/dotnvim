@@ -6,17 +6,24 @@
             python my.lang.python}})
 
 
-(def- Error vim.diagnostic.severity.ERROR)
-(def- Warning vim.diagnostic.severity.WARN)
-(def- Information vim.diagnostic.severity.INFO)
-(def- Hint vim.diagnostic.severity.HINT)
+(local b (require "my.bufreg"))
+(local j (require "my.check.job"))
+(local w (require "my.fswalk"))
+(local p (require "my.pathsep"))
+(local python (require "my.lang.python"))
 
 
-(def- line-pattern
+(local Error vim.diagnostic.severity.ERROR)
+(local Warning vim.diagnostic.severity.WARN)
+(local Information vim.diagnostic.severity.INFO)
+(local Hint vim.diagnostic.severity.HINT)
+
+
+(local line-pattern
   "([^:]+):(%d+):(%d+): ([^:]+): (.*)")
 
 
-(defn- parse-line [line]
+(fn parse-line [line]
   (let [(name line col severity msg) (string.match line line-pattern)]
     (when name
       (let [line (- (tonumber line) 1)
@@ -34,7 +41,7 @@
          :message msg}))))
 
 
-(defn- parse-output [lines]
+(fn parse-output [lines]
   (let [entries []]
     (each [_ line (ipairs lines)]
       (let [entry (parse-line line)]
@@ -43,14 +50,14 @@
     entries))
 
 
-(defn- find-mypy-config [directory]
+(fn find-mypy-config [directory]
   (let [files (w.gather directory ["mypy.ini" "setup.cfg"])]
     (when files
       (or (-?> files (. :mypy.ini) (. 1))
           (-?> files (. :setup.cfg) (. 1))))))
 
 
-(defn- mypy-directory [bufnr]
+(fn mypy-directory [bufnr]
   (let [dir (b.get-local bufnr :directory)
         cfg (find-mypy-config dir)
         launch-dir (or (and cfg (p.parent cfg)) dir)]
@@ -59,7 +66,7 @@
     launch-dir))
 
 
-(defn- cut-prefix [str prefix]
+(fn cut-prefix [str prefix]
   (local slen (length str))
   (local plen (length prefix))
   (if (and (<= plen slen) (= prefix (string.sub str 1 plen)))
@@ -67,18 +74,18 @@
     (values str 0)))
 
 
-(defn- relative-path [path root]
+(fn relative-path [path root]
   (p.trim (cut-prefix path root) p.separator?))
 
 
-(defn- handle-result [bufnr report-fn cleanup-fn jobid result]
+(fn handle-result [bufnr report-fn cleanup-fn jobid result]
   (cleanup-fn)
   (let [entries (parse-output result.stdout)]
     (report-fn entries))
   (LOG "Mypy Finished" :jobid jobid :result result))
 
 
-(def- default-configuration
+(local default-configuration
   ["--implicit-optional"
    "--allow-redefinition"
 
@@ -102,7 +109,7 @@
    "--warn-return-any"])
 
 
-(defn- table-concat [...]
+(fn table-concat [...]
   (local result {})
   (var pos 1)
   (for [i 1 (select :# ...)]
@@ -116,7 +123,7 @@
   result)
 
 
-(defn run [bufnr report-fn]
+(fn run [bufnr report-fn]
   (let [directory (mypy-directory bufnr)
         _ (LOG "Mypy directory" :dir directory)
         has-config (not= nil (b.get-local bufnr :python :mypy :config))
@@ -143,5 +150,9 @@
     res))
 
 
-(defn cancel [bufnr jobid]
+(fn cancel [bufnr jobid]
   (j.cancel jobid))
+
+
+{: run 
+ : cancel} 

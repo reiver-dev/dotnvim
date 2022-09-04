@@ -1,20 +1,17 @@
-(module my.strutil)
+(local find string.find)
+(local sub string.sub)
+(local byte string.byte)
+(local format string.format)
+
+(local fmod math.fmod)
 
 
-(def- find string.find)
-(def- sub string.sub)
-(def- byte string.byte)
-(def- format string.format)
-
-(def- fmod math.fmod)
-
-
-(defn- divmod [a b]
+(fn divmod [a b]
   (let [r (fmod a b)]
     (values (/ (- a r) b) r)))
 
 
-(defn expandvar [text exp]
+(fn expandvar [text exp]
   (var result [])
   (var at 1)
   (var len (length text))
@@ -81,3 +78,6 @@
         (set at (+ len 1)))))
 
   (table.concat result))
+
+
+{: expandvar} 

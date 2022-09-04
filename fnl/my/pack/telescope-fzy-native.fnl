@@ -1,13 +1,11 @@
-(module my.pack.telescope-fzy-native)
-
-(defn- upvalues-iter [state idx]
+(fn upvalues-iter [state idx]
   (local idx (+ idx 1))
   (local (name value) (debug.getupvalue state idx))
   (when (not= name nil)
     (values idx name value)))
 
 
-(defn- upvalues [func]
+(fn upvalues [func]
   (values upvalues-iter func 0))
 
 
@@ -32,7 +30,7 @@
       result)))
 
 
-(defn- copy-upvalues [f-to f-from]
+(fn copy-upvalues [f-to f-from]
   (local tovals (collect [i name value (upvalues f-to)]
                   (values name i)))
   (each [i name value (upvalues f-from)]
@@ -42,14 +40,14 @@
   f-to)
 
 
-(defn- patch-fzy [mod]
+(fn patch-fzy [mod]
   (collect [name func (pairs mod)]
     (values name (match name
                    "filter" (copy-upvalues fzy-filter-impl func)
                    _ func))))
 
 
-(defn- extract-mod [extension]
+(fn extract-mod [extension]
   (var mod nil)
   (each [i name value (upvalues extension.native_fzy_sorter)
          :until (not= mod nil)]
@@ -58,7 +56,10 @@
   mod)
 
 
-(defn setup []
+(fn setup []
   (let [extension (_T :telescope :load_extension "fzy_native")
         mod (extract-mod extension)]
     (set package.loaded.fzy (patch-fzy mod))))
+
+
+{: setup} 

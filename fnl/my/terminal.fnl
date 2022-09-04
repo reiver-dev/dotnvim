@@ -1,18 +1,17 @@
-(module my.terminal
-  {require {fun my.fun}})
+(local fun (require "my.fun"))
 
 
-(defn- job-running? [job]
+(fn job-running? [job]
   (local (ok res) (vim.api.nvim_call_function [[job] 0]))
   (if ok (= (. res 1) -1) false))
 
 
-(defn- job-pid [job]
+(fn job-pid [job]
   (local (ok pid) (pcall vim.api.nvim_call_function :jobpid [job]))
   (if ok pid -1))
 
 
-(defn find-terminal [pid]
+(fn find-terminal [pid]
   (when (< 0 pid)
     (let [chan (fun.find (fn [chan]
                            (and (= chan.mode :terminal)
@@ -23,21 +22,21 @@
       (when chan chan.buffer))))
 
 
-(defn- find-keymap [bufnr mode key]
+(fn find-keymap [bufnr mode key]
   (or (fun.find (fn [map] (= (. map :lhs) key))
                 (ipairs (vim.api.nvim_buf_get_keymap bufnr mode)))
       (fun.find (fn [map] (= (. map :lhs) key))
                 (ipairs (vim.api.nvim_get_keymap mode)))))
 
 
-(defn- execute-prefix-1 []
+(fn execute-prefix-1 []
   (let [input (vim.fn.nr2char (vim.fn.getchar))
         sequence (.. "<C-X>" input)
         keys (vim.api.nvim_replace_termcodes sequence true true true)]
     (vim.api.nvim_feedkeys keys :m true)))
 
 
-(defn- schedule-insert-mode []
+(fn schedule-insert-mode []
   (let [bufnr (vim.api.nvim_get_current_buf)]
     (vim.schedule
       (fn []
@@ -46,13 +45,13 @@
             (vim.cmd :startinsert)))))))
 
 
-(defn execute-prefix [prefix]
+(fn execute-prefix [prefix]
   (_T :my.simple :message "Key <C-x> ?" (vim.fn.getcmdline))
   (when (or (not (pcall execute-prefix-1)) (~= "" vim.v.errmsg))
     (schedule-insert-mode)))
 
 
-(defn- setup-bindings []
+(fn setup-bindings []
   (let [bind-1 vim.api.nvim_set_keymap
         bind (fn [key cmd] (bind-1 :t key cmd {:noremap true}))]
     (bind :<C-g> "<C-\\><C-N>")
@@ -60,12 +59,12 @@
     (bind :<C-y> "<C-\\><C-N>pi")))
 
 
-(defn chdir [bufnr directory]
+(fn chdir [bufnr directory]
   (vim.notify (string.format "bufnr: %s, directory: %s" bufnr directory))
   (_T :my.directory :force-default-directory bufnr directory))
 
 
-(defn gather-data [kind]
+(fn gather-data [kind]
   (local point (require "my.point"))
   (match kind
     :lines (vim.api.nvim_buf_get_lines (point.line-begin) (point.line-end))
@@ -74,7 +73,7 @@
     _ []))
 
 
-(defn- lines-trim-region [lines col-begin col-end]
+(fn lines-trim-region [lines col-begin col-end]
   (local len (length lines))
   (if
     (< 1 len)
@@ -86,24 +85,24 @@
   lines)
 
 
-(defn- lines-trim-block [lines col-begin col-end]
+(fn lines-trim-block [lines col-begin col-end]
   (for [i 1 (length lines)]
     (tset lines i (string.sub (. lines i) (math.max 1 col-begin))))
   lines)
 
 
-(defn- lines-max-length [lines]
+(fn lines-max-length [lines]
   (var maxlen 0)
   (for [i 1 (length lines)]
     (set maxlen (math.max maxlen (length (. lines i)))))
   maxlen)
 
 
-(defn string-indent [line]
+(fn string-indent [line]
   (or (string.find line "[^%s]") 0))
 
 
-(defn- lines-dedent [lines]
+(fn lines-dedent [lines]
   (var min-indent 2147483647)
   (for [i 1 (length lines)]
     (local line (. lines 1))
@@ -116,7 +115,7 @@
   lines)
 
 
-(defn- lines-dedent-nonempty [lines]
+(fn lines-dedent-nonempty [lines]
   (local nlines [])
   (var min-indent 0)
   (for [i 1 (length lines)]
@@ -131,7 +130,7 @@
   nlines)
 
 
-(defn- lines-reindent [lines]
+(fn lines-reindent [lines]
   (local base-indent (string-indent (. lines 1)))
   (when (< 1 base-indent)
     (tset lines 1 (string.sub (. lines 1) base-indent))
@@ -145,23 +144,23 @@
   lines)
 
 
-(defn- lines-extend-column [lines col]
+(fn lines-extend-column [lines col]
   (local len (length lines))
   (if (= len 0) col
     (< (length (. lines 1)) col) 2147483647
     col))
 
 
-(def- visual-register :v)
+(local visual-register :v)
 
 
-(defn- get-normal-visual-lines [?register]
+(fn get-normal-visual-lines [?register]
   (local reg (string.sub (or ?register visual-register) 1 1))
   (vim.cmd (string.format "silent normal gv\"%.1sy" reg))
   (values (vim.fn.getreg reg 1 1) (vim.fn.getregtype reg)))
 
 
-(defn selection [range line1 line2]
+(fn selection [range line1 line2]
   (local point (require "my.point"))
   (match (string.byte (. (vim.api.nvim_get_mode) :mode) 1)
     110 (let [(bl bc) (point.range-begin)
@@ -187,21 +186,21 @@
             _ lines))))
 
 
-(defn- getbuf [expr]
+(fn getbuf [expr]
   (or (tonumber expr) (vim.fn.bufnr expr)))
   
 
-(defn- terminal-job-id [bufnr]
+(fn terminal-job-id [bufnr]
   (vim.api.nvim_buf_get_var bufnr "terminal_job_id"))
 
 
-(defn- terminal-newline [bufnr]
+(fn terminal-newline [bufnr]
   (if (= :dos (vim.api.nvim_buf_get_option bufnr "fileformat"))
     "\n\r"
     "\n"))
 
 
-(defn- join-lines [lines newline]
+(fn join-lines [lines newline]
   (local numlines (length lines))
   (if
     (= 0 numlines) newline
@@ -211,7 +210,7 @@
       (table.concat lines newline))))
 
 
-(defn- join-lines-paste [lines newline]
+(fn join-lines-paste [lines newline]
   (local numlines (length lines))
   (if 
     (= 0 numlines) newline
@@ -219,7 +218,7 @@
     (.. "\27[200~" (table.concat lines newline) newline "\27[201~" newline)))
 
   
-(defn send-region [range line1 line2 dst-expr]
+(fn send-region [range line1 line2 dst-expr]
   (local bufnr (getbuf dst-expr))
   (vim.api.nvim_chan_send (terminal-job-id bufnr)
                           (join-lines 
@@ -227,7 +226,7 @@
                             (terminal-newline bufnr))))
 
 
-(defn paste-region [range line1 line2 dst-expr]
+(fn paste-region [range line1 line2 dst-expr]
   (local bufnr (getbuf dst-expr))
   (vim.api.nvim_chan_send (terminal-job-id bufnr)
                           (join-lines-paste
@@ -235,12 +234,12 @@
                             (terminal-newline bufnr))))
 
 
-(defn send-visual []
+(fn send-visual []
   (local p (require "my.point"))
   (print (table.concat (selection 0 0 0) "\n")))
 
 
-(defn setup []
+(fn setup []
   (setup-bindings)
   (vim.api.nvim_create_autocmd 
     :TermOpen
@@ -262,3 +261,14 @@
      :nargs 1
      :complete "buffer"}))
 
+
+{: find-terminal 
+ : execute-prefix 
+ : chdir 
+ : gather-data 
+ : string-indent 
+ : selection 
+ : send-region 
+ : paste-region 
+ : send-visual 
+ : setup} 

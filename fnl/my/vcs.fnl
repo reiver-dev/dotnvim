@@ -1,10 +1,9 @@
-(module my.vcs
-  {require {path my.pathsep
-            fs my.filesystem
-            b my.bufreg}})
+(local path (require "my.pathsep"))
+(local fs (require "my.filesystem"))
+(local b (require "my.bufreg"))
 
 
-(defn- buffer [bufnr]
+(fn buffer [bufnr]
   (let [t (type bufnr)]
     (assert (or (= t :nil)
                 (= t :number) (.. "BUFNR must be number, got " t))))
@@ -14,13 +13,13 @@
 
 
 
-(def- trigger-list [:git :hg])
-(def- triggers {:git [:project :triggers :dirs :.git]
-                :hg [:project :triggers :dirs :.hg]})
+(local trigger-list [:git :hg])
+(local triggers {:git [:project :triggers :dirs :.git]
+                 :hg [:project :triggers :dirs :.hg]})
 
 
 
-(defn get-marker [bufnr]
+(fn get-marker [bufnr]
   (var bufnr (buffer bufnr))
   (each [_ vcs (ipairs trigger-list)]
     (let [dirs (b.get-local bufnr (unpack (. triggers vcs)))]
@@ -30,12 +29,12 @@
             (lua "return vcs,dir")))))))
 
 
-(defn buffer-has-vcs [bufnr]
+(fn buffer-has-vcs [bufnr]
   (let [(vcs dir) (get-marker bufnr)]
     (and vcs dir)))
 
 
-(defn- isws [val]
+(fn isws [val]
   (or
     ;; "\n"
     (= val 10)
@@ -43,30 +42,30 @@
     (= val 32)))
 
 
-(defn- strip [text]
+(fn strip [text]
   (when text (path.rtrim text #(isws ($1:byte $2)))))
                             
 
-(defn- find-git-head [dir]
+(fn find-git-head [dir]
   (-> (path.join dir "HEAD")
       (fs.slurp)
       (string.match "ref: refs/heads/(.*)")
       (strip)))
 
 
-(defn- find-hg-bookmark [dir]
+(fn find-hg-bookmark [dir]
   (-> (path.join dir "bookmarks.current")
       (fs.slurp)
       (strip)))
 
 
-(defn- find-hg-branch [dir]
+(fn find-hg-branch [dir]
   (-> (path.join dir "branch")
       (fs.slurp)
       (strip)))
 
 
-(defn- git-head [bufnr root]
+(fn git-head [bufnr root]
   (let [known (b.get-local bufnr :vcs :git :head)]
     (if known
       known
@@ -76,7 +75,7 @@
           head)))))
 
 
-(defn- hg-head [bufnr root]
+(fn hg-head [bufnr root]
   (let [known (b.get-local bufnr :vcs :hg :head)]
     (if known
       known
@@ -97,7 +96,7 @@
 
 
 
-(defn find-head [bufnr]
+(fn find-head [bufnr]
   (var bufnr (buffer bufnr))
   (let [(vcs dir) (get-marker bufnr)]
     (if vcs
@@ -108,5 +107,10 @@
       "")))
 
 
-(defn setup [])
+(fn setup [])
 
+
+{: get-marker 
+ : buffer-has-vcs 
+ : find-head 
+ : setup} 

@@ -1,7 +1,4 @@
-(module my.pack.parinfer)
-
-
-(def- libnames
+(local libnames
   {"Darwin" "libparinfer_rust.dylib"
    "Linux" "libparinfer_rust.so"
    "Unix" "libparinfer_rust.so"
@@ -9,11 +6,11 @@
    "Windows_NT" "parinfer_rust.dll"})
 
 
-(defn filetypes []
+(fn filetypes []
   [:clojure :scheme :list :racket :hy :fennel :janet :carp :wast])
 
 
-(defn guess-libname []
+(fn guess-libname []
   (var name (. libnames (. (vim.loop.os_uname) :sysname)))
   (when (not name)
     (if (= 1 (vim.fn.has "macunix"))
@@ -26,14 +23,14 @@
   name)
 
 
-(defn guess-libpath []
+(fn guess-libpath []
   (let [root (?. _G :packer_plugins :parinfer :path)]
     (when (and root (not= root ""))
       (let [name (guess-libname)]
         (table.concat [root "target/release" name] "/")))))
 
 
-(defn- start [command cwd]
+(fn start [command cwd]
   (let [bufnr (vim.api.nvim_create_buf true true)
         opts {:cwd cwd
               :on_exit (fn [jobid data event]
@@ -42,25 +39,25 @@
     (vim.fn.termopen command opts)))
 
 
-(defn- keep-window-finalize [oldwin ok ...]
+(fn keep-window-finalize [oldwin ok ...]
   (vim.api.nvim_set_current_win oldwin)
   (when (not ok) (error ...))
   ...)
 
 
-(defn- keep-window [func ...]
+(fn keep-window [func ...]
   (let [curwin (vim.api.nvim_get_current_win)]
     (keep-window-finalize curwin (pcall func ...))))
 
 
-(defn compile-library [plugin]
+(fn compile-library [plugin]
   (let [plugin (or plugin (?. _G :packer_plugins :parinfer))
         path (when plugin (or plugin.path plugin.install_path))]
     (vim.notify "Building parinfer lib")
     (keep-window start ["cargo" "build" "--release"] path)))
 
 
-(defn setup []
+(fn setup []
   (let [libpath (guess-libpath)]
     (if (and libpath (= 1 (vim.fn.filereadable libpath)))
       (do
@@ -69,3 +66,9 @@
       (do
         (set vim.g.parinfer_enabled 0)))))
 
+
+{: filetypes 
+ : guess-libname 
+ : guess-libpath 
+ : compile-library 
+ : setup} 

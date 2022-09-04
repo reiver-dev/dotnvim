@@ -1,16 +1,14 @@
-(module my.promise
-  {require {a my.async
-            s my.simple
-            v my.vararg}})
+(local a (require "my.async"))
+(local s (require "my.simple"))
+(local v (require "my.vararg"))
+
+(local COMPLETED 0)
+(local STATUS 1) 
+(local WAIT 2)
+(local INSPECT 3)
 
 
-(def- COMPLETED 0)
-(def- STATUS 1) 
-(def- WAIT 2)
-(def- INSPECT 3)
-
-
-(defn- timeout-expired [timeout]
+(fn timeout-expired [timeout]
   (let [funcname (. (debug.getinfo 2 :n) :name)
         {: short_src : linedefined } (. (debug.getinfo 3))]
     (error (string.format "%s:%s: Timeout %d expired"
@@ -18,13 +16,13 @@
 
 
 
-(defn- error-message [function]
+(fn error-message [function]
   (let [info (debug.getinfo function :S)]
     (string.format "Error during running async %s:%d\n"
                    info.short_src info.linedefined)))
 
 
-(defn- block-impl [context timeout interval]
+(fn block-impl [context timeout interval]
   (vim.validate {:timeout [timeout :number true]
                  :interval [interval :number true]})
   (let [tm (or timeout 200)
@@ -35,7 +33,7 @@
       (timeout-expired tm))))
 
 
-(defn- finalizer [context]
+(fn finalizer [context]
   (fn [status ...]
     (set context.result (v.pack ...))
     (set context.completed true)
@@ -44,12 +42,12 @@
       (s.errmsg (error-message context.func) ...))))
     
 
-(defn- status-impl [context]
+(fn status-impl [context]
   (when context.coro
     (coroutine.status context.coro)))
 
 
-(defn new [asyncfunc ...]
+(fn new [asyncfunc ...]
   (let [context {:completed false
                  :func asyncfunc
                  :coro (coroutine.create asyncfunc)}]
@@ -62,17 +60,24 @@
         INSPECT (vim.inspect context)))))
 
 
-(defn completed? [cb]
+(fn completed? [cb]
   (cb COMPLETED))
 
 
-(defn status [cb]
+(fn status [cb]
   (cb STATUS))
 
 
-(defn wait [cb timeout interval]
+(fn wait [cb timeout interval]
   (cb WAIT timeout interval))
 
 
-(defn inspect [cb]
+(fn inspect [cb]
   (cb INSPECT))
+
+
+{: new
+ : completed?
+ : status
+ : wait
+ : inspect}

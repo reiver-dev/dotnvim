@@ -1,9 +1,7 @@
 ;;; My
 
-(module my)
 
-
-(def- modules
+(local modules
   ["my.bufreg"
    "my.options"
    "my.terminal"
@@ -22,7 +20,7 @@
    "my.scratch"])
 
 
-(defn setup []
+(fn setup []
   (set vim.g.loaded_matchit 1)
   (set vim.g.loaded_matchparen 1)
   (each [_ modname (ipairs modules)]
@@ -34,5 +32,8 @@
       (false err) (vim.notify
                     (string.format "Failed to load %s:\n    %s" modname err)
                     vim.log.levels.ERROR))))
+
+
+{: setup}
 
 ;;; my.fnl ends here

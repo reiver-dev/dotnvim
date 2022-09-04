@@ -8,7 +8,6 @@ local packages = fn.stdpath("data"):gsub("\\", "/") .. "/site/pack/packer"
 
 local packer_root = packages .. "/opt/packer.nvim"
 local fennel_root = packages .. "/opt/fennel"
-local conjure_root = packages .. "/opt/conjure"
 
 
 local function make_args(executable, ...)
@@ -73,8 +72,6 @@ local function setup()
         vim.cmd("packadd fennel")
         require "bootstrap.fennel.ensure_compiler".setup()
     end
-
-    download("https://github.com/Olical/conjure", conjure_root)
 
     ensure_plugin_loaders("packer.nvim", "packer")
     ensure_plugin_loaders("fennel", "fennel")

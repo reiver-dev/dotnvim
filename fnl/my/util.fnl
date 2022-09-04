@@ -1,35 +1,32 @@
-(module my.util)
+(local clock vim.loop.hrtime)
 
 
-(def clock vim.loop.hrtime)
-
-
-(defn nothing []
+(fn nothing []
   "Do nothing, return nothing."
   nil)
 
 
-(defn identity [id]
+(fn identity [id]
   "Return first argument."
   id)
 
 
-(defn str-join [sep ...]
+(fn str-join [sep ...]
   "Join VARARG of string with SEP."
   (table.concat [...] sep))
 
 
-(def- inspect-1 vim.inspect)
+(local inspect-1 vim.inspect)
 
 
-(defn inspect [first ...]
+(fn inspect [first ...]
   "Inspect each of VARARG elements."
   (if (= (select :# ...) 0)
     (inspect-1 first)
     (values (inspect-1 first) (inspect ...))))
 
 
-(defn bench [name fun]
+(fn bench [name fun]
   (var i 1000)
   (while (< 0 i)
     (fun)
@@ -43,13 +40,13 @@
       (LOG "Bench" :name name :time (- end begin)))))
 
 
-(defn- cycle-iter [state param a b c]
+(fn cycle-iter [state param a b c]
   (let [param (+ 1 (% param state.end))]
     (when (not= param state.begin)
       (values param (. state.table param)))))
 
 
-(defn cycle [begin tbl]
+(fn cycle [begin tbl]
   (if (<= begin 0)
     (ipairs tbl)
     (let [end (length tbl)
@@ -57,12 +54,12 @@
       (values cycle-iter {:begin begin :end end :table tbl} begin))))
 
 
-(defn- cycle-apply-impl [func begin end idx]
+(fn cycle-apply-impl [func begin end idx]
   (when (and (not= begin idx) (func idx))
     (cycle-apply-impl func begin end (+ 1 (% idx end)))))
 
 
-(defn cycle-apply [func idx end]
+(fn cycle-apply [func idx end]
   (if (<= idx 0)
     (when (and (< 0 end) (func 1) (< 1 end))
       (cycle-apply-impl func 1 end 2))
@@ -71,7 +68,7 @@
       (cycle-apply-impl func begin end (+ 1 (% idx end))))))
 
 
-(defn- nset-1 [map n key ...]
+(fn nset-1 [map n key ...]
   (if (< 2 n)
     (do
       (var nested (. map key))
@@ -85,26 +82,26 @@
       ...)))
   
 
-(defn nset [map ...]
+(fn nset [map ...]
   "Set MAP value by key. VARARG is (key1, key2, .., keyn, value).
   If multiple keys supplied, they are used to traverse or create nested maps."
   (nset-1 map (select :# ...) ...))
 
 
-(defn- nget-1 [map n key ...]
+(fn nget-1 [map n key ...]
   (let [nested (. map key)]
     (if (and (< 1 n) nested)
       (nget-1 nested (- n 1) ...)
       nested)))
 
 
-(defn nget [map ...]
+(fn nget [map ...]
   "Get value from MAP by key. VARARG is sequence of keys.
   If multiple keys supplied, they are used to traverse nested maps."
   (nget-1 map (select :# ...) ...))
 
 
-(defn- nupdate-1 [map n key ...]
+(fn nupdate-1 [map n key ...]
   (if (< 2 n)
     (do
       (var nested (. map key))
@@ -120,14 +117,14 @@
         result))))
 
 
-(defn nupd [map ...]
+(fn nupd [map ...]
   "Update value from MAP by key. VARARG is (key1, key2, ..., keyn, function).
   The function receives previous value as argument and returns new one.
   If multiple keys supplied, they are used to traverse nested maps."
   (nupdate-1 map (select :# ...) ...))
 
 
-(defn counter []
+(fn counter []
   "Create incrementing counter.
   The result is a function that returns new number each time it is called."
   (var counter 0)
@@ -136,5 +133,18 @@
       (set counter val)
       val)))
 
+
+{: clock
+ : nothing 
+ : identity 
+ : str-join 
+ : inspect 
+ : bench 
+ : cycle 
+ : cycle-apply 
+ : nset 
+ : nget 
+ : nupd 
+ : counter} 
 
 ;;; util.fnl ends here

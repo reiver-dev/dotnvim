@@ -1,14 +1,11 @@
-(module my.scratch)
+(local window-mods [:vertical
+                    :aboveleft :leftabove
+                    :rightbelow :belowright
+                    :topleft
+                    :botright])
 
 
-(def- window-mods [:vertical
-                   :aboveleft :leftabove
-                   :rightbelow :belowright
-                   :topleft
-                   :botright])
-
-
-(def- window-mods-short
+(local window-mods-short
   {:vert :vertical
    :lefta :leftabove
    :abo :aboveleft
@@ -18,13 +15,13 @@
    :bo :botright})
 
 
-(defn make-scratch-buffer [name]
+(fn make-scratch-buffer [name]
   (local bufnr (vim.api.nvim_create_buf true true))
   (vim.api.nvim_buf_set_name bufnr name)
   bufnr)
 
 
-(defn find-buf-by-name [name]
+(fn find-buf-by-name [name]
   (var bufnr -1)
   (each [_ num (ipairs (vim.api.nvim_list_bufs)) :until (<= 0 bufnr)]
     (let [bufname (vim.api.nvim_buf_get_name num)]
@@ -33,7 +30,7 @@
   bufnr)
 
 
-(defn make-or-switch [name]
+(fn make-or-switch [name]
   (local name (if (and (not= nil name) (not= "" name))
                 name
                 "[Scratch]"))
@@ -44,5 +41,11 @@
   (vim.cmd (.. "sbuffer " bufnr)))
 
 
-(defn setup []
+(fn setup []
   (vim.cmd "command! -nargs=? Scratch lua _T('my.scratch', 'make-or-switch', <q-args>)"))
+
+
+{: make-scratch-buffer 
+ : find-buf-by-name 
+ : make-or-switch 
+ : setup} 

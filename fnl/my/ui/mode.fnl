@@ -1,28 +1,26 @@
-(module my.ui.mode)
+(local visual-block (string.char 22)) ;; ^V
+(local select-block (string.char 19)) ;; ^S
 
-(def- visual-block (string.char 22)) ;; ^V
-(def- select-block (string.char 19)) ;; ^S
+(local normal [:n :no :nov :noV (.. :no visual-block)
+               :niI :niR :niV])
 
-(def- normal [:n :no :nov :noV (.. :no visual-block)
-              :niI :niR :niV])
+(local visual [:v :V visual-block])
 
-(def- visual [:v :V visual-block])
+(local select [:s :S select-block])
 
-(def- select [:s :S select-block])
+(local insert [:i :ic :ix])
 
-(def- insert [:i :ic :ix])
+(local replace [:R :Rc :Rv :Rx])
 
-(def- replace [:R :Rc :Rv :Rx])
+(local command [:c :cv :ce])
 
-(def- command [:c :cv :ce])
+(local prompt [:r :rm :r?])
 
-(def- prompt [:r :rm :r?])
+(local shell-pending [:!])
 
-(def- shell-pending [:!])
+(local terminal [:t])
 
-(def- terminal [:t])
-
-(def- modemap
+(local modemap
   {:n :normal
    :v :visual
    :V :visual
@@ -38,7 +36,7 @@
    :t :terminal})
 
 
-(def- mode-symbol
+(local mode-symbol
   {:normal :N
    :visual :V
    :insert :I
@@ -50,5 +48,8 @@
    :terminal :T})
 
 
-(defn resolve-current []
+(fn resolve-current []
   (. mode-symbol (. modemap (vim.fn.mode))))
+
+
+{: resolve-current}

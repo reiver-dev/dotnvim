@@ -1,18 +1,16 @@
-(module my.simple
-  {require {v my.vararg
-            s my.strutil}})
+(local v (require "my.vararg"))
+(local s (require "my.strutil"))
+
+(local argpack v.pack)
+(local argunpack v.unpack)
 
 
-(def- argpack v.pack)
-(def- argunpack v.unpack)
-
-
-(defn- remove-tabs [text]
+(fn remove-tabs [text]
   (let [result (string.gsub text "\t" "    ")]
     result))
 
 
-(defn message-1 [write ...]
+(fn message-1 [write ...]
   (let [ln (select :# ...)]
     (when (> ln 0)
       (write (remove-tabs (tostring (select 1 ...))))
@@ -22,7 +20,7 @@
     (write "\n")))
 
 
-(defn- message-safe [write ...]
+(fn message-safe [write ...]
   (if (vim.in_fast_event)
     (vim.schedule
       (let [args (argpack ...)]
@@ -30,15 +28,15 @@
     (message-1 write ...)))
 
 
-(defn message [...]
+(fn message [...]
   (message-safe vim.api.nvim_out_write ...))
 
 
-(defn errmsg [...]
+(fn errmsg [...]
   (message-safe vim.api.nvim_err_write ...))
 
 
-(def- empty-preview-template
+(local empty-preview-template
   (.. "silent! pedit! +setlocal"
       "\\ buftype=nofile"
       "\\ nobuflisted"
@@ -49,7 +47,7 @@
       " %s"))
 
 
-(defn verbose [command]
+(fn verbose [command]
   (let [output (vim.api.nvim_exec command true)]
     (vim.cmd (string.format empty-preview-template :text "Verbose"))
     (vim.cmd "wincmd P")
@@ -58,11 +56,11 @@
       (vim.api.nvim_buf_set_keymap bufnr :n "q" ":bd<CR>" {:noremap true}))))
 
 
-(defn expandvar [text]
+(fn expandvar [text]
   (s.expandvar text os.getenv))
 
 
-(defn- find-pos-1 [predicate next tbl idx]
+(fn find-pos-1 [predicate next tbl idx]
   (let [(nidx val) (next tbl idx)]
     (when nidx
       (if (predicate val)
@@ -70,15 +68,15 @@
         (find-pos-1 predicate next tbl nidx)))))
 
 
-(defn find-pos [predicate tbl]
+(fn find-pos [predicate tbl]
   (find-pos-1 predicate (ipairs tbl)))
 
 
-(defn find-key [predicate tbl]
+(fn find-key [predicate tbl]
   (find-pos-1 predicate (pairs tbl)))
 
 
-(defn loaded-buffers []
+(fn loaded-buffers []
   (let [tbl []
         buffers (vim.api.nvim_list_bufs)]
     (var i 1)
@@ -89,7 +87,7 @@
     tbl))
 
 
-(defn other-buffer [bufnr]
+(fn other-buffer [bufnr]
   (let [bufnr (or bufnr (vim.api.nvim_get_current_buf))
         altbufnr (vim.fn.bufnr "#")]
     (if (and (> altbufnr 0)
@@ -106,17 +104,17 @@
               bufnr)))))))
 
 
-(defn buffer-number [bufnr]
+(fn buffer-number [bufnr]
   (if (and (~= nil bufnr) (> 0 bufnr))
      bufnr
      (vim.api.nvim_get_current_buf)))
 
 
-(defn buffer-modified? [bufnr]
+(fn buffer-modified? [bufnr]
   (vim.api.nvim_buf_get_option bufnr :modified))
 
 
-(defn create-scratch-buffer []
+(fn create-scratch-buffer []
   (let [buf (vim.api.nvim_create_buf false false)]
     (vim.api.nvim_buf_set_option buf :swapfile false)
     (vim.api.nvim_buf_set_option buf :bufhidden :wipe)
@@ -124,7 +122,7 @@
     buf))
 
 
-(defn- prepare-delete-buffer [bufnr force]
+(fn prepare-delete-buffer [bufnr force]
   (if (not (buffer-modified? bufnr))
     (do
       (when (vim.api.nvim_buf_get_option bufnr :buflisted)
@@ -148,7 +146,7 @@
         3 false))))
 
 
-(defn kill-buffer [bufnr force]
+(fn kill-buffer [bufnr force]
   (let [bufnr (buffer-number bufnr)]
     (when (prepare-delete-buffer bufnr force)
       (let [otherbufnr (let [buf (other-buffer bufnr)]
@@ -166,19 +164,19 @@
           (vim.cmd (.. "bwipeout! " bufnr)))))))
 
 
-(defn kill-current-buffer [force]
+(fn kill-current-buffer [force]
   (kill-buffer (vim.api.nvim_get_current_buf) force))
 
 
-(defn var-set [name value]
+(fn var-set [name value]
   (vim.api.nvim_buf_set_var 0 name value))
 
 
-(defn var-get [name]
+(fn var-get [name]
   (vim.api.nvim_buf_get_var 0 name))
 
 
-(defn option-set [name value]
+(fn option-set [name value]
   (vim.fn.setbufvar "" (.. "&" name)
                     (match value
                       (true) 1
@@ -186,26 +184,26 @@
                       (any) any)))
 
 
-(defn option-get [name]
+(fn option-get [name]
   (vim.fn.getbufvar "" (.. "&" name)))
 
 
-(defn option-list []
+(fn option-list []
   {:buf (vim.fn.getbufvar "" "&")
    :win (vim.fn.getbufvar 0 "&")})
 
 
-(defn var-list []
+(fn var-list []
   {:buf (vim.fn.getbufvar "" "")
    :win (vim.fn.getbufvar 0 "")})
 
 
-(defn command-list []
+(fn command-list []
   {:global (vim.api.nvim_get_commands {})
    :local (vim.api.nvim_buf_get_commands 0 {})})
 
 
-(defn- kmap-flags [...]
+(fn kmap-flags [...]
   (let [res {}]
     (for [i 1 (select :# ...)]
       (tset res (select i ...) true))
@@ -215,48 +213,48 @@
     res))
 
 
-(defn- chars-iter [str idx]
+(fn chars-iter [str idx]
   (let [nidx (+ idx 1)]
     (when (<= nidx (str:len))
       (values nidx (str:sub nidx nidx)))))
 
 
-(defn- chars [str]
+(fn chars [str]
   (values chars-iter str 0))
 
 
-(defn kmap [modes key action ...]
+(fn kmap [modes key action ...]
   (each [_ mode (chars modes)]
     (vim.api.nvim_buf_set_keymap 0 mode key action (kmap-flags ...))))
 
 
-(defn kmap-global [modes key action ...]
+(fn kmap-global [modes key action ...]
   (each [_ mode (chars modes)]
     (vim.api.nvim_set_keymap mode key action (kmap-flags ...))))
 
 
-(defn getpos [name]
+(fn getpos [name]
   (let [pos (vim.fn.getpos name)]
     [(. pos 2) (- (. pos 3) 1)]))
 
 
-(defn line []
+(fn line []
   (vim.fn.line "."))
 
 
-(defn column []
+(fn column []
   (- (vim.fn.col ".") 1))
 
 
-(defn eol []
+(fn eol []
   (- (vim.fn.col "$") 1))
 
 
-(defn point []
+(fn point []
   (getpos "."))
 
 
-(defn visual-point []
+(fn visual-point []
   (let [(sb se) (unpack (getpos "v"))
         (eb ee) (unpack (getpos "."))]
     {:min [(math.min sb eb)
@@ -265,25 +263,62 @@
            (math.max se ee)]}))
 
 
-(defn line-begin []
+(fn line-begin []
   [(line) 0])
 
 
-(defn line-end []
+(fn line-end []
   [(line) (eol)])
 
 
-(defn operator-begin []
+(fn operator-begin []
   (vim.api.nvim_buf_get_mark 0 "["))
 
 
-(defn operator-end []
+(fn operator-end []
   (vim.api.nvim_buf_get_mark 0 "]"))
 
 
-(defn visual-begin []
+(fn visual-begin []
   (vim.api.nvim_buf_get_mark 0 "<"))
 
 
-(defn visual-end []
+(fn visual-end []
   (vim.api.nvim_buf_get_mark 0 ">"))
+
+
+{: message-1 
+ : message 
+ : errmsg 
+ : verbose 
+ : expandvar 
+ : find-pos 
+ : find-key 
+ : loaded-buffers 
+ : other-buffer 
+ : buffer-number 
+ : buffer-modified? 
+ : create-scratch-buffer 
+ : kill-buffer 
+ : kill-current-buffer 
+ : var-set 
+ : var-get 
+ : option-set 
+ : option-get 
+ : option-list 
+ : var-list 
+ : command-list 
+ : kmap 
+ : kmap-global 
+ : getpos 
+ : line 
+ : column 
+ : eol 
+ : point 
+ : visual-point 
+ : line-begin 
+ : line-end 
+ : operator-begin 
+ : operator-end 
+ : visual-begin 
+ : visual-end} 

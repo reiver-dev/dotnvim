@@ -1,15 +1,14 @@
-(module my.project
-  {require {fw my.fswalk
-            a my.async
-            p my.promise
-            b my.bufreg}})
+(local fw (require "my.fswalk"))
+(local a  (require "my.async"))
+(local p (require "my.promise"))
+(local b (require "my.bufreg"))
 
 
-(def- interesting-files [".projectile" ".lnvim.fnl"])
-(def- interesting-directories [".git" ".hg"])
+(local interesting-files [".projectile" ".lnvim.fnl"])
+(local interesting-directories [".git" ".hg"])
 
 
-(defn- getbufvar [bufnr name]
+(fn getbufvar [bufnr name]
   "Get buffer-local variable for BUFNR buffer by variable NAME."
   (match (pcall
            (fn []
@@ -18,12 +17,12 @@
     _ ""))
   
 
-(defn- setbufvar [bufnr name value]
+(fn setbufvar [bufnr name value]
   "Assign buffer-local variable for BUFNR buffer by variable NAME to VALUE."
   (vim.api.nvim_buf_set_var (or bufnr 0) name value))
 
 
-(defn project-root [bufnr]
+(fn project-root [bufnr]
   "Provide project root for BUFNR buffer."
   (let [pr (b.get-local bufnr :project :root)]
     (if pr
@@ -31,7 +30,7 @@
       (getbufvar bufnr :projectile))))
         
 
-(defn- find-nearest-provider [...]
+(fn find-nearest-provider [...]
   "Find project provider entry from multiple arrays
   which has with longest path."
   (var provider nil)
@@ -53,19 +52,19 @@
   (values provider longest-path shortest-path))
 
 
-(defn- fire-user-event [bufnr event]
+(fn fire-user-event [bufnr event]
   "Execute autocmd user event for BUFNR buffer by EVENT name."
   (when (vim.fn.exists (string.format "#User#%s" event))
     (let [cmd (string.format "doautocmd <nomodeline> User %s" event)]
       (vim.api.nvim_buf_call bufnr (fn [] (vim.cmd cmd))))))
   
 
-(defn- fire-project-updated [bufnr]
+(fn fire-project-updated [bufnr]
   "Execute autocmd Projectile for BUFNR buffer."
   (fire-user-event bufnr "Projectile"))
 
 
-(defn- do-project-search [bufnr path]
+(fn do-project-search [bufnr path]
   "Perform search for project-related files.
   BUFNR is buffer number. PATH is intended directory within project."
   (let [(files dirs) (fw.async-gather path interesting-files
@@ -89,18 +88,22 @@
             (fire-project-updated bufnr)))))))
 
 
-(defn defer-project-search [bufnr path]
+(fn defer-project-search [bufnr path]
   "Schedule search for project-related files.
   BUFNR is buffer number. PATH is intended directory within project."
   (p.new do-project-search bufnr path))
 
 
-(defn- on-directory-changed [bufnr directory]
+(fn on-directory-changed [bufnr directory]
   (defer-project-search bufnr directory))
 
 
-(defn setup []
+(fn setup []
   (let [hook (. (require "my.directory") :add-hook)]
     (hook :my.project on-directory-changed)))
+
+
+{: project-root
+ : setup}
   
 ;;; project.fnl ends here

@@ -1,25 +1,24 @@
-(module my.help
-  {require {fun my.fun
-            point my.point
-            selection my.selection}})
+(local fun (require "my.fun"))
+(local point (require "my.point"))
+(local selection (require "my.selection"))
 
 
-(defn- lines-to-str [obj]
+(fn lines-to-str [obj]
   (table.concat obj "\n"))
 
 
-(defn- term-lines-to-str [obj]
+(fn term-lines-to-str [obj]
   (table.concat obj "\r\n"))
 
 
-(defn- lines-not-empty [tbl]
+(fn lines-not-empty [tbl]
   (and
     (not= nil tbl)
     (< 0 (length tbl))
     (not= nil (fun.find #(< 0 (length $1)) tbl))))
 
 
-(defn- handle-finished-job [state jobid]
+(fn handle-finished-job [state jobid]
   (if (= state.exit 0)
     (do
       (when (lines-not-empty state.stdout)
@@ -36,7 +35,7 @@
       (vim.notify msg vim.log.levels.ERROR))))
 
 
-(defn- handle-job-data [state jobid data event]
+(fn handle-job-data [state jobid data event]
   (match event
     :stdout (set state.stdout data)
     :stderr (set state.stderr data)
@@ -45,7 +44,7 @@
         (handle-finished-job state jobid))))
 
 
-(defn- process-environment [tbl]
+(fn process-environment [tbl]
   (when tbl
     (let [base (vim.fn.environ)]
       (each [k v (pairs tbl)]
@@ -53,7 +52,7 @@
       base)))
 
 
-(defn- execute [program]
+(fn execute [program]
   (local result {})
   (local handler (partial handle-job-data result))
   (vim.fn.jobstart program
@@ -68,7 +67,7 @@
                     :on_stderr handler}))
 
 
-(defn show-command [command word count]
+(fn show-command [command word count]
   (local text (string.format
                 ":%d%s %s" (or count 0)
                 command (vim.fn.fnameescape word)))
@@ -76,17 +75,17 @@
   (values))
 
 
-(defn show-program [command word count]
+(fn show-program [command word count]
   (execute (.. command " " (vim.fn.fnameescape word))))
 
 
-(defn show-keywordprg [kprg word count]
+(fn show-keywordprg [kprg word count]
   (if (= ":" (string.sub kprg 1 1))
     (show-command (string.sub kprg 2) word count)
     (show-program kprg word count)))
 
 
-(defn try-hover [fallback]
+(fn try-hover [fallback]
   (if fallback
     (vim.lsp.buf_request
       0
@@ -101,12 +100,12 @@
     (vim.lsp.buf.hover)))
 
 
-(defn- get-keywordprg [bufnr]
+(fn get-keywordprg [bufnr]
   (local (ok val) (pcall vim.api.nvim_buf_get_option bufnr :keywordprg))
   (if ok val (vim.api.nvim_get_option :keywordprg)))
 
 
-(defn show [count word]
+(fn show [count word]
   (let [clients (vim.lsp.buf_get_clients 0)
         kprg (get-keywordprg 0)]
     (if (< 0 (length clients))
@@ -114,35 +113,46 @@
       (show-keywordprg kprg word count))))
 
 
-(defn show-command [count word]
+(fn show-command [count word]
   (local word (or word (vim.fn.expand "<cword>")))
   (local kprg (get-keywordprg 0))
   (show-keywordprg kprg word count))
 
 
-(defn show-current-word []
+(fn show-current-word []
   (show vim.v.count (vim.fn.expand "<cword>")))
 
 
-(defn show-current-selection []
+(fn show-current-selection []
   (let [lines (selection.selection)]
     (when (and lines (< 0 (length lines)))
       (show vim.v.count (. lines 1)))))
 
 
-(def- command
+(local command
   "command! -count=0 -nargs=? KeyHelp lua _T('my.help', 'show-command', <count>, <q-args>)")
 
 
-(def- key-normal
+(local key-normal
   "<Cmd>lua _T('my.help', 'show-current-word')<CR>")
 
 
-(def- key-visual
+(local key-visual
   "<Cmd>lua _T('my.help', 'show-current-selection')<CR>")
 
 
-(defn setup []
+(fn setup []
   (vim.cmd command)
   (vim.api.nvim_set_keymap :n :K key-normal {:noremap true})
   (vim.api.nvim_set_keymap :v :K key-visual {:noremap true}))
+
+
+{: show-command 
+ : show-program 
+ : show-keywordprg 
+ : try-hover 
+ : setup 
+ : show-command 
+ : show 
+ : show-current-word 
+ : show-current-selection} 

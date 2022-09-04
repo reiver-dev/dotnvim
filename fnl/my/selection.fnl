@@ -1,8 +1,7 @@
-(module my.selection
-  {require {point my.point}})
+(local point (require "my.point"))
 
 
-(defn lines-trim-region [lines col-begin col-end]
+(fn lines-trim-region [lines col-begin col-end]
   (local len (length lines))
   (local str-sub string.sub)
   (local max math.max)
@@ -16,7 +15,7 @@
   lines)
 
 
-(defn lines-trim-block [lines col-begin col-end]
+(fn lines-trim-block [lines col-begin col-end]
   (local str-sub string.sub)
   (local max math.max)
   (for [i 1 (length lines)]
@@ -24,7 +23,7 @@
   lines)
 
 
-(defn lines-max-length [lines]
+(fn lines-max-length [lines]
   (local max math.max)
   (var maxlen 0)
   (for [i 1 (length lines)]
@@ -32,11 +31,11 @@
   maxlen)
 
 
-(defn string-indent [line]
+(fn string-indent [line]
   (or (string.find line "[^%s]") 0))
 
 
-(defn lines-dedent [lines]
+(fn lines-dedent [lines]
   (local min math.min)
   (local sub string.sub)
   (var min-indent 2147483647)
@@ -51,7 +50,7 @@
   lines)
 
 
-(defn lines-dedent-nonempty [lines]
+(fn lines-dedent-nonempty [lines]
   (local str-sub string.sub)
   (local min math.min)
   (local nlines [])
@@ -68,7 +67,7 @@
   nlines)
 
 
-(defn lines-reindent [lines]
+(fn lines-reindent [lines]
   (local str-sub string.sub)
   (local str-rep string.rep)
   (local base-indent (string-indent (. lines 1)))
@@ -84,52 +83,52 @@
   lines)
 
 
-(defn lines-extend-column [lines col]
+(fn lines-extend-column [lines col]
   (local len (length lines))
   (if (= len 0) col
     (< (length (. lines 1)) col) 2147483647
     col))
 
 
-(def visual-register :v)
+(local visual-register :v)
 
 
-(defn- copy-last-visual-select [register]
+(fn copy-last-visual-select [register]
   (vim.cmd (string.format "silent normal! gv\"%.1sy" register))
   (local reginfo (vim.fn.getreginfo register))
   (values reginfo.regcontents reginfo.regtype))
 
 
-(defn- with-register-finally [regname regdata status ...]
+(fn with-register-finally [regname regdata status ...]
   (vim.fn.setreg regname regdata)
   (when (not status)
     (error ...))
   (values ...))
 
 
-(defn- with-register [?register func]
+(fn with-register [?register func]
   (local regname (string.sub (or ?register visual-register) 1 1))
   (local regdata (vim.fn.getreginfo regname))
   (with-register-finally
     regname regdata (xpcall #(func regname) debug.traceback)))
 
 
-(defn get-normal-visual-lines [register]
+(fn get-normal-visual-lines [register]
   (with-register register copy-last-visual-select))
 
 
-(defn normal-selection []
+(fn normal-selection []
   (local (lines regtype) (get-normal-visual-lines))
   (if (= 86 (string.byte regtype 1))
     (lines-dedent lines)
     lines))
 
 
-(defn range-selection [line1 line2]
+(fn range-selection [line1 line2]
   (vim.api.nvim_buf_get_lines 0 (- line1 1) line2 false))
 
 
-(defn visual-selection []
+(fn visual-selection []
   (let [(bl bc el ec) (point.visual-point)
         lines (vim.api.nvim_buf_get_lines 0 (- bl 1) el false)
         curswant (. (vim.fn.winsaveview) :curswant)]
@@ -144,7 +143,7 @@
       _ lines)))
 
 
-(defn selection []
+(fn selection []
   (match (string.byte (. (vim.api.nvim_get_mode) :mode) 1)
     ;; normal
     110 (normal-selection)
@@ -161,3 +160,19 @@
              lines (vim.api.nvim_buf_get_lines 0 (- bl 1) el false)
              curswant (. (vim.fn.winsaveview) :curswant)]
          (lines-trim-block lines (+ bc 1) (math.max (+ ec 1) curswant)))))
+
+
+{: lines-trim-region 
+ : lines-trim-block 
+ : lines-max-length 
+ : string-indent 
+ : lines-dedent 
+ : lines-dedent-nonempty 
+ : lines-reindent 
+ : lines-extend-column 
+ : get-normal-visual-lines 
+ : normal-selection 
+ : range-selection 
+ : visual-selection 
+ : visual-register
+ : selection} 

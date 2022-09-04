@@ -1,18 +1,15 @@
-(module my.check.job)
-
-
-(defn- process-start [options]
+(fn process-start [options]
   (let [job (require "plenary.job")]
     (: (job:new options) :start)
     job))
 
 
-(defn- process-kill [fd]
+(fn process-kill [fd]
   (when (not (fd:is_closing))
     (fd:close)))
 
 
-(defn execute-command [bufnr command cwd callback]
+(fn execute-command [bufnr command cwd callback]
   (vim.validate {:bufnr [bufnr :n]
                  :callback [callback :f]})
   (LOG "Executing job" :command command)
@@ -41,7 +38,7 @@
     jobid))
     
                             
-(defn- buffer-write [path]
+(fn buffer-write [path]
   (let [m vim.bo.modified]
     (set vim.bo.modified false)
     (let [(ok res)
@@ -54,13 +51,13 @@
         (error res)))))
 
 
-(defn backup-buffer [bufnr]
+(fn backup-buffer [bufnr]
   (let [tmpname (vim.fn.tempname)]
    (vim.api.nvim_buf_call bufnr (fn [] (buffer-write tmpname))) 
    tmpname))
 
 
-(defn slurp [path]
+(fn slurp [path]
   "Read the file from PATH into a string."
   (match (io.open path "r")
     (nil msg) nil
@@ -69,15 +66,23 @@
         content)))
 
 
-(defn get-buffer-lines [bufnr]
+(fn get-buffer-lines [bufnr]
   (vim.api.nvim_buf_get_lines
     bufnr 0 (vim.api.nvim_buf_line_count bufnr) true))
 
 
-(defn send-buffer [jobid bufnr]
+(fn send-buffer [jobid bufnr]
   (vim.fn.chansend jobid (get-buffer-lines bufnr))
   (vim.fn.chanclose jobid :stdin))
 
 
-(defn cancel [jobid]
+(fn cancel [jobid]
   (vim.fn.jobstop jobid))
+
+
+{: execute-command 
+ : backup-buffer 
+ : slurp 
+ : get-buffer-lines 
+ : send-buffer 
+ : cancel} 

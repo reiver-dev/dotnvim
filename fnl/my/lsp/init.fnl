@@ -1,12 +1,11 @@
-(module my.lsp
-  {require {s my.simple}})
+(local s (require "my.simple"))
 
 
-(def- kmap vim.api.nvim_buf_set_keymap)
-(def- handler "my.lsp.handlers")
+(local kmap vim.api.nvim_buf_set_keymap)
+(local handler "my.lsp.handlers")
 
 
-(def- keymap
+(local keymap
   {:n {"<C-]>" :jump-definition
        "<M-]>" :jump-declaration
        :<leader>gi :jump-implementation
@@ -36,7 +35,7 @@
 
 
 
-(defn- configure-diagnostic []
+(fn configure-diagnostic []
   (tset vim.lsp.callbacks "textDocument/publishDiagnostics"
         (vim.lsp.with vim.lsp.diagnostic.on_publish_diagnostics
                       {:underline true
@@ -45,7 +44,7 @@
                        :update_in_insert false})))
 
 
-(defn- autocmd [bufnr event fun]
+(fn autocmd [bufnr event fun]
   (if (> bufnr 0)
     (string.format
       "autocmd %s <buffer=%d> lua _T('my.lsp.handlers', %q)"
@@ -55,7 +54,7 @@
       event fun)))
 
 
-(def- highlight-command
+(local highlight-command
   (table.concat ["augroup lsp_document_highlight"
                  "autocmd! * <buffer>"
                  (autocmd 0 :CursorHold :show-document-highlight)
@@ -65,31 +64,36 @@
    "\n"))
 
 
-(defn- init-highlight [bufnr]
+(fn init-highlight [bufnr]
   (vim.api.nvim_exec highlight-command false))
 
 
-(defn- default-buffer-config [client buf]
+(fn default-buffer-config [client buf]
   (vim.api.nvim_buf_set_option 0 "omnifunc" "v:lua.vim.lsp.omnifunc")
   (init-highlight))
 
 
-(defn on-attach [client buf]
+(fn on-attach [client buf]
   (let [clients (vim.lsp.buf_get_clients buf)]
     (when (and (= (length clients) 1)
                (= (. clients 1) client))
       (default-buffer-config client buf))))
 
 
-(defn restart []
+(fn restart []
   (vim.lsp.stop_client (vim.lsp.get_active_clients)))
 
 
-(defn setup []
+(fn setup []
   (each [mode keys (pairs keymap)]
     (each [key action (pairs keys)]
       (vim.keymap.set mode key
                       #(_T "my.lsp.handlers" action)
                       {:desc (.. "my.lsp.handlers::" action)}))))
+
+
+{: on-attach 
+ : restart 
+ : setup} 
 
 ;;; lsp ends here

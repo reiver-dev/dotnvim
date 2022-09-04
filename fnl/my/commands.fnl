@@ -1,15 +1,14 @@
-(module my.commands
-  {require {s my.simple}})
-
-
-(def- verbose-command
+(local verbose-command
   (.. "command! -range=-1 -nargs=1 -complete=command" 
       " Verbose :lua _T('my.simple', 'verbose', <q-args>)"))
 
 
-(defn- define-verbose-command []
+(fn define-verbose-command []
   (vim.cmd verbose-command))
     
 
-(defn setup []
+(fn setup []
   (define-verbose-command))
+
+
+{: setup}

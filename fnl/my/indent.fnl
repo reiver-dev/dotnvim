@@ -1,32 +1,29 @@
-(module my.indent)
-
-
-(defn- current-line []
+(fn current-line []
   (vim.fn.getline "."))
 
 
-(def- indent-blank-line-command "\\<End>x\\<C-o>==\\<End>\\<Left>\\<Del>")
-(def- indent-command "\\<C-o>==")
-(def- tab-command "\\<Tab>")
+(local indent-blank-line-command "\\<End>x\\<C-o>==\\<End>\\<Left>\\<Del>")
+(local indent-command "\\<C-o>==")
+(local tab-command "\\<Tab>")
 
 
-(defn- indent []
+(fn indent []
   (if (string.find (current-line) "^%s*$")
     (vim.cmd indent-blank-line-command)
     (vim.cmd indent-command)))
 
 
-(defn- keybind []
+(fn keybind []
   (vim.api.nvim_set_keymap
     :i :<Tab> :<C-o>== {:silent true :noremap true}))
 
 
-(defn- setb [name value]
+(fn setb [name value]
   (tset vim.o name value)
   (tset vim.bo name value))
 
 
-(defn- options []
+(fn options []
   (setb :tabstop 8)
   (setb :softtabstop 4)
   (setb :shiftwidth 4)
@@ -34,5 +31,8 @@
   (setb :lispwords (.. vim.o.lispwords ",module,collect,icollect")))
 
 
-(defn setup []
+(fn setup []
   (options))
+
+
+{: setup}

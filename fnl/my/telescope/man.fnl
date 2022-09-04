@@ -1,16 +1,15 @@
-(module my.telescope.man
-  {require {t-entry telescope.make_entry
-            t-finders telescope.finders
-            t-pickers telescope.pickers
-            t-sorters telescope.sorters
-            t-previewers telescope.previewers
-            t-actions telescope.actions
-            t-utils telescope.utils
-            t-conf telescope.config
-            t-putils telescope.previewers.utils}})
+(local t-entry (require "telescope.make_entry"))
+(local t-finders (require "telescope.finders"))
+(local t-pickers (require "telescope.pickers"))
+(local t-sorters (require "telescope.sorters"))
+(local t-previewers (require "telescope.previewers"))
+(local t-actions (require "telescope.actions"))
+(local t-utils (require "telescope.utils"))
+(local t-conf (require "telescope.config"))
+(local t-putils (require "telescope.previewers.utils"))
 
 
-(defn- find-man-pages-cmd [opts]
+(fn find-man-pages-cmd [opts]
   (let [result ["apropos"]]
     (table.insert result (.. "--section=" (or opts.man_section "1")))
     (when opts.man_path
@@ -19,24 +18,24 @@
     result))
 
 
-(defn- entry-parse [text]
+(fn entry-parse [text]
   (let [(name section) (string.match text "(.*)%((.*)%)")]
     (if name
       (values name section)
       text)))
 
 
-(defn- did-ftplugin? [bufnr]
+(fn did-ftplugin? [bufnr]
   (let [(ok res) (pcall #(vim.api.nvim_buf_get_var bufnr :did_ftplugin))]
     (and ok (= res 1))))
 
 
-(defn- man-buffer-highlight [bufnr]
+(fn man-buffer-highlight [bufnr]
   (let [hl (. (require "man") :highlight_man_page)]
     (vim.api.nvim_buf_call bufnr hl)))
 
 
-(defn- erzatz-man-filetype [bufnr ?section]
+(fn erzatz-man-filetype [bufnr ?section]
   (when (not (did-ftplugin? bufnr))
     (man-buffer-highlight bufnr)
     (vim.api.nvim_buf_set_var bufnr :did_ftplugin 1)
@@ -46,7 +45,7 @@
                                  "@-@,:,a-z,A-Z,48-57,_,.,-,(,)")))
 
 
-(defn- process-environment [tbl]
+(fn process-environment [tbl]
   (when tbl
     (let [base (vim.fn.environ)]
       (each [k v (pairs tbl)]
@@ -54,7 +53,7 @@
       base)))
 
 
-(def- man-previewer
+(local man-previewer
   (t-utils.make_default_callable
     (fn [_]
       (t-previewers.new_buffer_previewer
@@ -77,20 +76,20 @@
                                   :bufname self.state.bufname})))}))))
 
 
-(defn- call-selection-command [command]
+(fn call-selection-command [command]
   (fn [bufnr]
     (let [selection (t-actions.get_selected_entry)]
       (t-actions.close bufnr)
       (vim.cmd (command:format selection.section selection.value)))))
 
 
-(def- man-edit (call-selection-command "Man %s %s"))
-(def- man-hsplit (call-selection-command "Man %s %s"))
-(def- man-vsplit (call-selection-command "vert bo Man %s %s"))
-(def- man-tabedit (call-selection-command "tab Man %s %s"))
+(local man-edit (call-selection-command "Man %s %s"))
+(local man-hsplit (call-selection-command "Man %s %s"))
+(local man-vsplit (call-selection-command "vert bo Man %s %s"))
+(local man-tabedit (call-selection-command "tab Man %s %s"))
 
 
-(defn- action-mapper [bufnr]
+(fn action-mapper [bufnr]
   (let [r #($1:replace $2)]
     (r t-actions.select_default man-edit)
     (r t-actions.select_horizontal man-hsplit)
@@ -99,15 +98,15 @@
   true)
 
 
-(defn- empty? [array]
+(fn empty? [array]
   (or (not array) (= (length array) 0)))
 
 
-(defn- os-darwin? []
+(fn os-darwin? []
   (= (. (vim.loop.os_uname) :sysname) "Darwin"))
 
 
-(defn- man-picker [opts]
+(fn man-picker [opts]
   (local search-cmd
     [opts.man_cmd (.. "--sections=" (table.concat opts.sections ",")) opts.man_pattern])
   {:prompt_title (string.format "Man(%s)" (table.concat opts.sections ", "))
@@ -117,7 +116,7 @@
    :attach_mappings action-mapper})
 
 
-(defn manpages [opts]
+(fn manpages [opts]
   (local opts (or opts {}))
 
   (match (type opts.sections)
@@ -135,3 +134,7 @@
 
   (-> (t-pickers.new opts (man-picker opts))
       (: :find)))
+
+
+{: manpages}
+

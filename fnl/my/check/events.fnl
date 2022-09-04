@@ -1,25 +1,21 @@
-(module my.check.events)
+(local buffer-state {})
+
+(local events [:BufEnter
+               :WinEnter
+               :BufWritePost
+               :CursorHold
+               :CursorHoldI
+               :InsertLeave
+               :FocusGained
+               :CmdlineLeave
+               :ShellCmdPost])
 
 
-(defonce- buffer-state {})
-
-
-(def- events [:BufEnter
-              :WinEnter
-              :BufWritePost
-              :CursorHold
-              :CursorHoldI
-              :InsertLeave
-              :FocusGained
-              :CmdlineLeave
-              :ShellCmdPost])
-
-
-(def- autocmd-trigger-event
+(local autocmd-trigger-event
     "autocmd %s <buffer=%d> lua _T('my.check.events', 'trigger', '%s')")
 
 
-(def- autocmd-template
+(local autocmd-template
   (string.format
     "augroup check
     autocmd! %s <buffer=%%d> lua _T('my.check.events', 'trigger')
@@ -27,13 +23,13 @@
     (table.concat events ",")))
 
 
-(def- autocmd-disable
+(local autocmd-disable
   "augroup check
   autocmd! * <buffer=%d>
   augroup END")
 
 
-(defn- initialize-events [bufnr]
+(fn initialize-events [bufnr]
   (vim.cmd "augroup check")
   (vim.cmd (string.format "autocmd! * <buffer=%d>" bufnr))
   (each [i event (ipairs events)]
@@ -41,17 +37,17 @@
   (vim.cmd "augroup END"))
 
 
-(defn- disable-events [bufnr]
+(fn disable-events [bufnr]
   (vim.api.nvim_exec (autocmd-disable:format bufnr) false))
 
 
-(defn- notify [state event]
+(fn notify [state event]
   (set state.last (vim.loop.hrtime))
   (set state.has-edits false)
   ((. state :callback) state.bufnr event))
 
 
-(defn- next-debounce [debounce last]
+(fn next-debounce [debounce last]
   (if (or (= debounce 0) (= last 0)) 0
     (let [now (vim.loop.hrtime)]
       (math.max
@@ -59,7 +55,7 @@
         0))))
 
 
-(defn- timer-stop [state]
+(fn timer-stop [state]
   (when state
     (local timer state.timer)
     (when timer
@@ -68,7 +64,7 @@
       (set state.timer nil))))
 
 
-(defn- run-change-hook [bufnr event]
+(fn run-change-hook [bufnr event]
   (let [state (. buffer-state bufnr)
         debounce (next-debounce state.debounce state.last)]
     (timer-stop state)
@@ -79,7 +75,7 @@
         (timer:start debounce 0 #(notify state event))))))
 
 
-(defn- on-reload [_event bufnr]
+(fn on-reload [_event bufnr]
   (let [state (. buffer-state bufnr)]
     (when (. state :enabled)
       (run-change-hook bufnr {:name "reload"
@@ -87,7 +83,7 @@
   false)
 
 
-(defn- on-detach [_event bufnr]
+(fn on-detach [_event bufnr]
   (local state (. buffer-state bufnr))
   (when state
     (timer-stop state.timer)
@@ -98,21 +94,21 @@
   false)
 
 
-(defn- on-bytes [event bufnr tick start-row start-col offset
-                 old-end-row old-end-col old-length
-                 new-end-row new-end-col new-length]
+(fn on-bytes [event bufnr tick start-row start-col offset
+              old-end-row old-end-col old-length
+              new-end-row new-end-col new-length]
   (let [state (. buffer-state bufnr)]
     (set state.has-edits true)
     (not state.enabled)))
 
 
-(defn- on-changedtick [event bufnr tick]
+(fn on-changedtick [event bufnr tick]
   (let [state (. buffer-state bufnr)]
     (set state.has-edits true)
     (not state.enabled)))
 
 
-(defn enable [bufnr callback]
+(fn enable [bufnr callback]
   (let [state (. buffer-state bufnr)]
     (if state
       (do
@@ -132,14 +128,18 @@
         (initialize-events bufnr)))))
 
 
-(defn disable [bufnr]
+(fn disable [bufnr]
   (tset (. buffer-state bufnr) :enabled false)
   (disable-events bufnr))
 
 
-(defn trigger [event]
+(fn trigger [event]
   (let [bufnr (tonumber (vim.fn.expand "<abuf>"))
         state (. buffer-state bufnr)]
     (when (and state state.has-edits)
       (run-change-hook bufnr {:name event
                               :kind :autocmd}))))
+
+{: enable 
+ : disable 
+ : trigger} 

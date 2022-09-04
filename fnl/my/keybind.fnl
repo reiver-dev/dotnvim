@@ -1,8 +1,7 @@
-(module my.keybind
-  {require {s my.simple}})
+(local s (require "my.simple"))
 
 
-(defn setup []
+(fn setup []
   ;; Disable middle mouse paste
   (let [keys ["<MiddleMouse>" "<2-MiddleMouse>"
               "<3-MiddleMouse>" "<4-MiddleMouse>"]]
@@ -63,3 +62,6 @@
   ;; kill-buffer-closing-window
   (s.kmap-global :n :<C-x><C-k>
                  "<cmd>confirm bdelete<CR>"))
+
+
+{: setup}

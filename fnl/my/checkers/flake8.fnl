@@ -1,19 +1,17 @@
-(module my.checkers.flake8
-  {require {j my.check.job
-            python my.lang.python}})
+(local j (require "my.check.job"))
+(local python (require "my.lang.python"))
+
+(local Error vim.diagnostic.severity.ERROR)
+(local Warning vim.diagnostic.severity.WARN)
+(local Information vim.diagnostic.severity.INFO)
+(local Hint vim.diagnostic.severity.HINT)
 
 
-(def- Error vim.diagnostic.severity.ERROR)
-(def- Warning vim.diagnostic.severity.WARN)
-(def- Information vim.diagnostic.severity.INFO)
-(def- Hint vim.diagnostic.severity.HINT)
-
-
-(def- line-pattern
+(local line-pattern
   "stdin:([^:]+):([^:]+): ([^ ]+) (.*)")
 
 
-(def- severity-patterns
+(local severity-patterns
   {"^redefinition" Warning
    ".*unused.*" Warning
    "used$" Warning
@@ -24,7 +22,7 @@
    "^[EW][0-9]+" Information})
 
 
-(defn- convert-severity-1 [code iter state pattern severity]
+(fn convert-severity-1 [code iter state pattern severity]
   (if pattern
     (if (string.match code pattern)
       severity
@@ -32,12 +30,12 @@
     Error))
 
 
-(defn- convert-severity [code]
+(fn convert-severity [code]
   (let [(iter state idx) (pairs severity-patterns)]
     (convert-severity-1 code iter state (iter state idx))))
 
 
-(defn- parse-line [line]
+(fn parse-line [line]
   (let [(line col code msg) (string.match line line-pattern)]
     (when line
       (let [line (- (tonumber line) 1)
@@ -51,7 +49,7 @@
          :severity (convert-severity code)}))))
 
 
-(defn- parse-output [lines]
+(fn parse-output [lines]
   (let [result []]
     (each [_ line (ipairs lines)]
       (let [entry (parse-line line)]
@@ -60,7 +58,7 @@
     result))
 
 
-(defn run [bufnr report-fn]
+(fn run [bufnr report-fn]
   (let [res (j.execute-command
               bufnr (python.module-command bufnr "flake8" "-") nil
               (fn [jobid result]
@@ -70,5 +68,9 @@
     res))
 
 
-(defn cancel [bufnr state]
+(fn cancel [bufnr state]
   (j.cancel state))
+
+
+{: run 
+ : cancel} 

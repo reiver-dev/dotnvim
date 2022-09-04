@@ -1,15 +1,13 @@
-(module my.check
-  {require {reg my.check.registry
-            evt my.check.events
-            b my.bufreg
-            u my.util}})
+(local reg (require "my.check.registry"))
+(local evt (require "my.check.events"))
+(local b (require "my.bufreg"))
+(local u (require "my.util"))
+
+(local new-id (u.counter))
+(local client-ids {})
 
 
-(defonce- new-id (u.counter))
-(defonce- client-ids {})
-
-
-(defn- buffer [bufnr]
+(fn buffer [bufnr]
   (let [t (type bufnr)]
     (assert (or (= t :nil)
                 (= t :number) (.. "BUFNR must be number, got " t))))
@@ -18,13 +16,13 @@
     (vim.api.nvim_get_current_buf)))
 
 
-(defn publish [id bufnr entries]
+(fn publish [id bufnr entries]
   (vim.schedule
     (fn []
       (vim.diagnostic.set id bufnr entries))))
 
 
-(defn- execute-checkers [bufnr event]
+(fn execute-checkers [bufnr event]
   (LOG "Execute checkers"
        :bufnr bufnr
        :event event
@@ -39,19 +37,25 @@
                       (publish client-id bufnr entries))))))))
 
 
-(defn register [name run cancel]
+(fn register [name run cancel]
   (when (not (. client-ids name))
     (tset client-ids name (vim.api.nvim_create_namespace name)))
   (reg.register name run cancel))
 
 
-(defn enable [bufnr name]
+(fn enable [bufnr name]
   (var bufnr (buffer bufnr))
   (b.set-local bufnr :enabled-checkers name (. client-ids name))
   (evt.enable bufnr execute-checkers))
 
 
-(defn disable [bufnr]
+(fn disable [bufnr]
   (var bufnr (buffer bufnr))
   (b.set-local bufnr :enabled-checkers {})
   (evt.disable bufnr))
+
+
+{: publish 
+ : register 
+ : enable 
+ : disable} 

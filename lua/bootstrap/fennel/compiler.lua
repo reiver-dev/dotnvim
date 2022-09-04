@@ -52,29 +52,9 @@ end
 M.compile_source = compile_source
 
 
-function M.compile_module_source(text, opts)
-    local file
-    if opts.filename == nil then
-        file = "nil"
-    else
-        file = string.format("%q", opts.filename)
-    end
-    local filevar = string.format([[(local *file* %s)]], file)
-    local code = filevar .. "(require-macros \"aniseed.macros\")" .. text
-    local delete_pat = "\n[^\n]-\"ANISEED_DELETE_ME\".-"
-    _G.ANISEED_STATIC_MODULES = true
-    local ok, res, sm = compile_source(code, opts)
-    if ok then
-	res = string.gsub(res, delete_pat .. "\n", "\n")
-	res = string.gsub(res, delete_pat .. "$", "")
-    end
-    return ok, res, sm
-end
-
-
 function M.compile_file(src, dst, opts)
     local text = basic.slurp(src):gsub("\r\n", "\n")
-    local compiled, code = M.compile_module_source(text, opts)
+    local compiled, code = compile_source(text, opts)
     if compiled then
         vim.fn.mkdir(vim.fn.fnamemodify(dst, ":h"), "p")
         basic.spew(dst, code)
@@ -253,61 +233,9 @@ local function macro_searcher(name)
 end
 
 
-local function aniseed_macro_searcher(name)
-    if name ~= "aniseed.macros" then
-        return nil
-    end
-    local path = vim.api.nvim_get_runtime_file("lua/conjure/aniseed/macros.fnl", false)[1]
-    if not path then
-        return nil
-    end
-    return macro_loader, path
-end
-
-
-function M.resolve_path()
-    local filesep, pathsep, submask
-    do
-        local it = string.gmatch(package.config, "([^\n]+)")
-        filesep = it() or "/"
-        pathsep = it() or ";"
-        submask = it() or "?"
-    end
-
-    local fnl_tail = string.format("%s.fnl", submask)
-    local fnl_base = table.concat({
-        ".", filesep, submask, ".fnl", pathsep,
-        ".", filesep, submask, filesep, "init.fnl",
-    })
-
-    local newpath = {fnl_base}
-    local len = 1
-
-    local paths = vim.api.nvim_get_runtime_file("fnl/", true)
-    for _, path in ipairs(paths) do
-        len = len + 1
-        newpath[len] = path .. fnl_tail
-    end
-
-    local aniseed_path = vim.api.nvim_get_runtime_file("lua/conjure/aniseed/macros.fnl", false)[1]
-    if aniseed_path then
-        len = len + 1
-        newpath[len] = aniseed_path
-    end
-
-    return table.concat(newpath, ";")
-end
-
-
 function M.compiler_init()
-    LOAD_PACKAGE("conjure")
     local searchers = fennel["macro-searchers"]
-    if type(searchers) == 'table' then
-        table.insert(searchers, 1, macro_searcher)
-        table.insert(searchers, aniseed_macro_searcher)
-    else
-        fennel.path = M.resolve_path()
-    end
+    table.insert(searchers, 1, macro_searcher)
 end
 
 

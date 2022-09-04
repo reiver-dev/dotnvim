@@ -1,36 +1,33 @@
-(module my.point)
+(local arg-dot ".")
+(local arg-eol "$")
+(local arg-v "v")
 
 
-(def- arg-dot ["."])
-(def- arg-eol ["$"])
-(def- arg-v ["v"])
+(local call vim.call)
 
 
-(def- call vim.api.nvim_call_function)
-
-
-(defn- getpos [args]
+(fn getpos [args]
   (let [pos (call :getpos args)]
     (values (. pos 2) (- (. pos 3) 1))))
 
 
-(defn line []
+(fn line []
   (call :line arg-dot))
 
 
-(defn column []
+(fn column []
   (- (call :col arg-dot) 1))
 
 
-(defn eol []
+(fn eol []
   (- (call :col arg-eol) 1))
 
 
-(defn current []
+(fn current []
   (getpos arg-dot))
 
 
-(defn visual-point []
+(fn visual-point []
   (let [(sb se) (getpos arg-v)
         (eb ee) (getpos arg-dot)]
     (values (math.min sb eb)
@@ -39,29 +36,38 @@
             (math.max se ee))))
 
 
-(defn line-begin []
+(fn line-begin []
   (values (line) 0))
 
 
-(defn line-end []
+(fn line-end []
   (values (line) (eol)))
 
 
-(defn operator-begin []
+(fn operator-begin []
   (let [[b e] (vim.api.nvim_buf_get_mark 0 "[")]
     (values b e)))
 
 
-(defn operator-end []
+(fn operator-end []
   (let [[b e] (vim.api.nvim_buf_get_mark 0 "]")]
     (values b e)))
 
 
-(defn range-begin []
+(fn range-begin []
   (let [[b e] (vim.api.nvim_buf_get_mark 0 "<")]
     (values b e)))
 
 
-(defn range-end []
+(fn range-end []
   (let [[b e] (vim.api.nvim_buf_get_mark 0 ">")]
     (values b e)))
+
+
+{: line : column
+ : eol
+ : current
+ : visual-point
+ : line-begin : line-end
+ : operator-begin : operator-end
+ : range-begin : range-end}

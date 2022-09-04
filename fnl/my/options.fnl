@@ -1,24 +1,19 @@
-(module my.options
-  {require {s my.simple}})
-
-
-(defn- seto [name value]
+(fn seto [name value]
   (tset vim.o name value))
 
-(defn- setb [name value]
+(fn setb [name value]
   (tset vim.o name value)
   (tset vim.bo name value))
 
-(defn- setw [name value]
+(fn setw [name value]
   (tset vim.o name value)
   (tset vim.wo name value))
 
-
-(defn- list [...]
+(fn list [...]
   (table.concat [...] ","))
 
 
-(defn setup []
+(fn setup []
   (seto :timeoutlen 300) ; 1000
   (seto :lazyredraw true)
 
@@ -66,3 +61,6 @@
 
   (vim.cmd "let mapleader=\",\"")
   (vim.cmd "let maplocalleader=\";\""))
+
+
+{: setup}

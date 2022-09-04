@@ -1,14 +1,12 @@
 ;;; lsp.handlers
 
-(module my.lsp.handlers
-  {require {p my.point}})
+(local p (require "my.point"))
+
+(local base vim.lsp.buf)
+(local base-diag vim.diagnostic)
 
 
-(def- base vim.lsp.buf)
-(def- base-diag vim.diagnostic)
-
-
-(defn- telescope [name fallback]
+(fn telescope [name fallback]
   (local (has ts) (pcall require :telescope.builtin))
   (if
     has
@@ -17,91 +15,114 @@
     ((. base name))))
 
 
-(defn jump-declaration []
+(fn jump-declaration []
   (base.declaration))
 
 
-(defn jump-definition []
+(fn jump-definition []
   (telescope :lsp_definitions :definition))
 
 
-(defn jump-implementation []
+(fn jump-implementation []
   (telescope :lsp_implementations :implementation))
 
 
-(defn jump-type-definition []
+(fn jump-type-definition []
   (base.type_definition))
 
 
-(defn preview-definition [])
+(fn preview-definition [])
 
 
-(defn diagnostic-prev []
+(fn diagnostic-prev []
   (base-diag.goto_prev))
 
 
-(defn diagnostic-next []
+(fn diagnostic-next []
   (base-diag.goto_next))
 
 
-(defn code-action []
+(fn code-action []
   (base.code_action))
 
 
-(defn range-code-action []
+(fn range-code-action []
   (base.range_code_action))
 
 
-(defn rename []
+(fn rename []
   (base.rename))
 
 
-(defn format-line []
+(fn format-line []
   (base.range_formatting {} [(p.line-begin)] [(p.line-end)]))
 
 
-(defn format-region []
+(fn format-region []
   (let [(bl bc el ec) (p.visual-point)]
     (base.range_formatting {} [bl bc] [el ec])))
 
 
-(defn format-buffer []
+(fn format-buffer []
   (base.formatting))
 
 
-(defn symbol-find [])
+(fn symbol-find [])
 
 
-(defn symbol-references []
+(fn symbol-references []
   (telescope :lsp_references :references))
 
 
-(defn symbol-in-document []
+(fn symbol-in-document []
   (telescope :lsp_document_symbols :document_symbol))
 
 
-(defn symbol-in-workspace []
+(fn symbol-in-workspace []
   (telescope :lsp_workspace_symbols :workspace_symbol))
 
 
-(defn line-diagnostic []
+(fn line-diagnostic []
   (base-diag.open_float))
 
 
-(defn signature-help []
+(fn signature-help []
   (base.signature_help))
 
 
-(defn hover []
+(fn hover []
   (base.hover))
 
 
-(defn show-document-highlight []
+(fn show-document-highlight []
   (base.document_highlight))
 
 
-(defn clear-document-highlight []
+(fn clear-document-highlight []
   (base.clear_references))
 
+
+{: jump-declaration 
+ : jump-definition 
+ : jump-implementation 
+ : jump-type-definition 
+ : preview-definition 
+ : diagnostic-prev 
+ : diagnostic-next 
+ : code-action 
+ : range-code-action 
+ : rename 
+ : format-line 
+ : format-region 
+ : format-buffer 
+ : symbol-find 
+ : symbol-references 
+ : symbol-in-document 
+ : symbol-in-workspace 
+ : line-diagnostic 
+ : signature-help 
+ : hover 
+ : show-document-highlight 
+ : clear-document-highlight} 
 
 ;;; lsp.handlers ends here

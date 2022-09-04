@@ -1,37 +1,31 @@
-(module my.pathsep)
+(local str-byte string.byte)
+(local str-sub string.sub)
 
-(def- str-byte string.byte)
-(def- str-sub string.sub)
+(local fslash 47) ;; "/"
+(local bslash 92) ;; "\\"
 
-(def- fslash 47) ;; "/"
-(def- bslash 92) ;; "\\"
-
-
-(def separator
-  (let [s (vim.fn.fnamemodify (vim.fn.stdpath "config") ":p")]
-    (str-sub s -1))
-  "Platform-dependent filesystem path separator")
+(local separator (if (= (vim.fn.has "win32") 1) "\\" "/"))
 
 
-(defn winsep? [str pos]
+(fn winsep? [str pos]
   "Check if position STR[POS] is windows separator, either '\\' or '/' ."
   (let [c (str-byte str pos)]
     (or (= fslash c)
         (= bslash c))))
 
 
-(defn posixsep? [str pos]
+(fn posixsep? [str pos]
   "Check if position STR[POS] is posix separator."
   (= fslash (str-byte str pos)))
 
 
-(def separator?
+(local separator?
   (if (= separator "/")
     posixsep?
     winsep?))
 
 
-(defn ltrim [str predicate]
+(fn ltrim [str predicate]
   (let [len (length str)]
     (var i 1)
     (while (and (<= i len) (predicate str i))
@@ -39,14 +33,14 @@
     (str-sub str i)))
 
 
-(defn rtrim [str predicate]
+(fn rtrim [str predicate]
   (var i (length str))
   (while (and (< 0 i) (predicate str i))
     (set i (- i 1)))
   (str-sub str 1 i))
 
 
-(defn trim [str predicate]
+(fn trim [str predicate]
   (var begin 1)
   (var end (length str))
   (while (and (<= begin end) (predicate str begin))
@@ -56,14 +50,14 @@
   (str-sub str begin end))
 
 
-(defn rkeepone [str predicate]
+(fn rkeepone [str predicate]
   (var i (length str))
   (while (and (> i 0) (predicate str i))
     (set i (- i 1)))
   (str-sub str 1 (+ i 1)))
 
 
-(defn rcut [str predicate]
+(fn rcut [str predicate]
   (var i (length str))
   (while (and (< 0 i) (predicate str i))
     (set i (- i 1)))
@@ -72,20 +66,30 @@
   (str-sub str 1 i))
 
 
-(defn parent [str]
+(fn parent [str]
   (rcut str separator?))
 
 
-(defn- firstsep? [str]
+(fn firstsep? [str]
   (separator? str 1))
 
 
-(defn- lastsep? [str]
+(fn lastsep? [str]
   (separator? str (length str)))
 
 
-(defn join [head tail]
+(fn join [head tail]
   (if (or (separator? head (length head))
           (separator? tail 1))
     (.. head tail)
     (.. head separator tail)))
+
+
+{: separator?
+ : join
+ : parent
+ : rcut
+ : rkeepone
+ : trim
+ : rtrim
+ : ltrim}
