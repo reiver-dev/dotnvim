@@ -10,18 +10,9 @@ local packer_root = packages .. "/opt/packer.nvim"
 local fennel_root = packages .. "/opt/fennel"
 
 
-local function make_args(executable, ...)
-    local args = {"!", executable, ...}
-    for idx = 2,#args,1 do
-        args[idx] = fn.shellescape(args[idx])
-    end
-    return table.concat(args, " ")
-end
-
-
 local function download(source, dest)
     if fn.empty(fn.glob(dest)) > 0 then
-        vim.cmd(make_args("git", "clone", source, dest))
+        vim.cmd['!']("git", "clone", source, dest)
         return true
     end
     return false
