@@ -105,11 +105,11 @@
 (fn lines-dedent [lines]
   (var min-indent 2147483647)
   (for [i 1 (length lines)]
-    (local line (. lines 1))
+    (local line (. lines i))
     (local indent (string-indent line))
     (when (not= 0 indent)
       (set min-indent (math.min min-indent indent))))
-  (when (< 1 min-indent)
+  (when (< 1 min-indent 2147483647)
     (for [i 1 (length lines)]
       (tset lines i (string.sub (. lines i) min-indent))))
   lines)
@@ -156,7 +156,7 @@
 
 (fn get-normal-visual-lines [?register]
   (local reg (string.sub (or ?register visual-register) 1 1))
-  (vim.cmd (string.format "silent normal gv\"%.1sy" reg))
+  (vim.cmd (string.format "silent normal! gv\"%.1sy" reg))
   (values (vim.fn.getreg reg 1 1) (vim.fn.getregtype reg)))
 
 

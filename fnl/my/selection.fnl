@@ -19,7 +19,7 @@
   (local str-sub string.sub)
   (local max math.max)
   (for [i 1 (length lines)]
-    (tset lines i (str-sub (. lines i) (max 1 col-begin))))
+    (tset lines i (str-sub (. lines i) (max 1 col-begin) col-end)))
   lines)
 
 
@@ -40,11 +40,11 @@
   (local sub string.sub)
   (var min-indent 2147483647)
   (for [i 1 (length lines)]
-    (local line (. lines 1))
+    (local line (. lines i))
     (local indent (string-indent line))
     (when (not= 0 indent)
       (set min-indent (min min-indent indent))))
-  (when (< 1 min-indent)
+  (when (and (< 1 min-indent 2147483647))
     (for [i 1 (length lines)]
       (tset lines i (sub (. lines i) min-indent))))
   lines)
@@ -94,31 +94,21 @@
 
 
 (fn copy-last-visual-select [register]
-  (vim.cmd (string.format "silent normal! gv\"%.1sy" register))
-  (local reginfo (vim.fn.getreginfo register))
-  (values reginfo.regcontents reginfo.regtype))
-
-
-(fn with-register-finally [regname regdata status ...]
-  (vim.fn.setreg regname regdata)
-  (when (not status)
-    (error ...))
-  (values ...))
-
-
-(fn with-register [?register func]
-  (local regname (string.sub (or ?register visual-register) 1 1))
-  (local regdata (vim.fn.getreginfo regname))
-  (with-register-finally
-    regname regdata (xpcall #(func regname) debug.traceback)))
+  (vim.api.nvim_exec (string.format "silent normal! gv\"%.1sy" register) false)
+  (vim.fn.getreginfo register))
 
 
 (fn get-normal-visual-lines [register]
-  (with-register register copy-last-visual-select))
+  (local old-regdata (vim.fn.getreginfo register))
+  (local (ok data) (pcall copy-last-visual-select register))
+  (vim.fn.setreg register old-regdata)
+  (when (not ok)
+    (error data))
+  (values data.regcontents data.regtype))
 
 
 (fn normal-selection []
-  (local (lines regtype) (get-normal-visual-lines))
+  (local (lines regtype) (get-normal-visual-lines visual-register))
   (if (= 86 (string.byte regtype 1))
     (lines-dedent lines)
     lines))
@@ -128,23 +118,8 @@
   (vim.api.nvim_buf_get_lines 0 (- line1 1) line2 false))
 
 
-(fn visual-selection []
-  (let [(bl bc el ec) (point.visual-point)
-        lines (vim.api.nvim_buf_get_lines 0 (- bl 1) el false)
-        curswant (. (vim.fn.winsaveview) :curswant)]
-    (match (string.byte (vim.fn.visualmode) 1)
-      ;; v region
-      118 (lines-trim-region lines (+ bc 1) (+ ec 1))
-      ;; V line
-      86 (lines-dedent lines)
-      ;; ^V block
-      22 (lines-trim-block lines (+ bc 1) (math.max (+ ec 1) curswant))
-      ;; What?
-      _ lines)))
-
-
-(fn selection []
-  (match (string.byte (. (vim.api.nvim_get_mode) :mode) 1)
+(fn selection [modenum]
+  (match (or modenum (string.byte (. (vim.api.nvim_get_mode) :mode) 1))
     ;; normal
     110 (normal-selection)
     ;; v region
@@ -173,6 +148,5 @@
  : get-normal-visual-lines 
  : normal-selection 
  : range-selection 
- : visual-selection 
  : visual-register
  : selection} 
