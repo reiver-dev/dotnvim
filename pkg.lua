@@ -221,9 +221,8 @@ pkg {
 }
 
 pkg {
-    name = "vista",
-    url = "liuchengxu/vista.vim",
-    cmd = {"Vista"},
+    name = "mason",
+    url = "williamboman/mason.nvim",
 }
 
 pkg {
@@ -247,6 +246,11 @@ pkg {
     name = "nvim-treesitter",
     url = "nvim-treesitter/nvim-treesitter",
     config = function() _T("my.treesitter", "setup") end,
+}
+
+pkg {
+    name = "nvim-treesitter-textobjects",
+    url = "nvim-treesitter/nvim-treesitter-textobjects",
 }
 
 pkg {
@@ -297,8 +301,9 @@ pkg {
 }
 
 pkg {
-    name = "surround",
-    url = "tpope/vim-surround",
+    name = "nvim-surround",
+    url = "kylechui/nvim-surround",
+    config = function() _T("nvim-surround", "setup") end
 }
 
 pkg {
