@@ -56,10 +56,9 @@ end)
 
 local not_recording
 do
-    local empty = {}
     local call = vim.call
     not_recording = function()
-        return call("reg_recording", empty) == ""
+        return call("reg_recording") == ""
     end
 end
 
