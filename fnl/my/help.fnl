@@ -68,11 +68,13 @@
 
 
 (fn show-command [command word count]
-  (local text (string.format
-                ":%d%s %s" (or count 0)
-                command (vim.fn.fnameescape word)))
-  (vim.cmd text)
-  (values))
+  (local ncommand
+    (let [c (vim.api.nvim_parse_cmd command {})]
+      {:cmd c.cmd :args c.args}))
+  (table.insert ncommand.args word)
+  (when (and count (< 0 count))
+    (set ncommand.count count))
+  (vim.api.nvim_cmd ncommand {}))
 
 
 (fn show-program [command word count]
