@@ -10,6 +10,7 @@
 (local nvim_buf_get_var vim.api.nvim_buf_get_var)
 (local nvim_buf_set_var vim.api.nvim_buf_set_var)
 (local nvim_buf_call vim.api.nvim_buf_call)
+(local nvim_cmd vim.api.nvim_cmd)
 
 
 (local hook {})
@@ -155,7 +156,10 @@
   (when dd
     (local cwd (getcwd))
     (when (and (not= dd cwd) (directory? dd))
-      (vim.cmd.lcd dd))))
+      (nvim_cmd {:cmd "lcd"
+                 :args [dd]
+                 :magic {:file false}}
+                {}))))
 
 
 (fn on-file-open [opts]
