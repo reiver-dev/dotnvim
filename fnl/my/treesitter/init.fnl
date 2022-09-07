@@ -33,8 +33,8 @@
 
 
 (fn disable-highlight? [lang bufnr]
-  (and (not (. disabled-langs lang))
-       (not (too-big? lang bufnr))))
+  (or (. disabled-langs lang)
+      (and bufnr (too-big? lang bufnr))))
 
 
 (fn configure []
