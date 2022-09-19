@@ -223,7 +223,7 @@ pkg {
 pkg {
     name = "mason",
     url = "williamboman/mason.nvim",
-    config = function() _T("mason", "setup") end
+    config = function() _T("my.pack.mason", "setup") end
 }
 
 pkg {
