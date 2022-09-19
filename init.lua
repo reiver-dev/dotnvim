@@ -10,6 +10,29 @@ if iswin then
     end)
 end
 
+local function get_stdpath()
+    local s = {}
+    local paths = {'cache', 'config', 'data', 'log', 'run', 'state'}
+    local call = vim.call
+    for _, path in ipairs(paths) do
+        local ok, res = pcall(call, 'stdpath', path)
+        if ok then
+            s[path] = res
+        end
+    end
+    return setmetatable(s, {
+        __index = function(_, k) 
+            error("No such stdpath: " .. tostring(k))
+        end,
+        __newindex = function(_, _, _)
+            error("STDPATH is immutable")
+        end
+    })
+end
+
+
+_G.STDPATH_RAW = get_stdpath()
+
 
 local mods
 do
@@ -70,6 +93,9 @@ end
 if iswin then
     vim.o.shellslash = true
     require "normalize_shellslash".setup()
+    _G.STDPATH = get_stdpath()
+else
+    _G.STDPATH = _G.STDPATH_RAW
 end
 
 
