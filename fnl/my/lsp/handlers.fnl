@@ -55,16 +55,18 @@
 
 
 (fn format-line []
-  (base.range_formatting {} [(p.line-begin)] [(p.line-end)]))
+  (base.format {:range {:start [(p.line-begin)]
+                        :end [(p.line-end)]}}))
 
 
 (fn format-region []
   (let [(bl bc el ec) (p.visual-point)]
-    (base.range_formatting {} [bl bc] [el ec])))
+    (base.format {:range {:start [bl bc]
+                          :end [el ec]}})))
 
 
 (fn format-buffer []
-  (base.formatting))
+  (base.format))
 
 
 (fn symbol-find [])
