@@ -60,7 +60,7 @@
 (fn uri-dirname [name]
   (-> name
       (vim.uri_to_fname)
-      (vim.fs.dirnamel)
+      (vim.fs.dirname)
       (normalize)))
 
 
@@ -70,7 +70,7 @@
     (not scheme) (fs-dirname name) 
     (= scheme "term:") (term-dirname name)
     (= scheme "fugitive:") (fugitive-dirname name)
-    (uri-dirname name)))
+    (= scheme "file:")) (uri-dirname name))
 
 
 (fn empty? [str]
