@@ -129,6 +129,11 @@ pkg {
 }
 
 pkg {
+    name = "nui",
+    url = "MunifTanjim/nui.nvim",
+}
+
+pkg {
     name = "parinfer-lua",
     url = "gpanders/nvim-parinfer",
 }
@@ -369,7 +374,9 @@ pkg {
     opt = true,
     after = {"telescope"},
     keys = {{"n", "<C-x>f"}},
-    config = function() _T("my.pack.telescope-file-browser", "setup") end
+    config = function()
+        _T("my.pack.telescope-file-browser", "setup")
+    end
 }
 
 pkg {
@@ -387,12 +394,6 @@ pkg {
     url = "tpope/vim-vinegar",
 }
 
-pkg {
-    name = "tree",
-    url = "kyazdani42/nvim-tree.lua",
-    cmd = {"NvimTreeOpen", "NvimTreeToggle"},
-    config = function() _T("my.pack.tree", "setup") end,
-}
 
 -- Tasks
 pkg {
