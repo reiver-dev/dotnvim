@@ -1,7 +1,9 @@
 --- Better lua eval
 
-local function complete_lua(arg, _, _)
-    return require"bootstrap.eval.lua_eval".complete(arg)
+local function complete_lua(arg, line, pos)
+    local offset = pos - (#line - #arg)
+    local prefix = string.sub(arg, 1, offset)
+    return require"bootstrap.eval.lua_eval".complete(prefix)
 end
 
 
@@ -12,7 +14,7 @@ local function setup()
         {
             desc = "bootstrap.eval.lua_eval::eval",
             complete = complete_lua,
-            nargs = 1,
+            nargs = '+',
         }
     )
 end

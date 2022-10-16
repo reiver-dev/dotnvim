@@ -25,7 +25,8 @@ local function ensure_modules()
 end
 
 
-local function complete_fennel(arg, _, pos)
+local function complete_fennel(arg, line, pos)
+    pos = pos - (#line - #arg)
     return require("bootstrap.fennel.repl").complete(arg, pos)
 end
 
@@ -40,7 +41,7 @@ function M.setup()
         {
             desc = "bootstrap.fennel.repl::eval_print",
             complete = complete_fennel,
-            nargs = 1,
+            nargs = '+',
         }
     )
 end

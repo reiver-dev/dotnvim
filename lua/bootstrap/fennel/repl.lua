@@ -195,7 +195,7 @@ function M.complete(text, pos)
     table.sort(matches)
 
     for i = 1,#matches do
-        matches[i] = string.format("%s%s%s", prefix, matches[i], suffix)
+        matches[i] = prefix .. matches[i]
     end
 
     return matches
