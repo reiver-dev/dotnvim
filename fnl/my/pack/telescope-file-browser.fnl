@@ -43,6 +43,14 @@
                      :entry_maker em})))
 
 
+(fn config []
+  (local act (require "telescope._extensions.file_browser.actions"))
+  {:hijack_netrw false
+   :mappings
+   {"i"
+    {"<M-BS>" act.goto_parent_dir}}})
+   
+
 (fn setup []
   (local t (require "telescope"))
   (t.load_extension :file_browser)
@@ -50,4 +58,4 @@
     :n "<C-x>f" "<cmd>lua _T('my.pack.telescope-file-browser', 'find-file')<CR>" {:noremap true}))
 
 
-{: setup : find-file}
+{: setup : config : find-file}

@@ -32,6 +32,19 @@
       path)))
 
 
+(local extension-mods 
+  {:file_browser #(_T :my.pack.telescope-file-browser :config)})
+
+
+(fn extension-config-loader []
+  (setmetatable
+    {} {:__index (fn [t key]
+                   (local (ok config) (pcall (. extension-mods key)))
+                   (when (and ok (not= config nil))
+                     (tset t key config)
+                     config))}))
+
+
 (fn configure []
   (local telescope (require :telescope))
   (local actions (require :telescope.actions))
@@ -56,7 +69,8 @@
       :sorting_strategy :ascending
       :results_title false
       :layout_config {:prompt_position :top}
-      :borderchars border}})
+      :borderchars border}
+     :extensions (extension-config-loader)})
   (when (string.match (. (vim.loop.os_uname) :sysname) "^Windows")
     (set config.defaults.path_display (make-path-display-shellslash)))
   (telescope.setup config)
