@@ -70,7 +70,15 @@
     (not scheme) (fs-dirname name) 
     (= scheme "term:") (term-dirname name)
     (= scheme "fugitive:") (fugitive-dirname name)
-    (= scheme "file:")) (uri-dirname name))
+    (= scheme "file:") (uri-dirname name)))
+
+
+(local valid-buftypes
+  {"" true :nowrite true :help true})
+
+
+(fn buftype-valid? [bufnr]
+  (. valid-buftypes (nvim_buf_get_option bufnr :buftype)))
 
 
 (fn empty? [str]
@@ -165,10 +173,8 @@
 (fn on-file-open [opts]
   "Update default-directory for current buffer.
   Happens when buffer is not special and is loaded
-  and buffer's file has not changed."
-  (when (and opts
-             (= "" (nvim_buf_get_option opts.buf :buftype))
-             (nvim_buf_is_loaded opts.buf))
+  and buffer's filename has not changed."
+  (when (and opts (buftype-valid? opts.buf) (nvim_buf_is_loaded opts.buf))
     (let [bufnr opts.buf
           file (normalize opts.match)
           oldfile (get-local bufnr :file)]
