@@ -99,4 +99,5 @@ else
 end
 
 
+require("bufreg").setup()
 require("bootstrap").setup()

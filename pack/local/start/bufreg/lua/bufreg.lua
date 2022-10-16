@@ -266,8 +266,18 @@ end
 
 --- @param opts Options
 local function setup(opts)
+    vim.api.nvim_create_autocmd(
+        { "VimEnter", "BufNew", "BufNewFile", "BufReadPre" },
+        {
+            group = vim.api.nvim_create_augroup("bufreg", { clear = false }),
+            callback = autocmd_new,
+        }
+    )
+
     if not _BUFFER_REGISTRY then
-        local reg = new_registry(opts.varname)
+        local vndefault = '__buffer_registry_state_ref_holder__'
+        local varname = opts and opts.varname or vndefault
+        local reg = new_registry(varname)
         _BUFFER_REGISTRY = function()
             return reg
         end
@@ -290,8 +300,7 @@ end
 
 
 return {
-    _setup = setup,
-    _autocmd_new = autocmd_new,
+    setup = setup,
     setlocal = setlocal,
     getlocal = getlocal,
     updlocal = updlocal,
