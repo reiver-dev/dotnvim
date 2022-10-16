@@ -1,5 +1,5 @@
 (fn setup []
-  (_T :my.lsp.capabilities :update-with
-      (. (require "cmp_nvim_lsp") :update_capabilities)))
+  (_T :my.lsp.capabilities :update
+      ((. (require "cmp_nvim_lsp") :default_capabilities))))
 
 {: setup}
