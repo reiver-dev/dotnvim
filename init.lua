@@ -2,6 +2,45 @@ local OS = vim.loop.os_uname()
 local iswin = OS.sysname:match("^Windows")
 local sep = iswin and "\\" or "/"
 
+do
+    local disable = {
+        'gzip',
+        'zip',
+        'zipPlugin',
+        'tar',
+        'tarPlugin',
+        'getscript',
+        'getscriptPlugin',
+        'vimball',
+        'vimballPlugin',
+        '2html_plugin',
+        'matchit',
+        'matchparen',
+        'logiPat',
+        'rrhelper',
+        -- 'netrw',
+        -- 'netrwPlugin',
+        -- 'netrwSettings',
+    }
+    local setg = vim.api.nvim_set_var
+    for _, name in ipairs(disable) do
+        setg('loaded_' .. name, 1)
+    end
+end
+
+do
+    local disable = {
+        "python",
+        "python3",
+        "ruby",
+        "node",
+        "perl",
+    }
+    local setg = vim.api.nvim_set_var
+    for _, name in ipairs(disable) do
+        setg('loaded_' .. name .. '_provider', 0)
+    end
+end
 
 if iswin then
     pcall(function()
