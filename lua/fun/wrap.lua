@@ -4,9 +4,8 @@ local raw_iter = require "fun.iter"
 local raw_str = require "fun.str"
 local raw_range = require "fun.range"
 
-
 local function to_string()
-  return "<iterator>"
+    return "<iterator>"
 end
 
 
@@ -16,13 +15,14 @@ end
 --- @return STATE
 --- @return IDX?
 local function self_iterate(self)
-  return self[1], self[2], self[3]
+    return self[1], self[2], self[3]
 end
 
 
---- @class Iterator
 local cls = {}
 
+--- @generic IDX, VAL
+--- @class Iterator<IDX, VAL>
 local iterator_mt = {
     __index = cls,
     __call = self_iterate,
@@ -50,7 +50,7 @@ local function unwrap(it, state, idx)
     elseif type(it) == "string" then
         return _utf8(it)
     end
-    return error("Unsupported iterator type: " .. type(it))
+    error("Unsupported iterator type: " .. type(it))
 end
 
 
@@ -68,7 +68,7 @@ local function unwrap_one(it)
     elseif type(it) == "string" then
         return _utf8(it)
     end
-    return error("Unsupported iterator type: " .. type(it))
+    error("Unsupported iterator type: " .. type(it))
 end
 
 
@@ -90,15 +90,14 @@ local function wrap(it, state, idx)
     elseif type(it) == "string" then
         return {_utf8(it)}
     end
-    return error("Unsupported iterator type: " .. type(it))
+    error("Unsupported iterator type: " .. type(it))
 end
 
 --- @generic STATE, IDX, VAL: ...
 --- @param it fun(state: STATE, idx: IDX): IDX, VAL
+--- @param state STATE
+--- @param idx IDX|nil
 --- @return Iterator<IDX, VAL>
---- @overload fun(it: string): Iterator<integer, string>
---- @overload fun(it: table): Iterator
---- @overload fun(it: Iterator): Iterator
 local function from(it, state, idx)
     return setmetatable(wrap(it, state, idx), iterator_mt)
 end
@@ -108,16 +107,16 @@ end
 --- @return fun(state: STATE, idx: IDX): IDX, VAL
 --- @return STATE
 --- @return IDX?
-local function iter(it, state, idx)
+local function iterate(it, state, idx)
     return unwrap(it, state, idx)
 end
 
 
------ @generic STATE, IDX, VAL: ..., F: function
------ @param iter F(state: STATE, idx: IDX): IDX, VAL
------ @param state STATE
------ @param idx? IDX
------ @return Iterator<IDX, VAL>
+--- @generic STATE, IDX, VAL
+--- @param iter fun(state: STATE, idx?: IDX): IDX, VAL
+--- @param state STATE
+--- @param idx? IDX
+--- @return Iterator<IDX, VAL>
 local function new(iter, state, idx)
     return setmetatable({iter, state, idx}, iterator_mt)
 end
@@ -221,7 +220,7 @@ local _rchars = raw_str.chars_reversed
 local _rbytes = raw_str.bytes_reversed
 local _split = raw_str.split
 local _splitpat = raw_str.split_pattern
-local _utf8 = raw_str.utf8
+-- local _utf8 = raw_str.utf8
 local _rutf8 = raw_str.rutf8
 local _utf8_pos = raw_str.utf8_pos
 local _rutf8_pos = raw_str.rutf8_pos
@@ -267,9 +266,7 @@ end
 --- @param start number
 --- @param stop number
 --- @param step? number
---- @return fun(state: any, idx: integer): integer, number
---- @return any state
---- @return integer idx
+--- @return Iterator<any, number>
 local function range(start, stop, step)
     return new(_range(start, stop, step))
 end
@@ -279,9 +276,7 @@ end
 --- @param start number
 --- @param stop number
 --- @param step? number
---- @return fun(state: any, idx: integer): integer, number
---- @return any state
---- @return integer idx
+--- @return Iterator<any, number>
 local function erange(start, stop, step)
     return new(_erange(start, stop, step))
 end
@@ -291,9 +286,7 @@ end
 --- @param start integer
 --- @param stop? integer
 --- @param step? integer
---- @return fun(state: any, idx: integer): integer, integer
---- @return any state
---- @return integer idx
+--- @return Iterator<any, integer>
 local function irange(start, stop, step)
     return new(_irange(start, stop, step))
 end
@@ -699,17 +692,17 @@ end
 
 --#region Combinators
 
---- @param self Iterator
---- @param ... Iterator
---- @return Iterator
+--- @param self Iterator<any, any>
+--- @param ... Iterator<any, any>
+--- @return Iterator<any, any>
 function cls:chain(...)
     return _chain(self, ...)
 end
 
 
---- @param self Iterator
---- @param ... Iterator
---- @return Iterator
+--- @param self Iterator<any, any>
+--- @param ... Iterator<any, any>
+--- @return Iterator<any, any>
 function cls:zip(...)
     return _zip(self, ...)
 end
@@ -718,7 +711,7 @@ end
 
 
 return {
-    iter = iter,
+    iter = iterate,
     new = new,
     from = from,
 

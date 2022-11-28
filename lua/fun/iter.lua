@@ -37,6 +37,8 @@ end
 --- @param state STATE
 --- @param idx IDX
 --- @return fun(state: NS, idx: IDX): IDX, B
+--- @return NS
+--- @return IDX
 local function map(mapper, iter, state, idx)
   return iter_map, {mapper, iter, state}, idx
 end
@@ -132,8 +134,8 @@ end
 --- @param idx I
 --- @return integer
 local function count(iter, state, idx)
+    idx = iter(state, idx)
     local i = 0
-    local idx = iter(state, idx)
     while idx ~= nil do
         idx = iter(state, idx)
         i = i + 1
@@ -828,8 +830,8 @@ end
 
 
 --- @generic V, S, I
---- @param tbl V[]
---- @param i integer
+--- @param tbl V[]|nil
+--- @param i integer|nil
 --- @param iter fun(state: S, idx?: I): I, V
 --- @param state S
 --- @param idx I
@@ -837,7 +839,9 @@ end
 local function into_array(tbl, i, iter, state, idx)
     if tbl == nil then
         tbl = {}
-        i = 1
+        if i == nil then
+            i = 1
+        end
     elseif i == nil then
         i = #tbl
     end
@@ -846,8 +850,8 @@ end
 
 
 --- @generic V, S, I
---- @param tbl V[]
---- @param i integer
+--- @param tbl V[]|nil
+--- @param i integer|nil
 --- @param iter fun(state: S, idx?: I): I, V
 --- @param state S
 --- @param idx I
@@ -855,7 +859,9 @@ end
 local function into_seq(tbl, i, iter, state, idx)
     if tbl == nil then
         tbl = {}
-        i = 1
+        if i == nil then
+            i = 1
+        end
     elseif i == nil then
         i = #tbl
     end
