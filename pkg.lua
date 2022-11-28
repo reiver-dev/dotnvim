@@ -25,8 +25,16 @@ pkg {
 }
 
 pkg {
-    name = "lua-dev.nvim",
-    url = "folke/lua-dev.nvim",
+    name = "neodev.nvim",
+    url = "folke/neodev.nvim",
+}
+
+pkg {
+    name = "which-key",
+    url = "folke/which-key.nvim",
+    config = function()
+        require("which-key").setup{}
+    end,
 }
 
 pkg {

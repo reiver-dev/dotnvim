@@ -52,8 +52,10 @@
 
 
 (fn setup []
-  (vim.api.nvim_set_keymap :n "<C-x>b" "" {:noremap true :callback buffers})
-  (vim.api.nvim_set_keymap :n "<C-x>r" "" {:noremap true :callback history})
+  (vim.api.nvim_set_keymap :n "<C-x>b" "" {:noremap true :callback buffers
+                                           :desc "telescope-buffers"})
+  (vim.api.nvim_set_keymap :n "<C-x>r" "" {:noremap true :callback history
+                                           :desc "telescope-history"})
   (vim.api.nvim_create_user_command :History history {:bang true})
   (vim.api.nvim_create_user_command :Buffers buffers {})
   (vim.api.nvim_create_user_command :Rg ripgrep {:nargs "?" :bang true})

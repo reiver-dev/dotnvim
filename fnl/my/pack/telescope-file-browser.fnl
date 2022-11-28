@@ -55,7 +55,10 @@
   (local t (require "telescope"))
   (t.load_extension :file_browser)
   (vim.api.nvim_set_keymap
-    :n "<C-x>f" "<cmd>lua _T('my.pack.telescope-file-browser', 'find-file')<CR>" {:noremap true}))
+    :n "<C-x>f" ""
+    {:noremap true
+     :callback (fn [opts] (find-file))
+     :desc "telescope-file-browser"}))
 
 
 {: setup : config : find-file}

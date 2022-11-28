@@ -57,11 +57,16 @@
   (s.kmap-global :n :<C-x><C-w> :<C-w>)
 
   ;; kill-buffer
-  (s.kmap-global :n :<C-x>k
-                 "<cmd>lua _T('my.simple', 'kill-current-buffer')<CR>")
+  (vim.keymap.set :n :<C-x>k ""
+                  {:noremap true
+                   :callback #(_T "my.simple" :kill-current-buffer)
+                   :desc "kill-current-buffer"})
+                                 
   ;; kill-buffer-closing-window
-  (s.kmap-global :n :<C-x><C-k>
-                 "<cmd>confirm bdelete<CR>"))
+  (vim.keymap.set :n :<C-x><C-k>
+                  "<cmd>confirm bdelete<CR>"
+                  {:noremap true
+                   :desc "kill-current-buffer-closing-window"}))
 
 
 {: setup}
