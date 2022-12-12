@@ -23,8 +23,11 @@
 
 
 (fn keep-window [func ...]
-  (let [curwin (vim.api.nvim_get_current_win)]
-    (keep-window-finalize curwin (pcall func ...))))
+  (let [curwin (vim.api.nvim_get_current_win)
+        argc (select :# ...)
+        argv [...]]
+    (keep-window-finalize
+      curwin (xpcall #(func (unpack argv 1 argc)) debug.traceback))))
 
 
 (local build-command
@@ -43,9 +46,10 @@
 
 (fn compile-library [plugin]
   (vim.notify "Building telescope fzf lib")
-  (let [plugin (or plugin (?. _G :packer_plugins :telescope-fzf-native))
-        path (when plugin (or plugin.path plugin.install_path))]
-    (keep-window start (shell-join build-command) path)))
+  (local path (if plugin
+                plugin.install_path
+                (?. _G :packer_plugins :telescope-fzf-native :path)))
+  (keep-window start (shell-join build-command) path))
 
 
 (fn setup []
