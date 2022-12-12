@@ -67,8 +67,8 @@ let g:clipboard = {
 
 local function configure(chan)
     vim.g.nvim_qt_channel = chan or channel()
-    vim.rpcnotify(chan, 'Gui', 'Option', 'Tabline', false) 
-    vim.rpcnotify(chan, 'Gui', 'Option', 'Popupmenu', false) 
+    vim.rpcnotify(chan, 'Gui', 'Option', 'Tabline', false)
+    vim.rpcnotify(chan, 'Gui', 'Option', 'Popupmenu', false)
     vim.fn.ClipboardReset()
     vim.api.nvim_command(GUI_CLIPBOARD)
 end

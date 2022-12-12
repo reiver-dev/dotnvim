@@ -30,6 +30,9 @@ function M.spew(path, data)
         if errno == 2 then
             vim.fn.mkdir(vim.fn.fnamemodify(path, ":p:h"), "p", 448)
             stream, err = io.open(path, "wb")
+            if not stream then
+                error(err)
+            end
         else
             error(err)
         end

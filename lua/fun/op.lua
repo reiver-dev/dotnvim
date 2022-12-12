@@ -118,6 +118,10 @@ local function compile_template(text, name)
 end
 
 
+--- @param name string
+--- @param constructor fun(arity: integer):string
+--- @param init table?
+--- @return table<integer, fun(...)>
 local function MakeOperator(name, constructor, init)
     local chunkname = string_format("=%s.%s(%%d)", MODULE, name)
     if not init then init = {identity} end
@@ -208,21 +212,21 @@ end
 
 local function join(sep, ...)
     local count = select("#", ...)
-    if count == 0 then return 0 end
+    if count == 0 then return "" end
     return _join[count](sep, ...)
 end
 
 
 local function strcat(...)
     local count = select("#", ...)
-    if count == 0 then return 0 end
+    if count == 0 then return "" end
     return _strcat[count](...)
 end
 
 
 local function strjoin(sep, ...)
     local count = select("#", ...)
-    if count == 0 then return 0 end
+    if count == 0 then return "" end
     return _strjoin[count](sep, ...)
 end
 

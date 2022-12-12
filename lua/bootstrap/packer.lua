@@ -33,10 +33,13 @@ end
 
 local function handle_packer_options(...)
     local options
-    if select("#", ...) == 1 then 
+    if select("#", ...) == 1 then
         options = ...
     else
         options = argpairs(...)
+    end
+    if not options then
+        error("Non-nil argument required")
     end
     options.as = options.name
     options[1] = options.url
@@ -57,7 +60,7 @@ local function make_packer_module(mod)
     if mod == nil then mod = require "packer" end
     local use = mod.use
     return function(...)
-        use(handle_packer_options(...)) 
+        use(handle_packer_options(...))
     end
 end
 
@@ -71,7 +74,7 @@ end
 
 
 local function package_hook_execute(packer)
-    for name, hook in pairs(package_hooks) do
+    for _, hook in pairs(package_hooks) do
         hook(make_packer_module(packer))
     end
 end
@@ -86,9 +89,9 @@ end
 
 
 local function path_sep()
-    local ok, ss = pcall(vim.api.nvim_get_option, "shellslash") 
+    local ok, ss = pcall(vim.api.nvim_get_option, "shellslash")
     if ok and ss == false then
-        return "\\" 
+        return "\\"
     else
         return "/"
     end
@@ -140,7 +143,7 @@ local function setup()
         complete = plugin_complete,
     }
     local none = {}
-    command = vim.api.nvim_create_user_command
+    local command = vim.api.nvim_create_user_command
     command("PackerInit", init_packages, none)
     command("PackerOpen", function(opts)
         open_dir(opts.fargs, opts.mods)

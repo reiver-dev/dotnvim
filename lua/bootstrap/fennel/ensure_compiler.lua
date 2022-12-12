@@ -21,6 +21,14 @@ local function compile(fennel, src, dst, env)
 end
 
 
+--- @param root string
+--- @param pattern string
+--- @return string[]
+local function glob(root, pattern)
+    return vim.fn.globpath(root, pattern, true, true)
+end
+
+
 local function gather_files(root, force)
     if root == nil or root == "" then
         error("Empty root dir")
@@ -29,7 +37,7 @@ local function gather_files(root, force)
     local srcdir = root .. "/src"
     local dstdir = root .. "/lua"
     local prefixlen = srcdir:len()
-    local sources = vim.fn.globpath(srcdir, "**/*.fnl", true, true)
+    local sources = glob(srcdir, "**/*.fnl")
     local getftime = vim.fn.getftime
     for _, srcpath in ipairs(sources) do
         if not srcpath:match(".*macros.fnl$") then

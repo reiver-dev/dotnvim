@@ -8,8 +8,8 @@ local basic = require "bootstrap.basic"
 
 --- @param state function
 --- @param idx number
---- @return number
---- @return string
+--- @return number|nil
+--- @return string|nil
 --- @return any
 local function upvalues_iter(state, idx)
     idx = idx + 1
@@ -26,13 +26,13 @@ local function upvalues(func)
     return upvalues_iter, func, 0
 end
 
---- @return table
+--- @return table?
 local function extract_sourcemap()
     for _, name, value in upvalues(fennel.traceback) do
         if name == "traceback_frame" then
-            for _, name, value in upvalues(value) do
-                if name == "sourcemap" then
-                    return value
+            for _, uname, uvalue in upvalues(value) do
+                if uname == "sourcemap" then
+                    return uvalue
                 end
             end
             break
@@ -61,24 +61,6 @@ function M.compile_file(src, dst, opts)
     else
         local msg = ("Failed compile: %s\n%s"):format(src, code)
         vim.api.nvim_err_writeln(msg)
-    end
-end
-
-
-local function find_macro(name)
-    local basename = string.gsub(name, "%.", "/")
-
-    local f = string.format
-    local paths = {
-        f("fnl/%s.fnl", basename),
-        f("fnl/%s/init.fnl", basename),
-        f("lua/%s.lua", basename),
-        f("lua/%s/init.lua", basename),
-    }
-
-    local found = basic.runtime(paths)
-    if found ~= nil then
-        return found
     end
 end
 
