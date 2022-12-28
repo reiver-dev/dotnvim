@@ -208,7 +208,7 @@ local function setup()
     _G.__after_load_hook = call_after_load
     vim.api.nvim_create_user_command(
         "LoadPackage",
-        load_package,
+        function(opts) load_package(unpack(opts.fargs)) end,
         {
             desc = "bootstrap.modules::load_package",
             nargs = "+",
