@@ -40,7 +40,7 @@ local function gather_files(root, force)
     local sources = glob(srcdir, "**/*.fnl")
     local getftime = vim.fn.getftime
     for _, srcpath in ipairs(sources) do
-        if not srcpath:match(".*macros.fnl$") then
+        if not srcpath:match(".*macros.fnl$") and not srcpath:match(".*match.fnl$") then
             srcpath = srcpath:gsub("\\", "/")
             local suffix = srcpath:sub(prefixlen + 1)
             local dstpath = dstdir .. suffix:sub(1, -4) .. "lua"
@@ -80,14 +80,13 @@ local function is_simple_type(t)
     return t == "table" or t == "function" or t == "boolean" or t == "number"
 end
 
-
 local function protect(tbl)
     local result = {}
     for key, val in pairs(tbl) do
         local t = type(val)
         if not is_simple_type(t) then
             local msg = string.format("Unexpected type(%s): %s => %s",
-                                       t, key, vim.inspect(val))
+                                      t, key, vim.inspect(val))
             error(msg)
         end
         if t == "table" then
@@ -99,14 +98,12 @@ local function protect(tbl)
     return setmetatable(result, forbid_insert)
 end
 
-
 local function open_ro(path, mode)
     if mode ~= nil and string.match(mode, "[wa]") ~= nil then
         error(string.format("Unexpected io.open mode: %s", mode))
     end
     return io.open(path, mode)
 end
-
 
 local function make_compiler_env(environ)
     if environ == nil then
@@ -136,7 +133,7 @@ local function make_compiler_env(environ)
         pcall = pcall,
         xpcall = xpcall,
         string = protect(string),
-        io = setmetatable({open = open_ro}, strict_global),
+        io = setmetatable({ open = open_ro, read = io.read }, strict_global),
         table = protect(table),
         bit = protect(bit),
         setmetatable = setmetatable,
@@ -155,7 +152,7 @@ local function make_compiler_env(environ)
         rawequal = rawequal,
         next = next,
         print = print,
-        debug = setmetatable({traceback = debug.traceback}, strict_global),
+        debug = setmetatable({ traceback = debug.traceback }, strict_global),
         os = setmetatable({
             getenv = function(k)
                 return environ[k]
@@ -174,10 +171,9 @@ local function make_compiler_env(environ)
 
 end
 
-
 function M.setup(opts)
     local force = opts and opts.force
-    local old_path = basic.runtime({"bootstrap/fennel.lua", "old/fennel.lua"})
+    local old_path = basic.runtime({ "bootstrap/fennel.lua", "old/fennel.lua" })
     if old_path == nil or old_path == "" then
         error("Fennel old compiler not found")
     end
@@ -200,12 +196,12 @@ function M.setup(opts)
         basic.rmdir(dir)
     end
 
-    local ok, res = pcall(function()
+    local ok, res = xpcall(function()
         for src, dst in pairs(gather_files(root)) do
             vim.notify(string.format("Compiling %s => %s", src, dst))
             compile(old_fennel, src, dst, baseenv)
         end
-    end)
+    end, debug.traceback)
 
     if not ok then
         error(res)
