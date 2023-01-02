@@ -22,10 +22,31 @@ end
 
 
 --- @param root string
---- @param pattern string
 --- @return string[]
-local function glob(root, pattern)
-    return vim.fn.globpath(root, pattern, true, true)
+local function collect(root)
+    local result = {}
+    local i = 0
+    local match = string.match
+    local sroot = root:gsub("[\\/]*$", "/")
+    for name, type in vim.fs.dir(root, { depth = 4 }) do
+        if type == "file" and match(name, ".*%.fnl$")
+            and not match(name, ".*macros%.fnl$")
+            and not match(name, ".*match%.fnl$") then
+            i = i + 1
+            result[i] = sroot .. name
+        end
+    end
+    return result
+end
+
+--- @param path string
+--- @return integer
+local function getftime(path)
+    local stat = vim.loop.fs_stat(path)
+    if not stat then
+        return -1
+    end
+    return stat.mtime.sec
 end
 
 
@@ -37,16 +58,12 @@ local function gather_files(root, force)
     local srcdir = root .. "/src"
     local dstdir = root .. "/lua"
     local prefixlen = srcdir:len()
-    local sources = glob(srcdir, "**/*.fnl")
-    local getftime = vim.fn.getftime
+    local sources = collect(srcdir)
     for _, srcpath in ipairs(sources) do
-        if not srcpath:match(".*macros.fnl$") and not srcpath:match(".*match.fnl$") then
-            srcpath = srcpath:gsub("\\", "/")
-            local suffix = srcpath:sub(prefixlen + 1)
-            local dstpath = dstdir .. suffix:sub(1, -4) .. "lua"
-            if force or getftime(srcpath) > getftime(dstpath) then
-                result[srcpath] = dstpath
-            end
+        local suffix = srcpath:sub(prefixlen + 1)
+        local dstpath = dstdir .. suffix:sub(1, -4) .. "lua"
+        if force or getftime(srcpath) > getftime(dstpath) then
+            result[srcpath] = dstpath
         end
     end
     return result
