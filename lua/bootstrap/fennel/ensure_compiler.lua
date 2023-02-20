@@ -143,10 +143,11 @@ local function make_compiler_env(environ)
     end
 
     local baseenv = {
+        _ENV = false,
         _VERSION = _VERSION,
         package = _package,
         require = _require,
-        unpack = unpack or table.unpack,
+        unpack = unpack,
         pcall = pcall,
         xpcall = xpcall,
         string = protect(string),
@@ -155,6 +156,8 @@ local function make_compiler_env(environ)
         bit = protect(bit),
         setmetatable = setmetatable,
         getmetatable = getmetatable,
+        setfenv = setfenv,
+        getfenv = getfenv,
         error = error,
         assert = assert,
         pairs = pairs,
@@ -180,12 +183,33 @@ local function make_compiler_env(environ)
     local _G = baseenv
     baseenv._G = _G
 
-    function baseenv.load(...)
-        return load(...)
+    do
+        local _load = load
+        function baseenv.load(...)
+            local this_env = getfenv()
+            local f, msg = _load(...)
+            if f then
+                return setfenv(f, this_env), msg
+            end
+            return f, msg
+        end
+        setfenv(baseenv.load, baseenv)
+    end
+
+    do
+        local _loadstring = loadstring
+        function baseenv.loadstring(...)
+            local this_env = getfenv()
+            local f, msg = _loadstring(...)
+            if f then
+                return setfenv(f, this_env), msg
+            end
+            return f, msg
+        end
+        setfenv(baseenv.loadstring, baseenv)
     end
 
     return setmetatable(baseenv, strict_global)
-
 end
 
 function M.setup(opts)
