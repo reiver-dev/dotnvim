@@ -10,6 +10,7 @@ local tostring = tostring
 local error = error
 local select = select
 local setmetatable = setmetatable
+--- @diagnostic disable-next-line: deprecated
 local unpack = _G.unpack or table.unpack
 
 local band = bit.band
