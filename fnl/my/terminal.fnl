@@ -239,6 +239,10 @@
   (print (table.concat (selection 0 0 0) "\n")))
 
 
+(fn shell-argv []
+  [vim.o.shell])
+
+
 (fn setup []
   (setup-bindings)
   (vim.api.nvim_create_autocmd 
@@ -259,7 +263,21 @@
     (fn [opts] (paste-region opts.range opts.line1 opts.line2 opts.args))
     {:range true
      :nargs 1
-     :complete "buffer"}))
+     :complete "buffer"})
+  (vim.api.nvim_create_user_command
+    :T
+    (fn [opts] 
+      (vim.notify (vim.inspect opts))
+      (local command (if (and opts.args (< 0 (length opts.args)))
+                       opts.args (shell-argv)))
+      (vim.api.nvim_cmd
+        {:cmd "sbuffer"
+         :count (vim.api.nvim_create_buf true true)
+         :mods opts.smods} {})
+      (vim.fn.termopen command opts))
+    {:bang true
+     :bar false
+     :nargs "?"}))
 
 
 {: find-terminal 
