@@ -110,7 +110,7 @@ end
 
 
 local function complete(text)
-    local completions, plen = vim._expand_pat("^" .. text, repl_environ())
+    local completions, plen = vim._expand_pat(text, repl_environ())
     local prefix = text:sub(1, plen)
     for i = 1,#completions do
         completions[i] = prefix .. completions[i]
