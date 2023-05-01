@@ -21,6 +21,22 @@ local function highlighted_prefix(hl, body)
     return fmt("%%#%s#%s", hl, body)
 end
 
+--- @alias Color integer|string
+--- @alias HL {fg: Color, bg: Color}
+
+--- @param name string Highlight name
+--- @return HL
+local function get_hl(name)
+    return api.nvim_get_hl(0, { name = name })
+end
+
+
+--- @param name string Highlight name
+--- @param hl HL Definition
+local function set_hl(name, hl)
+    api.nvim_set_hl(0, name, hl)
+end
+
 
 local function current_mode()
     local m = require "statusline.mode"
@@ -31,8 +47,7 @@ end
 
 
 local function setup_highlights()
-    local sethl = api.nvim_set_hl
-    local base = api.nvim_get_hl_by_name("StatusLine", true)
+    local base = get_hl("StatusLine")
     local colors = require "statusline.colors"
     local modes = {
         ["Normal"] = colors.default.red,
@@ -46,17 +61,17 @@ local function setup_highlights()
         ["Shell"] = colors.default.red,
     }
     for mode, bg in pairs(modes) do
-        sethl(0, "StatusMode" .. mode, { fg = "Black", bg = bg })
+        set_hl("StatusMode" .. mode, { fg = "Black", bg = bg })
     end
     for _, hl in ipairs({ "Error", "Warn", "Info", "Hint" }) do
-        local dhl = api.nvim_get_hl_by_name("DiagnosticSign" .. hl, true)
-        sethl(0, "StatusDiagnostic" .. hl, { fg = dhl.foreground, bg = base.background })
+        local dhl = get_hl("DiagnosticSign" .. hl)
+        set_hl("StatusDiagnostic" .. hl, { fg = dhl.fg, bg = base.bg })
     end
     local colors_ex = vim.o.background == "dark" and colors.dark or colors.light
-    sethl(0, "StatusVcs", { fg = colors_ex.magenta, bg = base.background })
-    sethl(0, "StatusDiffAdd", { fg = colors_ex.green, bg = base.background })
-    sethl(0, "StatusDiffModify", { fg = colors_ex.orange, bg = base.background })
-    sethl(0, "StatusDiffRemove", { fg = colors_ex.red, bg = base.background })
+    set_hl("StatusVcs", { fg = colors_ex.magenta, bg = base.bg })
+    set_hl("StatusDiffAdd", { fg = colors_ex.green, bg = base.bg })
+    set_hl("StatusDiffModify", { fg = colors_ex.orange, bg = base.bg })
+    set_hl("StatusDiffRemove", { fg = colors_ex.red, bg = base.bg })
 end
 
 
@@ -127,7 +142,7 @@ local statusline_right = {
     {
         fn = function(bufnr)
             local client_names = {}
-            for _, client in pairs(vim.lsp.buf_get_clients(bufnr)) do
+            for _, client in pairs(vim.lsp.get_active_clients({ bufnr = bufnr })) do
                 client_names[#client_names + 1] = fmt("%s(%d)", client.name, client.id)
             end
             if #client_names == 0 then
@@ -149,7 +164,7 @@ local statusline_right = {
     {
         fn = function(bufnr)
             local ok, stats = pcall(vim.call, "sy#repo#get_stats", bufnr)
-            if not ok then
+            if not ok or stats == nil then
                 return ""
             end
             if stats[1] == -1 and stats[2] == -1 and stats[3] == -1 then
@@ -222,15 +237,14 @@ function __Tabline()
     end
     local tabs = tabsegment()
     return current_mode()
-            .. " "
-            .. table.concat(sl, " | ")
-            .. "%="
-            .. table.concat(sr, " | ")
-            .. fmt("%%%d(", #tabs * 10)
-            .. table.concat(tabs, "")
-            .. "%)"
+        .. " "
+        .. table.concat(sl, " | ")
+        .. "%="
+        .. table.concat(sr, " | ")
+        .. fmt("%%%d(", #tabs * 10)
+        .. table.concat(tabs, "")
+        .. "%)"
 end
-
 
 local gid = api.nvim_create_augroup("statusline", { clear = true })
 api.nvim_create_autocmd("ModeChanged", { command = "redrawtabline", group = gid })
