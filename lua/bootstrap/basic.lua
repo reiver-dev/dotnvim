@@ -106,7 +106,7 @@ M.mkdir = mkdir
 --- @nodiscard
 function M.is_dir(path)
     local stat = vim.loop.fs_stat(path)
-    return stat and stat.mode and bit.band(stat.mode, 0x4000) ~= 0
+    return stat and stat.mode and bit.band(stat.mode, 0x4000) ~= 0 or false
 end
 
 

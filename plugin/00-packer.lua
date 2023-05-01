@@ -11,7 +11,7 @@ do
         loaders[1] = loaders[2]
         loaders[2] = loaders[3]
         loaders[3] = lazy_loader
-    elseif not err:match("No such file or directory$") then
+    elseif err and not err:match("No such file or directory$") then
         error(err)
     end
 end
