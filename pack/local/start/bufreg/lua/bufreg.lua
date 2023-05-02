@@ -8,15 +8,14 @@ local delbufvar = vim.api.nvim_buf_del_var
 --- @class Registry
 --- @field state table<integer, table<string, any>>
 --- @field mapping table<integer, integer>
---- @field free_ids integer[]
+--- @field free_ids table<integer, true>
 --- @field top_id integer
 --- @field varname string
 --- @field funcname string
 
 --- @param varname string
---- @param funcname string
 --- @return Registry
-local function new_registry(varname, funcname)
+local function new_registry(varname)
     return {
         state = {},
         mapping = {},
@@ -173,7 +172,7 @@ end
 
 
 --- @param reg Registry
---- @param bufnr number
+--- @param bufnr integer|nil
 --- @param ... any
 --- @return any
 local function set_local(reg, bufnr, ...)
@@ -194,7 +193,7 @@ end
 
 
 --- @param reg Registry
---- @param bufnr number
+--- @param bufnr integer|nil
 --- @param ... any
 --- @return any
 local function get_local(reg, bufnr, ...)
@@ -208,7 +207,7 @@ end
 
 
 --- @param reg Registry
---- @param bufnr number
+--- @param bufnr integer|nil
 --- @param ... any
 --- @return any
 local function upd_local(reg, bufnr, ...)
@@ -228,7 +227,7 @@ end
 
 
 --- Associcate value with buffer state.
---- @param bufnr number|nil Buffer handle
+--- @param bufnr integer|nil Buffer handle
 --- @param ... any
 --- @return any Last value of vararg
 local function setlocal(bufnr, ...)
@@ -239,7 +238,7 @@ end
 _BUFFER_REGISTRY = nil
 
 --- Get current associated value in buffer state.
---- @param bufnr number|nil
+--- @param bufnr integer|nil
 --- @param ... any
 --- @return any Associated value or nil
 local function getlocal(bufnr, ...)
@@ -248,7 +247,7 @@ end
 
 
 --- Update current associated value in buffer state.
---- @param bufnr number|nil
+--- @param bufnr integer|nil
 --- @param ... any Keys to find the state, last elemet must be function
 --- @return any Value returned by function in vararg
 local function updlocal(bufnr, ...)
