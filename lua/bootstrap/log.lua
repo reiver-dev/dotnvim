@@ -97,8 +97,13 @@ local function setup()
     local log_dir = vim.fn.stdpath("log")
     local filename = log_dir .. "/my.log"
     vim.fn.mkdir(log_dir, "p")
-    file = io.open(filename, "ab")
-    _G.LOG = log
+    local f, err = io.open(filename, "ab")
+    if f ~= nil then
+        file = f
+        _G.LOG = log
+    else
+        error(str_fmt("Failed to open logfile `%s`: %s", f, err))
+    end
 end
 
 
