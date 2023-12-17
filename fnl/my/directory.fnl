@@ -34,6 +34,15 @@
     (fn [path] path)))
 
 
+(local normalize-cygwin
+  (if (= "\\" (package.config:sub 1 1))
+    (fn [path] 
+      (match (str-match path "^/(%a)/(.*)")
+        (drive rest) (.. drive ":/" rest)
+        _ (normalize path)))
+    (fn [path] path)))
+
+
 (fn getcwd []
   (normalize (vim-getcwd)))
 
@@ -57,6 +66,12 @@
       (normalize)))
 
 
+(fn oil-dirname [name]
+  (-> name
+     (str-match "oil://(.*)")
+     (normalize-cygwin)))
+
+
 (fn uri-dirname [name]
   (-> name
       (vim.uri_to_fname)
@@ -70,7 +85,8 @@
     (not scheme) (fs-dirname name) 
     (= scheme "term:") (term-dirname name)
     (= scheme "fugitive:") (fugitive-dirname name)
-    (= scheme "file:") (uri-dirname name)))
+    (= scheme "file:") (uri-dirname name)
+    (= scheme "oil:") (oil-dirname name)))
 
 
 (local valid-buftypes

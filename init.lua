@@ -18,9 +18,9 @@ do
         'matchparen',
         'logiPat',
         'rrhelper',
-        -- 'netrw',
-        -- 'netrwPlugin',
-        -- 'netrwSettings',
+        'netrw',
+        'netrwPlugin',
+        'netrwSettings',
     }
     local setg = vim.api.nvim_set_var
     for _, name in ipairs(disable) do

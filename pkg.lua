@@ -398,10 +398,17 @@ pkg {
 
 -- FileTree
 pkg {
-    name = "vinegar",
-    url = "tpope/vim-vinegar",
+    name = "oil",
+    url = "stevearc/oil.nvim",
+    config = function()
+        require"oil".setup {
+            columns = {},
+        }
+        vim.keymap.set("n", "-", function(...)
+            require("oil").open(...)
+        end, {desc = "Open parent directory"})
+    end,
 }
-
 
 -- Tasks
 pkg {
