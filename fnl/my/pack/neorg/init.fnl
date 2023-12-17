@@ -58,7 +58,7 @@
   (isolate-neorg-env path)
   (local neorg (require "neorg"))
   (neorg.setup {:load (load-config)
-                :logger (_T :neorg.external.log :get_default_config)})
+                :lazy_loading true})
   (_T :my.pack.neorg.autoload :setup))
 
 
