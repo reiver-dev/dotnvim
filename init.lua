@@ -51,7 +51,7 @@ end
 
 local function get_stdpath()
     local s = {}
-    local paths = {'cache', 'config', 'data', 'log', 'run', 'state'}
+    local paths = { 'cache', 'config', 'data', 'log', 'run', 'state' }
     local call = vim.call
     for _, path in ipairs(paths) do
         local ok, res = pcall(call, 'stdpath', path)
@@ -60,7 +60,7 @@ local function get_stdpath()
         end
     end
     return setmetatable(s, {
-        __index = function(_, k) 
+        __index = function(_, k)
             error("No such stdpath: " .. tostring(k))
         end,
         __newindex = function(_, _, _)
@@ -73,10 +73,10 @@ end
 _G.STDPATH_RAW = get_stdpath()
 
 
-local mods
 do
     local fs_scandir = vim.loop.fs_scandir
     local fs_next = vim.loop.fs_scandir_next
+    local sub = string.sub
 
     local function scandir(mods, ext, dirmod, prefix, path)
         local fd, err = fs_scandir(path)
@@ -87,14 +87,14 @@ do
                 break
             elseif fstype == "directory" then
                 scandir(mods, ext, dirmod,
-                        prefix .. name .. ".",
-                        path .. sep .. name)
+                    prefix .. name .. ".",
+                    path .. sep .. name)
             elseif name == dirmod then
-                if prefix ~= "" and mods[prefix:sub(1, -2)] == nil then
-                    mods[prefix:sub(1, -2)] = path .. sep .. dirmod
+                if prefix ~= "" and mods[sub(prefix, 1, -2)] == nil then
+                    mods[sub(prefix, 1, -2)] = path .. sep .. dirmod
                 end
             elseif name:sub(-4, -1) == ext then
-                mods[prefix .. name:sub(1, -5)] = path .. sep .. name
+                mods[prefix .. sub(name, 1, -5)] = path .. sep .. name
             end
         end
     end
@@ -107,27 +107,9 @@ do
         scandir(mods, ext, dirmod, "", path)
         return mods
     end
-
-    mods = SCAN_MODULES(vim.fn.stdpath("config") .. sep .. "lua")
 end
 
-local function private_loader(name)
-    local mod = mods[name]
-    if mod then
-        local f, err = loadfile(mod)
-        if f then return f(name) else error(err) end
-    end
-end
-
-if package.loaders[1] == vim._load_package then
-    package.loaders[1] = package.loaders[2]
-    package.loaders[2] = vim._load_package
-end
-
-for modname, _ in pairs(mods) do
-    package.preload[modname] = private_loader
-end
-
+vim.loader.enable()
 
 if iswin then
     vim.o.shellslash = true
