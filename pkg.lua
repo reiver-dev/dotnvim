@@ -218,8 +218,8 @@ pkg {
 }
 
 pkg {
-    name = "null-ls",
-    url = "jose-elias-alvarez/null-ls.nvim",
+    name = "none-ls",
+    url = "nvimtools/none-ls.nvim",
     opt = true,
     cmd = {"NullLsLog", "NullLsInfo"},
     module = {"null-ls"},
