@@ -5,6 +5,8 @@
 (local str-match string.match)
 (local str-gsub string.gsub)
 
+(local nvim_exec_autocmds vim.api.nvim_exec_autocmds)
+(local nvim_get_current_buf vim.api.nvim_get_current_buf)
 (local nvim_buf_get_option vim.api.nvim_buf_get_option)
 (local nvim_buf_is_loaded vim.api.nvim_buf_is_loaded)
 (local nvim_buf_get_var vim.api.nvim_buf_get_var)
@@ -47,6 +49,13 @@
   (normalize (vim-getcwd)))
 
 
+(fn setcwd [path]
+  (nvim_cmd {:cmd "lcd"
+             :args [path]
+             :magic {:file false}}
+            {}))
+
+
 (fn fs-dirname [name]
   (vim.fs.dirname name))
 
@@ -69,7 +78,8 @@
 (fn oil-dirname [name]
   (-> name
      (str-match "oil://(.*)")
-     (normalize-cygwin)))
+     (normalize-cygwin)
+     (str-gsub "/*$" "")))
 
 
 (fn uri-dirname [name]
@@ -142,7 +152,7 @@
 
 (fn fire-user-event [bufnr event data]
   "Execute autocmd user event for BUFNR buffer by EVENT name."
-  (vim.api.nvim_exec_autocmds
+  (nvim_exec_autocmds
     "User" {:pattern event
             :modeline false
             :data data}))
@@ -157,11 +167,12 @@
 (fn apply-default-directory [bufnr dirname]
   "Attempt to update default-directory for BUFNR buffer."
   (let [dd (default-directory bufnr)]
-    (nvim_buf_call
-      bufnr #(let [dir (or dirname (getcwd))]
-               (set-default-directory bufnr dir)
-               (when (~= dir dd)
-                 (fire-default-directory-updated bufnr dir dd))))))
+    (when (not= bufnr (nvim_get_current_buf))
+      (error "Expected current buf"))
+    (let [dir (or dirname (getcwd))]
+      (set-default-directory bufnr dir)
+      (when (~= dir dd)
+        (fire-default-directory-updated bufnr dir dd)))))
 
 
 (fn force-default-directory [bufnr directory]
@@ -177,13 +188,11 @@
 (fn on-file-enter [opts]
   "Ensure local current directory is default-directory for current buffer."
   (local dd (default-directory opts.buf))
-  (when dd
+  (when (and dd (not= "" dd))
     (local cwd (getcwd))
     (when (and (not= dd cwd) (directory? dd))
-      (nvim_cmd {:cmd "lcd"
-                 :args [dd]
-                 :magic {:file false}}
-                {}))))
+      (setcwd dd)
+      (set-local opts.buf :chdir dd))))
 
 
 (fn on-file-open [opts]
@@ -210,15 +219,22 @@
   (on-file-enter opts))
 
 
+(fn on-chdir-memoize [opts]
+  (set-local opts.buf :chdir opts.file))
+
+
 (fn setup []
   (local g (vim.api.nvim_create_augroup :projectile {:clear true}))
   (local au vim.api.nvim_create_autocmd)
   (au [:VimEnter :BufNew :BufNewFile :BufReadPre]
       {:group g
        :callback on-file-open})
-  (au :BufEnter
-       {:group g
-        :callback on-file-enter})
+  (au [:BufEnter :BufReadPost]
+      {:group g
+       :callback on-file-enter})
+  (au [:DirChangedPre]
+      {:group g
+       :callback on-chdir-memoize})
   (au :BufWritePost
       {:group g
        :callback on-file-write})
