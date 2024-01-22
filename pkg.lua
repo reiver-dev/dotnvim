@@ -287,6 +287,14 @@ pkg {
 
 -- Editing
 pkg {
+    name = "langmapper",
+    url = "Wansmer/langmapper.nvim",
+    config = function()
+        require("langmapper").setup{}
+    end,
+}
+
+pkg {
     name = "table-mode",
     url = "dhruvasagar/vim-table-mode",
     cmd = {"Tableize", "TableModeEnable", "TableModeToggle"},
