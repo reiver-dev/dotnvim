@@ -33,6 +33,8 @@ pkg {
     name = "which-key",
     url = "folke/which-key.nvim",
     config = function()
+        local M = require("which-key.plugins.registers")
+        M.registers = M.registers:gsub("[+*]", "")
         require("which-key").setup{}
     end,
 }
