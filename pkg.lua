@@ -288,13 +288,13 @@ pkg {
 }
 
 -- Editing
-pkg {
-    name = "langmapper",
-    url = "Wansmer/langmapper.nvim",
-    config = function()
-        require("langmapper").setup{}
-    end,
-}
+-- pkg {
+--     name = "langmapper",
+--     url = "Wansmer/langmapper.nvim",
+--     config = function()
+--         require("langmapper").setup{}
+--     end,
+-- }
 
 pkg {
     name = "table-mode",
