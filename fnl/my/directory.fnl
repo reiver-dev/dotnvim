@@ -200,7 +200,8 @@
     (local cwd (getcwd))
     (when (and (not= dd cwd) (directory? dd))
       (setcwd dd)
-      (set-local opts.buf :chdir dd))))
+      (set-local opts.buf :chdir dd)))
+  nil)
 
 
 (fn on-file-open [opts]
@@ -214,41 +215,50 @@
       (when (or (= oldfile nil) (not= file oldfile))
         (set-local bufnr :file file)
         (apply-default-directory bufnr (if (= "" file) nil
-                                         (extract-dirname file)))))))
+                                         (extract-dirname file))))))
+  nil)
 
 
 (fn on-file-write [opts]
   (on-file-open opts)
-  (on-file-enter opts))
+  (on-file-enter opts)
+  nil)
 
 
 (fn on-file-rename [opts]
   (on-file-open opts)
-  (on-file-enter opts))
+  (on-file-enter opts)
+  nil)
 
 
 (fn on-chdir-memoize [opts]
-  (set-local opts.buf :chdir opts.file))
+  (set-local opts.buf :chdir opts.file)
+  nil)
 
 
 (fn setup []
   (local g (vim.api.nvim_create_augroup :projectile {:clear true}))
   (local au vim.api.nvim_create_autocmd)
-  (au [:VimEnter :BufNew :BufNewFile]
+  (au [:VimEnter :BufNew :BufNewFile :BufReadPre]
       {:group g
-       :callback on-file-open})
-  (au [:BufEnter :BufReadPre :BufReadPost]
+       :callback on-file-open
+       :desc "directory::on-file-open"})
+  (au [:BufEnter :BufReadPost]
       {:group g
-       :callback on-file-enter})
+       :callback on-file-enter
+       :desc "directory::on-file-enter"})
   (au [:DirChangedPre]
       {:group g
-       :callback on-chdir-memoize})
+       :callback on-chdir-memoize
+       :desc "directory::on-chdir-memoize"})
   (au :BufWritePost
       {:group g
-       :callback on-file-write})
+       :callback on-file-write
+       :desc "directory::on-file-write"})
   (au :BufFilePost
       {:group g
-       :callback on-file-rename}))
+       :callback on-file-rename
+       :desc "directory::on-file-rename"}))
 
 
 {: setup
