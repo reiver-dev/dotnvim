@@ -411,12 +411,7 @@ pkg {
     name = "oil",
     url = "stevearc/oil.nvim",
     config = function()
-        require"oil".setup {
-            columns = {},
-        }
-        vim.keymap.set("n", "-", function(...)
-            require("oil").open(...)
-        end, {desc = "Open parent directory"})
+        _T("my.pack.oil", "setup")
     end,
 }
 
