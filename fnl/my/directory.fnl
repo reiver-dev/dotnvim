@@ -32,7 +32,7 @@
 
 (local normalize
   (if (= "\\" (package.config:sub 1 1))
-    (fn [path] (str-gsub path "\\" "/"))
+    (fn [path] (let [res (str-gsub path "\\" "/")] res))
     (fn [path] path)))
 
 
@@ -49,11 +49,18 @@
   (normalize (vim-getcwd)))
 
 
+(local -cd-arg 
+  {:cmd "lcd"
+   :args [""]
+   :magic {:file false}})
+
+
+(local -empty {})
+
+
 (fn setcwd [path]
-  (nvim_cmd {:cmd "lcd"
-             :args [path]
-             :magic {:file false}}
-            {}))
+  (tset -cd-arg.args 1 path)
+  (nvim_cmd -cd-arg -empty))
 
 
 (fn fs-dirname [name]
@@ -100,7 +107,7 @@
 
 
 (local valid-buftypes
-  {"" true :nowrite true :help true})
+  {"" true :nowrite true :acwrite true :help true})
 
 
 (fn buftype-valid? [bufnr]
@@ -166,13 +173,14 @@
 
 (fn apply-default-directory [bufnr dirname]
   "Attempt to update default-directory for BUFNR buffer."
-  (let [dd (default-directory bufnr)]
-    (when (not= bufnr (nvim_get_current_buf))
-      (error "Expected current buf"))
+  (local dd (default-directory bufnr))
+  (if (= bufnr (nvim_get_current_buf))
     (let [dir (or dirname (getcwd))]
-      (set-default-directory bufnr dir)
       (when (~= dir dd)
-        (fire-default-directory-updated bufnr dir dd)))))
+        (set-default-directory bufnr dir)
+        (fire-default-directory-updated bufnr dir dd)))
+    (when (and dirname (~= dirname dd))
+      (set-default-directory bufnr dirname))))
 
 
 (fn force-default-directory [bufnr directory]
@@ -226,10 +234,10 @@
 (fn setup []
   (local g (vim.api.nvim_create_augroup :projectile {:clear true}))
   (local au vim.api.nvim_create_autocmd)
-  (au [:VimEnter :BufNew :BufNewFile :BufReadPre]
+  (au [:VimEnter :BufNew :BufNewFile]
       {:group g
        :callback on-file-open})
-  (au [:BufEnter :BufReadPost]
+  (au [:BufEnter :BufReadPre :BufReadPost]
       {:group g
        :callback on-file-enter})
   (au [:DirChangedPre]
@@ -248,6 +256,8 @@
  : on-file-open
  : on-file-write
  : on-file-rename
+ : getcwd
+ : setcwd
  : force-default-directory
  : default-directory
  : add-hook
