@@ -54,7 +54,6 @@
 (fn setup-bindings []
   (let [bind-1 vim.api.nvim_set_keymap
         bind (fn [key cmd] (bind-1 :t key cmd {:noremap true}))]
-    (bind :q "<C-\\><C-N>")
     (bind :<C-g> "<C-\\><C-N>")
     (bind :<C-x> "<C-\\><C-N>:lua _T('my.terminal', 'execute-prefix')<CR>")
     (bind :<C-y> "<C-\\><C-N>pi")))
