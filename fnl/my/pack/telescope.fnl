@@ -58,6 +58,7 @@
            :q actions.close}
        :i {:<C-g> actions.close
            :<C-c> actions.close
+           :<C-f> false
            :<C-d> false
            :<C-u> false
            :<C-e> false
