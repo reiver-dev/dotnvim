@@ -222,6 +222,7 @@ return {
     setup = setup,
     load_package = load_package,
     complete_package = complete_package,
+    eval_after_load = eval_after_load,
     call_after_load = call_after_load,
 }
 
