@@ -1,7 +1,7 @@
 --- Install basic dependencies
 --
 
-local load_package = require("bootstrap.modules").load_package
+local modules = require("bootstrap.modules")
 local fn = vim.fn
 
 ---@type string
@@ -48,7 +48,7 @@ end
 local function package_preloader(package_name, module_name)
     local function preload_module_loader(modname)
         assert(modname == module_name)
-        load_package(package_name)
+        modules.load_package(package_name)
         return load_module(modname, preload_module_loader)
     end
     return preload_module_loader
@@ -74,9 +74,12 @@ local function setup()
         vim.cmd("packadd packer.nvim")
     end
 
+    modules.eval_after_load("fennel", function()
+        ensure_rtp(fennel_root .. "/rtp")
+    end)
+
     if download("https://github.com/bakpakin/Fennel", fennel_root) then
         vim.cmd("packadd fennel")
-        ensure_rtp(fennel_root .. "/rtp")
         require "bootstrap.fennel.ensure_compiler".setup()
     end
 
