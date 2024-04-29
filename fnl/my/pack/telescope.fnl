@@ -16,7 +16,7 @@
                        s)))
   (local normalize (fn [path]
                      (if _G.SHELLSLASH
-                       (str-gsub path "\\" "/")
+                       (let [res (str-gsub path "\\" "/")] res)
                        path)))
   (fn [opts path]
     (if (and path (not= path "") (not= path "[No Name]"))
