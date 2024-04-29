@@ -4,12 +4,16 @@
 local load_package = require("bootstrap.modules").load_package
 local fn = vim.fn
 
+---@type string
 local packages = fn.stdpath("data"):gsub("\\", "/") .. "/site/pack/packer"
 
 local packer_root = packages .. "/opt/packer.nvim"
 local fennel_root = packages .. "/opt/fennel"
 
 
+---@param source string
+---@param dest string
+---@return boolean
 local function download(source, dest)
     if fn.empty(fn.glob(dest)) > 0 then
         vim.cmd['!']("git", "clone", source, dest)
@@ -19,6 +23,8 @@ local function download(source, dest)
 end
 
 
+---@param module_name string
+---@param parent_loader function
 local function load_module(module_name, parent_loader)
     if module_name == nil then
         error("Module name is nil")
@@ -49,11 +55,14 @@ local function package_preloader(package_name, module_name)
 end
 
 
+---@param package_name string
+---@param module_name string
 local function ensure_plugin_loaders(package_name, module_name)
     package.preload[module_name] = package_preloader(package_name, module_name)
 end
 
 
+---@param path string
 local function ensure_rtp(path)
     ---@diagnostic disable-next-line: undefined-field
     vim.opt.runtimepath:append(path)
