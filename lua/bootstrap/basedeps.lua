@@ -54,6 +54,12 @@ local function ensure_plugin_loaders(package_name, module_name)
 end
 
 
+local function ensure_rtp(path)
+    ---@diagnostic disable-next-line: undefined-field
+    vim.opt.runtimepath:append(path)
+end
+
+
 local function setup()
     if download("https://github.com/wbthomason/packer.nvim", packer_root) then
         vim.cmd("packadd packer.nvim")
@@ -61,6 +67,7 @@ local function setup()
 
     if download("https://github.com/bakpakin/Fennel", fennel_root) then
         vim.cmd("packadd fennel")
+        ensure_rtp(fennel_root .. "/rtp")
         require "bootstrap.fennel.ensure_compiler".setup()
     end
 
