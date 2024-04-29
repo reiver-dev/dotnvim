@@ -56,7 +56,7 @@ local function gather_files(root, force)
     end
     local result = {}
     local srcdir = root .. "/src"
-    local dstdir = root .. "/lua"
+    local dstdir = root .. "/rtp/lua"
     local prefixlen = srcdir:len()
     local sources = collect(srcdir)
     for _, srcpath in ipairs(sources) do
@@ -232,7 +232,7 @@ function M.setup(opts)
     local old_fennel = old_fennel_loader("fennel")
 
     if force then
-        local dir = root .. "/lua"
+        local dir = root .. "/rtp/lua"
         vim.notify("Removing " .. dir)
         basic.rmdir(dir)
     end

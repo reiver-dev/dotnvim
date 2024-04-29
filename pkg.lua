@@ -12,6 +12,7 @@ pkg {
     name = "fennel",
     url = "bakpakin/Fennel",
     opt = true,
+    rtp = "rtp",
     run = function()
         vim.schedule(_F("bootstrap.fennel.ensure_compiler", "setup", {force = true}))
     end,
