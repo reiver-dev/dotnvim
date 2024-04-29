@@ -207,6 +207,7 @@ pkg {
 pkg {
     name = "rest-client",
     url = "NTBBloodbath/rest.nvim",
+    disable = true,
 }
 
 -- LSP
