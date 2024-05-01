@@ -1,4 +1,5 @@
 (local fun (require "my.fun"))
+(local {: set-local} (require "my.bufreg"))
 
 
 (fn job-running? [job]
@@ -62,6 +63,11 @@
 (fn chdir [bufnr directory]
   (vim.notify (string.format "bufnr: %s, directory: %s" bufnr directory))
   (_T :my.directory :force-default-directory bufnr directory))
+
+
+(fn set-title [bufnr title]
+  (print "BUFNR:" bufnr "TITLE:" title)
+  (set-local bufnr "terminal" "title" title))
 
 
 (fn gather-data [kind]
@@ -243,12 +249,21 @@
   [vim.o.shell])
 
 
+(fn memoize-osc [opts]
+  (set-local 0 "terminal" "osc" opts))
+
+
 (fn setup []
   (setup-bindings)
+  (local group (vim.api.nvim_create_augroup :boostrap_terminal {:clear true}))
   (vim.api.nvim_create_autocmd 
     :TermOpen
-    {:group (vim.api.nvim_create_augroup :boostrap_terminal {:clear true})
+    {:group group
      :command "setlocal nonumber norelativenumber"})
+  (vim.api.nvim_create_autocmd
+    :TermRequest
+    {:group group
+     :callback memoize-osc})
   (vim.api.nvim_set_keymap :v "<leader>x" ""
                            {:noremap true
                             :callback send-visual})
@@ -282,7 +297,8 @@
 
 {: find-terminal 
  : execute-prefix 
- : chdir 
+ : chdir
+ : set-title 
  : gather-data 
  : string-indent 
  : selection 
