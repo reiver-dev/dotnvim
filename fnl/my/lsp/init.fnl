@@ -73,15 +73,18 @@
   (init-highlight))
 
 
+(local get-clients (or vim.lsp.get_clients vim.lsp.get_active_clients))
+
+
 (fn on-attach [client buf]
-  (let [clients (vim.lsp.buf_get_clients buf)]
+  (let [clients (get-clients {:bufnr buf})]
     (when (and (= (length clients) 1)
                (= (. clients 1) client))
       (default-buffer-config client buf))))
 
 
 (fn restart []
-  (vim.lsp.stop_client (vim.lsp.get_active_clients)))
+  (vim.lsp.stop_client (get-clients)))
 
 
 (fn setup []

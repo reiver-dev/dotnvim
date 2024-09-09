@@ -142,7 +142,8 @@ local statusline_right = {
     {
         fn = function(bufnr)
             local client_names = {}
-            for _, client in pairs(vim.lsp.get_active_clients({ bufnr = bufnr })) do
+            local get_clients = vim.lsp.get_clients or vim.lsp.get_active_clients
+            for _, client in pairs(get_clients({ bufnr = bufnr })) do
                 client_names[#client_names + 1] = fmt("%s(%d)", client.name, client.id)
             end
             if #client_names == 0 then
