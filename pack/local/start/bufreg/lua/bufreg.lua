@@ -263,7 +263,7 @@ end
 --- @class Options
 --- @field varname string
 
---- @param opts Options
+--- @param opts? Options
 local function setup(opts)
     vim.api.nvim_create_autocmd(
         { "VimEnter", "BufNew", "BufNewFile", "BufReadPre" },
