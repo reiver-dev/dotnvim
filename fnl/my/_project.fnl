@@ -70,6 +70,8 @@
   (let [(files dirs) (fw.async-gather path interesting-files
                                       interesting-directories)
         data {: files : dirs}]
+    (LOG "Defer search done" :bufnr bufnr)
+    (LOG "Defer search done -- props" :loc (b.get-local bufnr))
     (let [lnvim (. files ".lnvim.fnl")]
       (when lnvim
         (b.set-local bufnr :dir-local lnvim)
@@ -91,6 +93,8 @@
 (fn defer-project-search [bufnr path]
   "Schedule search for project-related files.
   BUFNR is buffer number. PATH is intended directory within project."
+  (let [l (b.get-local bufnr)]
+    (LOG "Defer search start" :loc l))
   (p.new do-project-search bufnr path))
 
 
