@@ -65,7 +65,7 @@ local function do_project_search(bufnr, path)
     local data = {files = files, dirs = dirs}
     local lnvim = files[".lnvim.fnl"]
     if lnvim then
-        b.setlocal("bufnr", "dir-local", lnvim)
+        b.setlocal(bufnr, "dir-local", lnvim)
         files[".lnvim.fnl"] = nil
     end
     b.setlocal(bufnr, "project", "triggers", data)
