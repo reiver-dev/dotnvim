@@ -7,7 +7,7 @@ local M = {}
 local basic = require("bootstrap.basic")
 
 
-local function compile(fennel, src, dst, env)
+local function compile(fennel, src, env)
     local options = {
         filename = src,
         requireAsInclude = false,
@@ -16,8 +16,7 @@ local function compile(fennel, src, dst, env)
         allowedGlobals = false,
     }
     local srcdata = basic.slurp(src)
-    local dstdata = fennel['compile-string'](srcdata, options)
-    basic.spew(dst, dstdata)
+    return fennel['compile-string'](srcdata, options)
 end
 
 
@@ -214,6 +213,8 @@ end
 
 function M.setup(opts)
     local force = opts and opts.force
+    local dry_run = opts and opts.dry_run
+
     local old_path = basic.runtime({ "bootstrap/fennel.lua", "old/fennel.lua" })
     if old_path == nil or old_path == "" then
         error("Fennel old compiler not found")
@@ -226,21 +227,28 @@ function M.setup(opts)
 
     local root = vim.fn.fnamemodify(old_path, ":p:h:h")
     assert(root ~= nil and root ~= "", "Empty fennel path")
+    vim.notify("Fennel root: " .. root)
 
-    local baseenv = make_compiler_env({FENNEL_SRC = root})
+    local baseenv = make_compiler_env({
+        FENNEL_SRC = root,
+        FENNEL_PATH = root .. "src/?.fnl",
+    })
     setfenv(old_fennel_loader, baseenv)
     local old_fennel = old_fennel_loader("fennel")
 
-    if force then
+    if force and not dry_run then
         local dir = root .. "/rtp/lua"
         vim.notify("Removing " .. dir)
         basic.rmdir(dir)
     end
 
     local ok, res = xpcall(function()
-        for src, dst in pairs(gather_files(root)) do
+        for src, dst in pairs(gather_files(root, force)) do
             vim.notify(string.format("Compiling %s => %s", src, dst))
-            compile(old_fennel, src, dst, baseenv)
+            local compiled = compile(old_fennel, src, baseenv)
+            if not dry_run then
+                basic.spew(dst, compiled)
+            end
         end
     end, debug.traceback)
 
