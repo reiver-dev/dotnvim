@@ -91,21 +91,6 @@ pkg {
     after = {"conjure", "cmp"},
 }
 
-pkg {
-    name = "luasnip",
-    url = "L3MON4D3/LuaSnip",
-    after = {"cmp"},
-    opt = true,
-    config = function() _T("my.pack.luasnip", "setup") end,
-}
-
-pkg {
-    name = "cmp-luasnip",
-    url = "saadparwaiz1/cmp_luasnip",
-    after = {"cmp"},
-    opt = true,
-}
-
 -- end
 pkg {
     name = "colorizer",

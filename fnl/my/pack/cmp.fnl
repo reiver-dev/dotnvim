@@ -3,7 +3,6 @@
 (local sources
   [{:name :nvim_lsp}
    {:name :nvim_lua}
-   {:name :luasnip}
    {:name :conjure}
    {:name :neorg}
    {:name :path}
@@ -65,10 +64,6 @@
             :select false})})
 
 
-(fn expand-snippet [param]
-  (_T :luasnip :lsp_expand param.body))
-
-
 (fn setup []
   (local format-entry
     (match (pcall require :lspkind)
@@ -80,7 +75,6 @@
   (cmp.setup {:mapping mapping
               :completion {:autocomplete false}
               :formatting {:format format-entry}
-              :snippet {:expand expand-snippet}
               :experimental {:ghost_text true}
               :sources sources})
   (when _G.packer_plugins.neorg
