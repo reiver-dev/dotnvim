@@ -28,7 +28,7 @@ local function collect(root)
     local match = string.match
     local sroot = root:gsub("[\\/]*$", "/")
     for name, type in vim.fs.dir(root, { depth = 4 }) do
-        if type == "file" and match(name, ".*%.fnl$")
+        if type == "file" and match(name, ".*fennel.*%.fnl$")
             and not match(name, ".*macros%.fnl$")
             and not match(name, ".*match%.fnl$") then
             i = i + 1
@@ -211,7 +211,7 @@ local function make_compiler_env(environ)
     return setmetatable(baseenv, strict_global)
 end
 
-function M.setup(opts)
+function M.old_setup(opts)
     local force = opts and opts.force
     local dry_run = opts and opts.dry_run
 
@@ -257,6 +257,74 @@ function M.setup(opts)
     end
 end
 
+
+local function aot(root, input, opts)
+    local cmd = {
+        vim.uv.exepath(),
+        "--clean",
+        "-l",
+        "bootstrap/aot.lua",
+        input
+    }
+
+    if opts and opts.macro then
+        table.insert(cmd, "--macro")
+    end
+
+    vim.notify(vim.inspect(cmd), vim.log.levels.DEBUG)
+
+    local result = vim.system(cmd, { cwd = root, text = true }):wait()
+
+    if result.code == 0 and result.signal == 0 then
+        if not result.stderr or result.stderr == "" then
+            error("empty output")
+        end
+        return result.stderr
+    end
+
+    local msg = string.format("Exited: %d (%d)\nOUTPUT: %s", result.code, result.signal, result.stderr)
+    error(msg)
+end
+
+local function aot_save(root, input, output, opts)
+    local dst = vim.fs.joinpath(root, output)
+    vim.notify(string.format("Compiling %s => %s", input, dst))
+    local compiled = aot(root, input, opts)
+    if not (opts and opts.dry_run) then
+        basic.spew(dst, compiled)
+    end
+end
+
+function M.setup(opts)
+    local force = opts and opts.force
+    local dry_run = opts and opts.dry_run
+
+    local old_path = basic.runtime({ "bootstrap/fennel.lua", "old/fennel.lua" })
+    if old_path == nil or old_path == "" then
+        error("Fennel old compiler not found")
+    end
+
+    local root = vim.fn.fnamemodify(old_path, ":p:h:h")
+    assert(root ~= nil and root ~= "", "Empty fennel path")
+    vim.notify("Fennel root: " .. root)
+
+    aot_save(root, "src/fennel/macros.fnl", "bootstrap/macros.lua", {macro = true, dry_run = dry_run})
+    aot_save(root, "src/fennel/match.fnl", "bootstrap/match.lua", {macro = true, dry_run = dry_run})
+
+    local ok, res = xpcall(function()
+        for src, dst in pairs(gather_files(root, force)) do
+            vim.notify(string.format("Compiling %s => %s", src, dst))
+            local compiled = aot(root, src)
+            if not dry_run then
+                basic.spew(dst, compiled)
+            end
+        end
+    end, debug.traceback)
+
+    if not ok then
+        error(res)
+    end
+end
 
 return M
 
