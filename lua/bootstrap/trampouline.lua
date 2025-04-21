@@ -90,7 +90,7 @@ local function tf_no_upvalues(witharg, modname, funcname, ...)
         for i = 1,n do
             res[i+1] = serialize(args[i])
         end
-        argtext = table.concat(res, ",") 
+        argtext = table.concat(res, ",")
     end
     local vararg = witharg and ",..." or ""
     local text = string.format("return function()return _T(%q,%s%s%s)end",
@@ -130,19 +130,15 @@ end
 
 
 local function trampouline_func(modname, funcname, ...)
-    vim.validate {
-        modname = {modname, 'string'},
-        funcname = {funcname, 'string', true}
-    }
+    vim.validate("modname", modname, "string")
+    vim.validate("funcname", funcname, "string", true)
     return tf_simple(modname, funcname, ...)
 end
 
 
 local function trampouline_func_frozen(modname, funcname, ...)
-    vim.validate {
-        modname = {modname, 'string'},
-        funcname = {funcname, 'string', true}
-    }
+    vim.validate("modname", modname, "string")
+    vim.validate("funcname", funcname, "string", true)
     return tf_no_upvalues(false, modname, funcname, ...)
 end
 
