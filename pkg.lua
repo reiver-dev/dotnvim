@@ -94,7 +94,7 @@ pkg {
 -- end
 pkg {
     name = "colorizer",
-    url = "norcalli/nvim-colorizer.lua",
+    url = "catgoose/nvim-colorizer.lua",
     config = function() _T("colorizer", "setup") end,
 }
 
