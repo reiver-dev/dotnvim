@@ -37,18 +37,18 @@
   (s.kmap-global :i :<C-h> :<BS>)
 
   ;; kill-line
-  (s.kmap-global :i :<C-k> :<C-\><C-o>D)
-  (s.kmap-global :i :<C-DEL> :<C-\><C-o>D)
-  (s.kmap-global :i :<C-BS> :<C-\><C-o>d0)
+  (s.kmap-global :i :<C-k> "<C-\\><C-o>D")
+  (s.kmap-global :i :<C-DEL> "<C-\\><C-o>D")
+  (s.kmap-global :i :<C-BS> "<C-\\><C-o>d0")
   (s.kmap-global :i :<M-k> :<End><C-u>)
 
   ;; forward-delete-word
-  (s.kmap-global :i :<M-d> :<C-\><C-o>dw)
-  (s.kmap-global :i :<M-DEL> :<C-\><C-o>dw)
+  (s.kmap-global :i :<M-d> "<C-\\><C-o>dw")
+  (s.kmap-global :i :<M-DEL> "<C-\\><C-o>dw")
 
   ;; backward-delete-word
-  (s.kmap-global :i :<M-h> :<C-\><C-o>db)
-  (s.kmap-global :i :<M-BS> :<C-\><C-o>db)
+  (s.kmap-global :i :<M-h> "<C-\\><C-o>db")
+  (s.kmap-global :i :<M-BS> "<C-\\><C-o>db")
 
   ;; Switch to related buffer
   (s.kmap-global :n :<leader><leader> :<C-^>)
