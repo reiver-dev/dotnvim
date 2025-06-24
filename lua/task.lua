@@ -1,17 +1,143 @@
 --- Task scheduler
 
+--- @class (private, exact) task._task_queue
+--- @field _tnext self|false
+--- @field _tprev self|false
+
+--- @class (private, exact) task._wait_queue
+--- @field _wnext self|false
+--- @field _wprev self|false
+
+--- @alias task._error_handler fun(string, integer): string
+
+--- @class (private, exact) task._task_data : task._task_queue, task._wait_queue
+--- @field _thread thread
+--- @field _nargs integer
+--- @field _args any|any[]|false
+--- @field _fn {function:true}|false
+--- @field _status ""|"cancelled"|"done"|"error"|"blocked"
+--- @field _sched task.scheduler|false
+--- @field _error_handler task._error_handler|false
+
+--- @alias (private) task._reply_id
+--- | 1 # Yield
+--- | 2 # Cancel
+--- | 3 # Block
+--- | 4 # YieldTransfer
+--- | 5 # BlockTransfer
+
+--- @class (exact) task : task._task_data
+local __task = {}
+
+--- @class (private, exact) task._scheduler_data
+--- @field _q_ready task._task_queue
+--- @field _q_blocked task._task_queue
+--- @field _q_yield task._task_queue
+--- @field _running task|false
+--- @field _num_tasks integer
+--- @field _num_ready integer
+--- @field _tasks {task:true}
+
+--- @class (exact) task.scheduler : task._scheduler_data
+local __scheduler = {}
+
+--- @class (private, exact) task._event_data : task._wait_queue
+--- @field _state integer
+--- @field _args any|any[]|false
+--- @field _fn {function:boolean}|false
+
+--- @alias task.event.state "init"|"posted"|"cancelled"
+
+--- @class (exact) task.event : task._event_data
+local __event = {}
+
+--- @class (exact) task.signal : task._wait_queue
+local __signal = {}
+
+--- @class (private, exact) task._sem_data : task._wait_queue
+--- @field _state integer
+
+--- @class task.sem : task._sem_data
+local __sem = {}
+
+--- @class (private, exact) _ring_queue
+--- @field r integer
+--- @field w integer
+--- @field c integer
+--- @field n integer
+--- @field [integer] any
+
+--- @class (private, exact) _array_linked_queue
+--- @field h integer
+--- @field t integer
+--- @field f integer
+--- @field n integer
+--- @field [integer] any
+
+--- @class (private, exact) task._bqueue_data
+--- @field _q _ring_queue
+--- @field _r task._wait_queue
+--- @field _w task._wait_queue
+
+--- @class (exact) task.bqueue : task._bqueue_data
+local __bqueue = {}
+
+--- @class (private, exact) task._uqueue_data : task._wait_queue
+--- @field _q _array_linked_queue
+
+--- @class (exact) task.uqueue : task._uqueue_data
+local __uqueue = {}
+
+
 local co_yield = coroutine.yield
 local co_create = coroutine.create
 local co_resume = coroutine.resume
 local co_status = coroutine.status
 local co_running = coroutine.running
+--- @diagnostic disable-next-line:deprecated
+local co_isyieldable = coroutine.isyieldable
 local vararg_unpack = table.unpack or unpack
+local select = select
 
 
-local function vararg_unpack_n(tbl)
-    if tbl then
-        return vararg_unpack(tbl, 1, tbl.n or #tbl)
-    end
+local _pack_dispatch = {
+    function(a1) return a1 end,
+    function(a1, a2) return { a1, a2 } end,
+    function(a1, a2, a3) return { a1, a2, a3 } end,
+    function(a1, a2, a3, a4) return { a1, a2, a3, a4 } end,
+}
+
+
+--- @return integer
+--- @return any[]
+--- @overload fun(): 0
+--- @overload fun(arg: `T`): 1, `T`
+local function _pack(...)
+    local n = select("#", ...)
+    if n == 0 then return 0 end
+    if n <= 4 then return n, _pack_dispatch[n](...) end
+    return n, { ... }
+end
+
+
+local _unpack_dispatch = {
+    function(args) return args end,
+    function(args) return args[1], args[2] end,
+    function(args) return args[1], args[2], args[3] end,
+    function(args) return args[1], args[2], args[3], args[4] end,
+}
+
+
+local function _unpack0(n, args)
+    if n == 0 then return end
+    if n <= 4 then _unpack_dispatch(args) end
+    return vararg_unpack(args, 1, n)
+end
+
+
+local function _unpack1(n, args)
+    if n <= 4 then _unpack_dispatch[n](args) end
+    return vararg_unpack(args, 1, n)
 end
 
 
@@ -60,6 +186,7 @@ local function dqueue_pop_front(n, p, at)
 end
 
 
+--- @diagnostic disable-next-line:unused-local,unused-function
 local function dqueue_pop_back(n, p, at)
     local value = at[p]
     dqueue_remove(n, p, value)
@@ -67,36 +194,9 @@ local function dqueue_pop_back(n, p, at)
 end
 
 
+--- @diagnostic disable-next-line:unused-local
 local function dqueue_isempty(n, p, at)
     return at == at[n]
-end
-
-
-local function _dqueue_it(state, val)
-    val = val[state.n]
-    if val == state.at then
-        return nil
-    end
-    return val
-end
-
-
-local function _dqueue_pop(state, val)
-    val = dqueue_pop_front(state.n, state.p, state.at)
-    if val == state.at then
-        return nil
-    end
-    return val
-end
-
-
-local function dqueue_iter(n, p, at, func)
-    return _dqueue_it, { n = n, p = p, at = at }, at
-end
-
-
-local function dqueue_drain(n, p, at, func)
-    return _dqueue_pop, { n = n, p = p, at = at }, at
 end
 
 
@@ -124,6 +224,7 @@ end
 
 local CORO_MAPPING
 
+
 if debug and debug.getregistry then
     local reg = debug.getregistry()
     if reg then
@@ -137,16 +238,36 @@ if debug and debug.getregistry then
     end
 end
 
+
 if not CORO_MAPPING then
     CORO_MAPPING = setmetatable({}, { __mode = "kv" })
 end
 
 
+--- @return task
 local function current_task()
-    return CORO_MAPPING[co_running()]
+    local t = co_running()
+    return t and CORO_MAPPING[t]
 end
 
 
+local is_running
+
+if co_isyieldable then
+    is_running = function()
+        if not co_isyieldable() then return false end
+        local thread, ismain = co_running()
+        return not ismain and thread and co_isyieldable and CORO_MAPPING[thread] ~= nil
+    end
+else
+    is_running = function()
+        local thread, ismain = co_running()
+        return not ismain and thread and CORO_MAPPING[thread] ~= nil
+    end
+end
+
+
+--- @return task
 local function assert_current_task()
     local t = CORO_MAPPING[co_running()]
     if not t then
@@ -156,87 +277,139 @@ local function assert_current_task()
 end
 
 
-local function ud_tostring(self)
-    local mt = getmetatable(self)
+--- @param obj any
+--- @return string
+local function ud_tostring(obj)
+    local mt = getmetatable(obj)
     local name = mt.__name
     if name then
-        if self._name then
-            return string.format("<%s: %s>", name, self._name)
+        if obj._name then
+            return string.format("<%s: %s>", name, obj._name)
         else
-            return string.gsub(tostring(self), "userdata", "task.scheduler")
+            return string.format("<%s: %p>", name, obj)
         end
     end
-    return tostring(self)
+    return tostring(obj)
 end
 
 
-local function pack(...)
-    return { n = select("#", ...), ... }
-end
-
-
-local function report_callback_error(task, cb, err, ...)
+local function report_callback_error(parent, cb, err, ...)
     if select("#", ...) > 1 then
         print(string.format("[ERROR] %s - %s - %s - %s",
-            task, cb, err, vim.inspect({ ... })))
+            parent, cb, err, vim.inspect({ ... })))
     else
         print(string.format("[ERROR] %s - %s - %s",
-            task, cb, err))
+            parent, cb, err))
     end
 end
 
 
-local function task_finished(task, ...)
-    local cblist = task._callbacks
-    task._callbacks = false
-
-    if not cblist then
-        return
+--- @param parent any
+--- @param errh task._error_handler?
+--- @param fns {function:true}|false|nil
+local function invoke_hook(parent, errh, fns, ...)
+    if not fns then return end
+    local xpcall = xpcall
+    if not errh then
+        errh = error_handler()
     end
-
-    local errh = task._error_handler or error_handler()
-
-    for cb in pairs(cblist) do
-        local ok, err = xpcall(cb, errh, ...)
+    for f in fns, next, nil do
+        local ok, err = xpcall(f, errh, ...)
         if not ok then
-            report_callback_error(task, cb, err, ...)
+            report_callback_error(parent, f, err, ...)
         end
     end
 end
 
+--- @param task task
+local function waitlist_detach(task)
+    dqueue_remove("_wnext", "_wprev", task)
+end
 
-local function task_dispose(task)
+
+--- @param task task
+local function tasklist_detach(task)
+    dqueue_remove("_tnext", "_tprev", task)
+end
+
+
+--- @param task task
+--- @param tasklist task._task_queue
+local function tasklist_tofront(task, tasklist)
+    dqueue_push_front("_tnext", "_tprev", tasklist, task)
+end
+
+
+--- @param task task
+--- @param tasklist task._task_queue
+local function tasklist_toback(task, tasklist)
+    dqueue_push_back("_tnext", "_tprev", tasklist, task)
+end
+
+
+--- @param task task._task_data
+local function task_finish(task, ...)
+    local cblist = task._fn
+    task._fn = false
+    invoke_hook(task, task._error_handler, cblist, ...)
+end
+
+
+--- @param task task
+--- @return string
+local function _no_scheduler_error_msg(task)
+    return "Task " .. tostring(task) .. " has no scheduler"
+end
+
+
+--- @param task task
+--- @return string
+local function _not_blocked_error_msg(task)
+    return "Task " .. tostring(task) .. " not blocked"
+end
+
+
+--- @param task task
+local function task_is_blocked(task)
+    return task._status == "blocked"
+end
+
+
+--- @param task task
+local function task_detach_from_scheduler(task)
     local sched = task._sched
-    task._sched = nil
-    sched._num_task = sched._num_task - 1
+    task._sched = false
+    tasklist_detach(task)
+    if not sched then
+        error(_no_scheduler_error_msg(task))
+    end
+    if not task_is_blocked(task) then
+        sched._num_ready = sched._num_ready - 1
+    end
+    sched._num_tasks = sched._num_tasks - 1
     sched._tasks[task] = nil
 end
 
 
+--- @param task task
 local function task_close(task)
     CORO_MAPPING[task._thread] = nil
 end
 
 
-local function task_status(task)
-    local status = task._status
-    if status and status ~= "" then
-        return status
-    end
-    return co_status(task._thread)
-end
-
-
+--- @param task task
 local function task_do_block(task)
     local sched = task._sched
+    if not sched then error(_no_scheduler_error_msg(task)) end
+
     if task ~= sched._running then
         sched._num_ready = sched._num_ready - 1
     end
-    dqueue_remove("_tnext", "_tprev", task)
-    dqueue_push_front("_tnext", "_tprev", sched._q_blocked, task)
+
+    tasklist_detach(task)
+    tasklist_toback(task, sched._q_blocked)
     task._status = "blocked"
 end
-
 
 
 local TASK_TERMINAL_STATUS = {
@@ -246,78 +419,115 @@ local TASK_TERMINAL_STATUS = {
 }
 
 
-local function task_is_blocked(task)
-    return task._status == "blocked"
-end
-
-
+--- @param task task
 local function task_is_finished(task)
     return TASK_TERMINAL_STATUS[task._status] ~= nil
 end
 
 
-local function task_do_unblock(task, args)
-    dqueue_remove("_tnext", "_tprev", task)
-    dqueue_push_front("_tnext", "_tprev", task._sched._q_ready, task)
+--- @param task task
+local function task_do_unblock(task, n, args)
+    if not task_is_blocked(task) then
+        error(_not_blocked_error_msg(task))
+    end
+    tasklist_detach(task)
+    tasklist_toback(task, task._sched._q_ready)
+    task._nargs = n
     task._args = args
     task._status = ""
 end
 
+
+--- @param task task
 local function task_handle_cancel(task)
+    task_detach_from_scheduler(task)
     task._status = "cancelled"
-    task_dispose(task)
-    task_finished(task, nil)
+    task._nargs = 0
+    task._args = false
+    task_finish(task, nil)
     task_close(task)
 end
 
 
+--- @param task task
 local function task_do_cancel(task)
-    dqueue_remove("_tnext", "_tprev", task)
-    dqueue_remove("_wnext", "_wprev", task)
+    waitlist_detach(task)
     task_handle_cancel(task)
 end
 
 
-local function on_yield(task)
-    local sched = task._sched
-    dqueue_push_back("_tnext", "_tprev", sched._q_yield, task)
-    sched._num_tasks = sched._num_tasks + 1
+local function task_do_yield(task)
+    tasklist_toback(task, task._sched._q_yield)
 end
 
 
+--- @param task task
+local function on_yield(task)
+    task_do_yield(task)
+end
+
+
+--- @param task task
 local function on_cancel(task)
     task_do_cancel(task)
 end
 
 
+--- @param task task
 local function on_block(task)
     task_do_block(task)
 end
 
 
+--- @param task task
+local function _move_task_to_front(task)
+    tasklist_detach(task)
+    tasklist_tofront(task, task._sched._q_ready)
+end
+
+
+--- @param task_to task
+--- @param task_from task
+local function _copy_scheduler(task_to, task_from)
+    --- @type task.scheduler
+    local new_sched = task_from._sched
+    --- @type task.scheduler
+    local old_sched = task_to._sched
+
+    if new_sched ~= old_sched then
+        old_sched._num_tasks = old_sched._num_tasks - 1
+        old_sched._num_ready = old_sched._num_ready - 1
+        old_sched._tasks[task_to] = nil
+        new_sched._num_tasks = new_sched._num_tasks + 1
+        new_sched._num_ready = new_sched._num_ready + 1
+        new_sched._tasks[task_to] = nil
+    end
+
+    task_to._sched = new_sched
+end
+
+
+--- @param task task
 local function on_reply_transfer_yield(task, other_task)
-    local sched = task._sched
-    dqueue_push_back("_tnext", "_tprev", sched._q_yield, task)
+    task_do_yield(task)
     if other_task and not task_is_blocked(other_task) then
-        other_task._sched = sched
-        dqueue_remove("_tnext", "_tprev", other_task)
-        dqueue_push_front("_tnext", "_tprev", sched)
+        _copy_scheduler(other_task, task)
+        _move_task_to_front(other_task)
     end
 end
 
 
+--- @param task task
 local function on_reply_transfer_block(task, other_task)
     task_do_block(task)
     if other_task and not task_is_blocked(other_task) then
-        local sched = task._sched
-        other_task._sched = sched
-        dqueue_remove("_tnext", "_tprev", other_task)
-        dqueue_push_front("_tnext", "_tprev", sched)
+        _copy_scheduler(other_task, task)
+        _move_task_to_front(other_task)
     end
 end
 
 
-
+--- @type {[task._reply_id]:fun(task,...)}
 local TASK_REPLY = setmetatable({
     on_yield,
     on_cancel,
@@ -329,34 +539,38 @@ local TASK_REPLY = setmetatable({
 })
 
 
+--- @param task task
 local function task_handle_done(task, ...)
+    task_detach_from_scheduler(task)
     task._status = "done"
-    task_dispose(task)
-    task._args = pack(...)
-    task_finished(task, true, ...)
+    task._nargs, task._args = _pack(...)
+    task_finish(task, true, ...)
     task_close(task)
 end
 
 
+--- @param task task
 local function task_handle_error(task, err)
+    task_detach_from_scheduler(task)
     task._status = "error"
-    task_dispose(task)
+    task._nargs = 1
     task._args = err
-    task_finished(task, false, err)
+    task_finish(task, false, err)
     task_close(task)
 end
 
 
+--- @param task task
 local function task_handle_late_result(task)
     local status = task._status
     if status == "cancelled" then
-        return task_finished(task, nil)
+        return task_finish(task, nil)
     end
     if status == "error" then
-        return task_finished(task, false, task._args)
+        return task_finish(task, false, task._args)
     end
     if status == "done" then
-        return task_finished(task, true, vararg_unpack_n(task._args))
+        return task_finish(task, true, _unpack0(task._nargs, task._args))
     end
 end
 
@@ -370,6 +584,8 @@ local function invalid_step_reply(step_id)
 end
 
 
+--- @param task task
+--- @param step_id task._reply_id
 local function task_handle_continue(task, step_id, ...)
     if not step_id then
         step_id = 1
@@ -380,102 +596,59 @@ local function task_handle_continue(task, step_id, ...)
 end
 
 
-local function handle_reply(task, status, ...)
+--- @param task task
+--- @param status boolean
+--- @param ... any
+local function task_handle_step_reply(task, status, ...)
     if not status then
         task_handle_error(task, ...)
+        return
     end
     if co_status(task._thread) == "dead" then
         task_handle_done(task, ...)
+        return
     end
     task_handle_continue(task, ...)
 end
 
 
+--- @param task task
 local function task_args_release(task)
-    local args = task._args
-    if args then
+    local n = task._nargs
+    if n > 0 then
+        local args = task._args
+        task._nargs = 0
         task._args = false
-        return vararg_unpack_n(args)
+        return _unpack1(n, args)
     end
 end
 
 
-local function task_resume(task)
-    return co_resume(task._thread, task_args_release(task))
-end
-
-
+--- @param task task
 local function task_step(task)
-    return handle_reply(task, task_resume(task))
+    return task_handle_step_reply(task, co_resume(task._thread, task_args_release(task)))
 end
 
 
-local function step_ready_task(sched)
-    local t = dqueue_pop_front("_tnext", "_tprev", sched._q_ready)
-    if not t then
-        return false
-    end
-    sched._running = t
-    task_step(t)
-    sched._running = false
-    return true
-end
-
-
-local function scheduler_step(sched, num_steps)
-    dqueue_splice("_tnext", "_tprev", sched._q_ready, sched._q_yield)
-    if num_steps and num_steps > 0 then
-        while num_steps > 0 and step_ready_task(sched) do
-            num_steps = num_steps - 1
-        end
-    else
-        repeat
-            local hasmore = step_ready_task(sched)
-        until hasmore
-    end
-    dqueue_splice("_tnext", "_tprev", sched._q_ready, sched._q_yield)
-    return sched._num_tasks
-end
-
-
-local function task_reply_yield()
-    return co_yield(0)
-end
-
-
-local function task_reply_cancel()
+--- @async
+local function task_yield_reply_yield()
     return co_yield(1)
 end
 
 
-local function task_reply_block(...)
-    return co_yield(2, ...)
+--- @async
+local function task_yield_reply_cancel()
+    return co_yield(2)
 end
 
 
-local function task_add_callback(task, func)
-    if task_is_finished(task) then
-        return task_handle_late_result(task)
-    end
-
-    local cblist = task._callbacks
-
-    if cblist then
-        cblist[func] = true
-    else
-        task._callbacks = { func = true }
-    end
+--- @async
+local function task_yield_reply_block(...)
+    return co_yield(3, ...)
 end
 
 
-local function task_del_callback(task, func)
-    local cblist = task._callbacks
-    if cblist then
-        task._callbacks[func] = nil
-    end
-end
-
-
+--- @param task task
 local function assert_current(task)
     local co = co_running()
     if not co then
@@ -487,6 +660,7 @@ local function assert_current(task)
 end
 
 
+--- @param task task
 local function assert_not_current(task)
     local co = co_running()
     if not co then
@@ -498,72 +672,95 @@ local function assert_not_current(task)
 end
 
 
-local function task_iscurrent(task)
-    return co_running() == task._thread
-end
-
-
-local function task_block(task)
-    if not task_iscurrent(task) then
-        return task_do_block(task)
+--- @param func function
+function __task:fn(func)
+    if task_is_finished(self) then
+        return task_handle_late_result(self)
     end
-    return task_reply_block()
-end
 
+    local cblist = self._fn
 
-local function task_unblock(task, ...)
-    assert_not_current(task)
-    return task_do_unblock(task, pack(...))
-end
-
-
-local function task_cancel(task)
-    if not task_iscurrent(task) then
-        return task_do_cancel(task)
+    if cblist then
+        cblist[func] = true
+    else
+        self._fn = { [func] = true }
     end
-    return task_reply_cancel()
 end
 
-
-local function task_yield(task)
-    assert_current(task)
-    return task_reply_yield()
+--- @param func function
+function __task:delfn(func)
+    local cblist = self._fn
+    if cblist then
+        self._fn[func] = nil
+    end
 end
 
-
-local function task_scheduler(task)
-    return task._sched
+function __task:iscurrent()
+    return co_running() == self._thread
 end
 
+--- @async
+function __task:block()
+    if co_running() ~= self._thread then
+        return task_do_block(self)
+    end
+    return task_yield_reply_block()
+end
+
+function __task:unblock(...)
+    assert_not_current(self)
+    return task_do_unblock(self, _pack(...))
+end
+
+function __task:cancel()
+    if co_running() ~= self._thread then
+        return task_do_cancel(self)
+    end
+    return task_yield_reply_cancel()
+end
+
+--- @async
+function __task:yield()
+    assert_current(self)
+    return task_yield_reply_yield()
+end
+
+--- @return task.scheduler?
+function __task:scheduler()
+    return self._sched or nil
+end
+
+--- @return string
+function __task:status()
+    local status = self._status
+    if status ~= "" then
+        return status
+    end
+    return co_status(self._thread)
+end
 
 local task_mt = {
     __name = "task.instance",
     __tostring = ud_tostring,
-    __index = {
-        status = task_status,
-        iscurrent = task_iscurrent,
-        block = task_block,
-        fn = task_add_callback,
-        delfn = task_del_callback,
-        unblock = task_unblock,
-        cancel = task_cancel,
-        yield = task_yield,
-        scheduler = task_scheduler,
-    },
+    __index = __task,
 }
 
 
+--- @return task
 local function new_task(func, args)
+    --- @type task._task_data
     local t = {
         _thread = co_create(func),
+        _nargs = 0,
         _args = args,
-        _callbacks = false,
+        _fn = false,
         _status = "",
         _tnext = false,
         _tprev = false,
         _wnext = false,
         _wprev = false,
-        _blocked_on = false,
+        _sched = false,
+        _error_handler = false,
     }
 
     t._tnext = t
@@ -571,32 +768,67 @@ local function new_task(func, args)
     t._wnext = t
     t._wprev = t
 
+    --- @cast t task
     return setmetatable(t, task_mt)
 end
 
 
-local function scheduler_spawn(sched, func, ...)
-    local t = new_task(func, pack(...))
-    dqueue_push_back("_tnext", "_tprev", sched._q_ready, t)
-    sched._num_tasks = sched._num_tasks + 1
-    sched._num_ready = sched._num_ready + 1
-    return t
+--- @param sched task.scheduler
+local function scheduler_step_ready_task(sched)
+    local t = dqueue_pop_front("_tnext", "_tprev", sched._q_ready)
+    if not t then
+        return false
+    end
+    sched._running = t
+    task_step(t)
+    sched._running = false
+    return true
 end
 
 
-local function scheduler_current(sched)
-    local t = sched._running
+--- @param num_steps integer
+function __scheduler:step(num_steps)
+    dqueue_splice("_tnext", "_tprev", self._q_ready, self._q_yield)
+    if num_steps and num_steps > 0 then
+        while num_steps > 0 and scheduler_step_ready_task(self) do
+            num_steps = num_steps - 1
+        end
+    else
+        repeat
+            local hasmore = scheduler_step_ready_task(self)
+        until hasmore
+    end
+    dqueue_splice("_tnext", "_tprev", self._q_ready, self._q_yield)
+    return self._num_tasks
+end
+
+--- @param func async fun(...):...
+function __scheduler:spawn(func, ...)
+    local t = new_task(func, _pack(...))
+    t._sched = self
+    dqueue_push_back("_tnext", "_tprev", self._q_ready, t)
+    self._num_tasks = self._num_tasks + 1
+    self._num_ready = self._num_ready + 1
+    self._tasks[t] = true
+    return t
+end
+
+local scheduler_spawn = __scheduler.spawn
+
+
+function __scheduler:current()
+    local t = self._running
     if not t then
         return nil
     end
     return t
 end
 
-
+--- @param sched task.scheduler
 local function _maybe_cancel_current(sched)
     local t = sched._running
     if t then
-        if t._co == co_running() then
+        if t._thread == co_running() then
             return true
         else
             task_do_cancel(t)
@@ -606,6 +838,9 @@ local function _maybe_cancel_current(sched)
 end
 
 
+--- @param sched task.scheduler
+--- @param q task._task_queue
+--- @param limit 1|0
 local function _maybe_cancel_queue(sched, q, limit)
     local task = dqueue_pop_front("_tnext", "_tprev", q)
     while task do
@@ -616,185 +851,290 @@ local function _maybe_cancel_queue(sched, q, limit)
 end
 
 
-local function scheduler_shutdown(sched)
-    local was_running = _maybe_cancel_current(sched)
+function __scheduler:shutdown()
+    local was_running = _maybe_cancel_current(self)
     local limit = was_running and 1 or 0
-    while sched._num_tasks > limit do
-        while sched._num_ready > 0 do
-            _maybe_cancel_queue(sched, sched._q_ready, 1)
+    while self._num_tasks > limit do
+        while self._num_ready > 0 do
+            _maybe_cancel_queue(self, self._q_ready, 1)
         end
-        _maybe_cancel_queue(sched, sched._q_blocked, 0)
+        _maybe_cancel_queue(self, self._q_blocked, 0)
     end
 end
 
-
-local function scheduler_nblocked(sched)
-    return sched._num_tasks - sched._num_ready
+--- @return integer
+function __scheduler:nblocked()
+    return self._num_tasks - self._num_ready
 end
 
-
-local function scheduler_nready(sched)
-    return sched._num_ready
+--- @return integer
+function __scheduler:nready()
+    return self._num_ready
 end
 
-
-local function scheduler_ntasks(sched)
-    return sched._num_tasks
+--- @return integer
+function __scheduler:ntasks()
+    return self._num_tasks
 end
-
 
 local scheduler_mt = {
     __name = "task.scheduler",
     __tostring = ud_tostring,
-    __index = {
-        current = scheduler_current,
-        spawn = scheduler_spawn,
-        step = scheduler_step,
-        shutdown = scheduler_shutdown,
-        ntasks = scheduler_ntasks,
-        nready = scheduler_nready,
-        nblocked = scheduler_nblocked,
-    },
+    __index = __scheduler,
 }
 
 
+--- @return task.scheduler
 local function new_scheduler()
-    local t = {
+    --- @type task._scheduler_data
+    local s = {
         _q_ready = dqueue_init("_tnext", "_tprev", {}),
         _q_blocked = dqueue_init("_tnext", "_tprev", {}),
         _q_yield = dqueue_init("_tnext", "_tprev", {}),
-        _running_task = false,
-        _num_task = 0,
+        _running = false,
+        _num_tasks = 0,
         _num_ready = 0,
         _tasks = {},
     }
 
-    return setmetatable(t, scheduler_mt)
+    --- @cast s task.scheduler
+    return setmetatable(s, scheduler_mt)
 end
 
 
+--- @return task.scheduler?
 local function current_scheduler()
     local t = current_task()
     if not t then
         return nil
     end
-    return t:schedulder()
+    return t._sched or nil
 end
 
 
+--- @param func function
+--- @param ... any
 local function spawn(func, ...)
     local sched = current_scheduler()
     if not sched then
         error("No current scheduler")
     end
-    return sched:spawn(func, ...)
+    return scheduler_spawn(sched, func, ...)
 end
 
 
-local function waitlist_wakeup(obj, args)
+--- @param obj task._wait_queue
+--- @return boolean
+local function waitlist_isempty(obj)
+    return dqueue_isempty("_wnext", "_wprev", obj)
+end
+
+
+--- @param obj task._wait_queue
+--- @param n integer
+--- @param args any|any[]
+--- @return integer
+local function waitlist_wakeup(obj, n, args)
+    local i = 0
     local val = dqueue_pop_front("_wnext", "_wpref", obj)
     while val ~= obj do
-        task_do_unblock(val, args)
+        i = i + 1
+        task_do_unblock(val, n, args)
         val = dqueue_pop_front("_wnext", "_wpref", obj)
     end
+    return i
 end
 
 
-local function waitlist_wakeup_one(obj, args)
+--- @param obj task._wait_queue
+--- @param n integer
+--- @param args any|any[]
+--- @return boolean
+local function waitlist_wakeup_one(obj, n, args)
     local val = dqueue_pop_front("_wnext", "_wpref", obj)
-    task_do_unblock(val, args)
-    val = dqueue_pop_front("_wnext", "_wpref", obj)
+    if val then
+        task_do_unblock(val, n, args)
+        return true
+    end
+    return false
 end
 
 
+--- @param obj task._wait_queue
+--- @return integer
 local function waitlist_cancel(obj)
+    local i = 0
     local val = dqueue_pop_front("_wnext", "_wpref", obj)
     while val ~= obj do
+        i = i + 1
         task_do_cancel(val)
         val = dqueue_pop_front("_wnext", "_wpref", obj)
     end
+    return i
 end
 
 
+--- @async
+--- @param obj task._wait_queue
 local function waitlist_block_on(obj)
     dqueue_push_back("_wnext", "_wpref", obj, assert_current_task())
-    return task_reply_block()
+    return task_yield_reply_block()
 end
 
+--- @param ... any
+--- @return integer
+function __signal:post(...)
+    if waitlist_isempty(self) then
+        return 0
+    end
+    return waitlist_wakeup(self, _pack(...))
+end
 
-EVENT_STATE = {
-    [-1] = "cancelled",
-    [0] = "init",
-    [1] = "posted",
+--- @param ... any
+--- @return boolean
+function __signal:postone(...)
+    if waitlist_isempty(self) then
+        return false
+    end
+    return waitlist_wakeup_one(self, _pack(...))
+end
+
+--- @return boolean
+function __signal:isempty()
+    return waitlist_isempty(self)
+end
+
+--- @async
+--- @return ... any
+function __signal:wait()
+    return waitlist_block_on(self)
+end
+
+function __signal:cancel()
+    return waitlist_cancel(self)
+end
+
+local signal_mt = {
+    __name = "task.signal",
+    __tostring = ud_tostring,
+    __index = __signal,
 }
 
 
-local function event_post(event, ...)
-    if event._state ~= 0 then
+--- @return task.signal
+local function new_signal()
+    --- @type task._wait_queue
+    local s = {
+        _wnext = false,
+        _wprev = false,
+    }
+    s._wnext = s
+    s._wprev = s
+
+    --- @cast s task.signal
+    return setmetatable(s, signal_mt)
+end
+
+
+--- @param ... any
+function __event:post(...)
+    if self._state ~= 0 then
         error("Attempt to post fired event")
     end
-    local args = pack(...)
-    event._args = args
-    waitlist_wakeup(event, args)
+
+    local n, args = _pack(...)
+    self._state = n + 1
+    self._args = args
+
+    waitlist_wakeup(self, n, args)
+
+    invoke_hook(self, nil, self._fn, ...)
+    self._fn = false
 end
 
-
-local function event_wait(event)
-    if event._state == -1 then
-        return task_reply_cancel()
+--- @async
+--- @return ... any
+function __event:wait()
+    if self._state == -1 then
+        return task_yield_reply_cancel()
     end
-    if event._state == 1 then
-        return vararg_unpack_n(event._args)
+    local state = self._state
+    if state > 0 then
+        return _unpack1(state - 1, self._args)
     end
-    return waitlist_block_on(event)
+    return waitlist_block_on(self)
 end
 
-
-local function event_cancel(event)
-    event._state = -1
-    waitlist_cancel(event)
+function __event:cancel()
+    self._state = -1
+    waitlist_cancel(self)
 end
 
-
-local function event_reset(event)
-    event._state = -1
-    waitlist_cancel(event)
-    event._state = 0
-    event._args = pack()
+function __event:isposted()
+    return self._state > 0
 end
 
-
-local function event_state(event)
-    return EVENT_STATE[event._state]
+--- @param func function
+function __event:fn(func)
+    local cbt = self._fn
+    if cbt then
+        cbt[func] = true
+        return
+    end
+    self._fn = { [func] = true }
 end
 
+--- @param func function
+function __event:delfn(func)
+    local cbt = self._fn
+    if cbt then
+        cbt[func] = nil
+    end
+end
+
+function __event:reset()
+    self._state = -1
+    waitlist_cancel(self)
+    self._state = 0
+    self._args = false
+    self._fn = false
+end
+
+--- @return task.event.state
+function __event:state()
+    local state = self._state
+    if state == 0 then return "init" end
+    if state > 0 then return "posted" end
+    return "cancelled"
+end
 
 local event_mt = {
     __name = "task.event",
     __tostring = ud_tostring,
-    __index = {
-        post = event_post,
-        wait = event_wait,
-        cancel = event_cancel,
-        reset = event_reset,
-        state = event_state,
-    }
+    __index = __event,
 }
 
 
+--- @return task.event
 local function new_event()
-    local t = {
+    --- @type task._event_data
+    local ev = {
         _wnext = false,
         _wprev = false,
-        _args = pack(),
+        _args = false,
+        _fn = false,
         _state = 0,
     }
-    t._wnext = t
-    t._wprev = t
-    return setmetatable(t, event_mt)
+    ev._wnext = ev
+    ev._wprev = ev
+    --- @cast ev task.event
+    return setmetatable(ev, event_mt)
 end
 
 
+--- @param a integer
+--- @param b integer
+--- @return integer
 local function _max(a, b)
     if b < a then
         return a
@@ -803,6 +1143,8 @@ local function _max(a, b)
 end
 
 
+--- @param value any
+--- @return integer
 local function posint(value)
     if not value then
         return 0
@@ -812,8 +1154,8 @@ local function posint(value)
 end
 
 
-local function sem_post(sem, value, maxvalue)
-    local state = sem._state
+function __sem:post(value, maxvalue)
+    local state = self._state
     if state < 0 then
         return -1
     end
@@ -831,77 +1173,89 @@ local function sem_post(sem, value, maxvalue)
     end
 
     while state > 0 do
-        local t = dqueue_pop_front("_wnext", "_wpref", sem)
-        if t == sem then
+        local t = dqueue_pop_front("_wnext", "_wpref", self)
+        if t == self then
             break
         end
         state = state - 1
         task_do_unblock(t, 1)
     end
 
-    sem._state = state
+    self._state = state
 
     return state
 end
 
-
-local function sem_wait(sem)
-    local state = sem._state
+--- @async
+function __sem:wait()
+    local state = self._state
     if state < 0 then
-        return task_reply_cancel()
+        return task_yield_reply_cancel()
     end
     if state == 0 then
-        return task_reply_block()
+        return task_yield_reply_block()
     end
     state = state - 1
-    sem._state = state
+    self._state = state
     return state
 end
 
-
-local function sem_cancel(sem)
-    sem._state = -1
-    waitlist_cancel(sem)
+--- @param self task.sem
+function __sem:cancel()
+    self._state = -1
+    waitlist_cancel(self)
 end
 
-
-local function sem_reset(sem)
-    sem._state = -1
-    waitlist_cancel(sem)
-    sem._state = 0
+--- @param self task.sem
+function __sem:reset()
+    self._state = -1
+    waitlist_cancel(self)
+    self._state = 0
 end
 
-
-local function sem_state(sem)
-    return sem._state
+--- @param self task.sem
+function __sem:state()
+    return self._state
 end
-
 
 local sem_mt = {
     __name = "task.semaphore",
     __tostring = ud_tostring,
-    __index = {
-        post = sem_post,
-        wait = sem_wait,
-        cancel = sem_cancel,
-        reset = sem_reset,
-        state = sem_state,
-    }
+    __index = __sem,
 }
 
 
+--- @return task.sem
 local function new_sem(state)
-    local t = {
+    --- @type task._sem_data
+    local s = {
         _wnext = false,
         _wprev = false,
         _state = posint(state),
     }
-    t._wnext = t
-    t._wprev = t
-    return setmetatable(t, sem_mt)
+    s._wnext = s
+    s._wprev = s
+    --- @cast s task.sem
+    return setmetatable(s, sem_mt)
 end
 
 
+
+--- @param capacity integer
+--- @return _ring_queue
+local function rq_init(capacity)
+    return {
+        r = 0,
+        w = 0,
+        c = _max(posint(capacity), 1),
+        n = 0,
+    }
+end
+
+
+--- @param q _ring_queue
+--- @param value any
+--- @return boolean
 local function rq_push(q, value)
     if q.n == q.c then
         return false
@@ -916,82 +1270,106 @@ local function rq_push(q, value)
 end
 
 
+--- @param q _ring_queue
+--- @return boolean
+--- @return any
 local function rq_pop(q)
     if q.n == 0 then
-        return nil
+        return false
     end
 
     q.n = q.n - 1
     local idx = (q.r + 1) % q.c
     q.r = idx
 
-    return q[idx + 1]
+    return true, q[idx + 1]
 end
 
 
-local function bqueue_post(bqueue, value)
-    while bqueue._q do
-        if rq_push(bqueue._q, value) then
+function __bqueue:post(value)
+    while self._q do
+        if rq_push(self._q, value) then
+            waitlist_wakeup_one(self._r, 0)
             return
         end
-        waitlist_block_on(bqueue._w)
+        waitlist_block_on(self._w)
     end
 
-    if not bqueue._q then
+    if not self._q then
         if current_task() then
-            task_reply_cancel()
+            task_yield_reply_cancel()
         else
             error("Attempt to post in closed queue")
         end
     end
 end
 
+function __bqueue:trypost(value)
+    local q = self._q
+    if not q then
+        return false
+    end
+    if rq_push(q, value) then
+        waitlist_wakeup_one(self._r, 0)
+        return true
+    end
+    return false
+end
 
-local function bqueue_wait(bqueue)
-    while bqueue._q do
-        local value = rq_pop(bqueue._q)
-        if value ~= nil then
+--- @async
+--- @param self task.bqueue
+function __bqueue:wait()
+    while self._q do
+        local hasval, value = rq_pop(self._q)
+        if hasval then
             return value
         end
-        waitlist_block_on(bqueue._r)
+        waitlist_block_on(self._r)
     end
-    task_reply_cancel()
+    task_yield_reply_cancel()
 end
 
-
-local function bqueue_cancel(bqueue)
-    bqueue._q = nil
-    waitlist_cancel(bqueue._q)
+function __bqueue:trywait()
+    local q = self._q
+    if not q then
+        return false
+    end
+    return rq_pop(q)
 end
 
+function __bqueue:cancel()
+    self._q = nil
+    waitlist_cancel(self._r)
+    waitlist_cancel(self._w)
+end
 
 local bqueue_mt = {
     __name = "task.bounded_queue",
     __tostring = ud_tostring,
-    __index = {
-        post = bqueue_post,
-        wait = bqueue_wait,
-        cancel = bqueue_cancel,
-    }
+    __index = __bqueue,
 }
 
 
+--- @return task.bqueue
 local function new_bqueue(capacity)
-    local t = {
-        _q = { r = 0, w = 0, c = _max(posint(capacity), 1), n = 0, },
+    --- @type task._bqueue_data
+    local bq = {
+        _q = rq_init(capacity),
         _r = { _wnext = false, _wprev = false },
         _w = { _wnext = false, _wprev = false },
     }
 
-    t._r._wnext = t._r
-    t._r._wprev = t._r
-    t._w._wnext = t._w
-    t._w._wprev = t._w
+    bq._r._wnext = bq._r
+    bq._r._wprev = bq._r
+    bq._w._wnext = bq._w
+    bq._w._wprev = bq._w
 
-    return setmetatable(t, bqueue_mt)
+    --- @cast bq task.bqueue
+    return setmetatable(bq, bqueue_mt)
 end
 
 
+--- @return _array_linked_queue
 local function alq_new()
     return {
         h = 0,
@@ -1002,6 +1380,7 @@ local function alq_new()
 end
 
 
+--- @param q _array_linked_queue
 local function alq_init0(q)
     q.h = 0
     q.t = 0
@@ -1010,6 +1389,8 @@ local function alq_init0(q)
 end
 
 
+--- @param q _array_linked_queue
+--- @param value any
 local function alq_init1(q, value)
     q.h = 1
     q.t = 1
@@ -1020,10 +1401,9 @@ local function alq_init1(q, value)
 end
 
 
+--- @param q _array_linked_queue
+--- @param value any
 local function alq_push(q, value)
-    if value == nil then
-        error("Expected value, got: " .. tostring(value))
-    end
     if q.n == 0 then
         alq_init1(q, value)
         return
@@ -1045,9 +1425,12 @@ local function alq_push(q, value)
 end
 
 
+--- @param q _array_linked_queue
+--- @return boolean
+--- @return any
 local function alq_pop(q)
     if q.n == 0 then
-        return nil
+        return false, nil
     end
 
     q.n = q.n - 1
@@ -1056,7 +1439,7 @@ local function alq_pop(q)
         local v = q[q.h + 1]
         q[q.h + 1] = false
         alq_init0(q)
-        return v
+        return true, v
     end
 
     local idx_head = q.h
@@ -1067,61 +1450,78 @@ local function alq_pop(q)
     local v = q[idx_head + 1]
     q[idx_head + 1] = false
 
-    return v
+    return true, v
 end
 
 
-local function uqueue_post(uqueue, value)
-    if not uqueue._q then
+--- @param value any
+function __uqueue:post(value)
+    if not self._q then
         error("Attempt to push after cancel")
     end
-    alq_push(uqueue._q, value)
-    waitlist_wakeup_one(uqueue, false)
+    alq_push(self._q, value)
+    waitlist_wakeup_one(self, 0)
 end
 
+--- @param value any
+function __uqueue:trypost(value)
+    if not self._q then
+        return false
+    end
+    alq_push(self._q, value)
+    waitlist_wakeup_one(self, 0)
+    return true
+end
 
-local function uqueue_wait(uqueue)
-    while uqueue._q do
-        local value = alq_pop(uqueue._q)
-        if value ~= nil then
+--- @async
+--- @return any
+function __uqueue:wait()
+    while self._q do
+        local hasval, value = alq_pop(self._q)
+        if hasval then
             return value
         end
-        waitlist_block_on(uqueue)
+        waitlist_block_on(self)
     end
-    task_reply_cancel()
+    task_yield_reply_cancel()
 end
 
-
-local function uqueue_cancel(uqueue)
-    uqueue._q = nil
-    waitlist_cancel(uqueue)
+--- @return boolean
+--- @return any
+function __uqueue:trywait()
+    local q = self._q
+    if not q then
+        return false
+    end
+    return alq_pop(q)
 end
 
+function __uqueue:cancel()
+    self._q = nil
+    waitlist_cancel(self)
+end
 
 local uqueue_mt = {
     __name = "task.undbounded_queue",
     __tostring = ud_tostring,
-    __index = {
-        post = uqueue_post,
-        wait = uqueue_wait,
-        cancel = uqueue_cancel,
-    }
+    __index = __uqueue,
 }
 
 
+--- @return task.uqueue
 local function new_uqueue()
-    local t = {
+    --- @type task._uqueue_data
+    local uq = {
         _q = alq_new(),
         _wnext = false,
         _wprev = false,
     }
 
-    t._r._wnext = t._r
-    t._r._wprev = t._r
-    t._w._wnext = t._w
-    t._w._wprev = t._w
+    uq._wnext = uq
+    uq._wprev = uq
 
-    return setmetatable(t, uqueue_mt)
+    --- @cast uq task.uqueue
+    return setmetatable(uq, uqueue_mt)
 end
 
 
@@ -1129,12 +1529,16 @@ return {
     new_scheduler = new_scheduler,
     scheduler = current_scheduler,
     spawn = spawn,
+    signal = new_signal,
     event = new_event,
     sem = new_sem,
     bqueue = new_bqueue,
     uqueue = new_uqueue,
     current = current_task,
-    yield = task_reply_yield,
-    block = task_reply_block,
-    cancel = task_reply_cancel,
+    isrunning = is_running,
+    yield = task_yield_reply_yield,
+    block = task_yield_reply_block,
+    cancel = task_yield_reply_cancel,
 }
+
+--- task.lua ends here
