@@ -8,7 +8,9 @@
 --- @field _wnext self|false
 --- @field _wprev self|false
 
+--- @alias task._thread_error_handler fun(thread, string): string
 --- @alias task._error_handler fun(string, integer): string
+--- @alias task._result_handler fun(boolean?, ...)
 
 --- @class (private, exact) task._task_data : task._task_queue, task._wait_queue
 --- @field _thread thread
@@ -17,7 +19,8 @@
 --- @field _fn {function:true}|false
 --- @field _status ""|"cancelled"|"done"|"error"|"blocked"
 --- @field _sched task.scheduler|false
---- @field _error_handler task._error_handler|false
+--- @field _q_join task._wait_queue|false
+--- @field _errh task._error_handler|false
 
 --- @alias (private) task._reply_id
 --- | 1 # Yield
@@ -25,6 +28,7 @@
 --- | 3 # Block
 --- | 4 # YieldTransfer
 --- | 5 # BlockTransfer
+--- | 6 # SchedulerCall
 
 --- @class (exact) task : task._task_data
 local __task = {}
@@ -60,6 +64,19 @@ local __signal = {}
 --- @class task.sem : task._sem_data
 local __sem = {}
 
+--- @class (private, exact) task._latch_data : task._wait_queue
+--- @field _state integer
+
+--- @class task.latch : task._latch_data
+local __latch = {}
+
+--- @class (private, exact) task._chan_data
+--- @field _tx task._wait_queue|false
+--- @field _rx task._wait_queue|false
+
+--- @class task.chan : task._chan_data
+local __chan = {}
+
 --- @class (private, exact) _ring_queue
 --- @field r integer
 --- @field w integer
@@ -76,8 +93,8 @@ local __sem = {}
 
 --- @class (private, exact) task._bqueue_data
 --- @field _q _ring_queue
---- @field _r task._wait_queue
---- @field _w task._wait_queue
+--- @field _tx task._wait_queue
+--- @field _rx task._wait_queue
 
 --- @class (exact) task.bqueue : task._bqueue_data
 local __bqueue = {}
@@ -98,29 +115,44 @@ local co_running = coroutine.running
 local co_isyieldable = coroutine.isyieldable
 local vararg_unpack = table.unpack or unpack
 local select = select
+local traceback = debug.traceback
 
 
 local _pack_dispatch = {
-    function(a1) return a1 end,
-    function(a1, a2) return { a1, a2 } end,
-    function(a1, a2, a3) return { a1, a2, a3 } end,
-    function(a1, a2, a3, a4) return { a1, a2, a3, a4 } end,
+    [0] = function() return 0 end,
+    function(a1) return 1, a1 end,
+    function(a1, a2)
+        if a1 == false then
+            return -1, a2
+        end
+        if a1 == true then
+            return -2, a2
+        end
+        if a1 == nil then
+            return -3, a2
+        end
+        return 2, { a1, a2 }
+    end,
+    function(a1, a2, a3) return 3, { a1, a2, a3 } end,
+    function(a1, a2, a3, a4) return 4, { a1, a2, a3, a4 } end,
 }
 
 
 --- @return integer
---- @return any[]
---- @overload fun(): 0
---- @overload fun(arg: `T`): 1, `T`
+--- @return any[]?
 local function _pack(...)
     local n = select("#", ...)
     if n == 0 then return 0 end
-    if n <= 4 then return n, _pack_dispatch[n](...) end
+    if n <= 4 then return _pack_dispatch[n](...) end
     return n, { ... }
 end
 
 
 local _unpack_dispatch = {
+    [-3] = function(args) return nil, args end,
+    [-2] = function(args) return false, args end,
+    [-1] = function(args) return true, args end,
+    [0] = function() end,
     function(args) return args end,
     function(args) return args[1], args[2] end,
     function(args) return args[1], args[2], args[3] end,
@@ -128,21 +160,27 @@ local _unpack_dispatch = {
 }
 
 
-local function _unpack0(n, args)
-    if n == 0 then return end
-    if n <= 4 then _unpack_dispatch(args) end
+local function _unpack(n, args)
+    if -3 <= n and n <= 4 then
+        return _unpack_dispatch[n](args)
+    end
     return vararg_unpack(args, 1, n)
 end
 
 
-local function _unpack1(n, args)
-    if n <= 4 then _unpack_dispatch[n](args) end
-    return vararg_unpack(args, 1, n)
+--- @param msg string
+--- @param level? integer
+--- @return string
+local function error_handler(msg, level)
+    return traceback(msg, level)
 end
 
 
-local function error_handler()
-    return debug.traceback
+--- @param thread thread
+--- @param msg string
+--- @return string
+local function thread_error_handler(thread, msg)
+    return traceback(thread, msg)
 end
 
 
@@ -154,18 +192,18 @@ end
 
 
 local function dqueue_push_front(n, p, at, value)
-    value[n] = at
-    value[p] = at[p]
-    at[p][n] = value
-    at[p] = value
-end
-
-
-local function dqueue_push_back(n, p, at, value)
     value[p] = at
     value[n] = at[n]
     at[n][p] = value
     at[n] = value
+end
+
+
+local function dqueue_push_back(n, p, at, value)
+    value[n] = at
+    value[p] = at[p]
+    at[p][n] = value
+    at[p] = value
 end
 
 
@@ -182,6 +220,9 @@ end
 local function dqueue_pop_front(n, p, at)
     local value = at[n]
     dqueue_remove(n, p, value)
+    if at == value then
+        return nil
+    end
     return value
 end
 
@@ -190,6 +231,9 @@ end
 local function dqueue_pop_back(n, p, at)
     local value = at[p]
     dqueue_remove(n, p, value)
+    if at == value then
+        return nil
+    end
     return value
 end
 
@@ -251,6 +295,11 @@ local function current_task()
 end
 
 
+local function register_task(task)
+    CORO_MAPPING[task._thread] = task
+end
+
+
 local is_running
 
 if co_isyieldable then
@@ -306,20 +355,30 @@ end
 
 --- @param parent any
 --- @param errh task._error_handler?
---- @param fns {function:true}|false|nil
-local function invoke_hook(parent, errh, fns, ...)
-    if not fns then return end
-    local xpcall = xpcall
-    if not errh then
-        errh = error_handler()
-    end
-    for f in fns, next, nil do
-        local ok, err = xpcall(f, errh, ...)
-        if not ok then
-            report_callback_error(parent, f, err, ...)
-        end
+--- @param func function
+local function invoke_hook_1(parent, errh, func, ...)
+    local ok, err = xpcall(func, errh or error_handler, ...)
+    if not ok then
+        report_callback_error(parent, func, err, ...)
     end
 end
+
+
+--- @param parent any
+--- @param errh task._error_handler?
+--- @param fns {function:true}|false|nil
+local function invoke_hook(parent, errh, fns, ...)
+    if not fns then
+        return
+    end
+    if not errh then
+        errh = error_handler
+    end
+    for func in next, fns, nil do
+        invoke_hook_1(parent, errh, func, ...)
+    end
+end
+
 
 --- @param task task
 local function waitlist_detach(task)
@@ -344,14 +403,6 @@ end
 --- @param tasklist task._task_queue
 local function tasklist_toback(task, tasklist)
     dqueue_push_back("_tnext", "_tprev", tasklist, task)
-end
-
-
---- @param task task._task_data
-local function task_finish(task, ...)
-    local cblist = task._fn
-    task._fn = false
-    invoke_hook(task, task._error_handler, cblist, ...)
 end
 
 
@@ -424,6 +475,12 @@ local function task_is_finished(task)
     return TASK_TERMINAL_STATUS[task._status] ~= nil
 end
 
+--- @param obj task._wait_queue
+--- @return boolean
+local function waitlist_isempty(obj)
+    return dqueue_isempty("_wnext", "_wprev", obj)
+end
+
 
 --- @param task task
 local function task_do_unblock(task, n, args)
@@ -438,6 +495,45 @@ local function task_do_unblock(task, n, args)
 end
 
 
+--- @param obj task._wait_queue
+--- @param n integer
+--- @param args any|any[]
+--- @return integer
+local function waitlist_wakeup(obj, n, args)
+    local i = 0
+    local val = dqueue_pop_front("_wnext", "_wprev", obj)
+    while val do
+        i = i + 1
+        task_do_unblock(val, n, args)
+        val = dqueue_pop_front("_wnext", "_wprev", obj)
+    end
+    return i
+end
+
+
+--- @param obj task._wait_queue
+--- @param n integer
+--- @param args any|any[]
+--- @return boolean
+local function waitlist_wakeup_one(obj, n, args)
+    local val = dqueue_pop_front("_wnext", "_wprev", obj)
+    if val then
+        task_do_unblock(val, n, args)
+        return true
+    end
+    return false
+end
+
+--- @param task task._task_data
+local function task_finish(task, ...)
+    local cblist = task._fn
+    task._fn = false
+    invoke_hook(task, task._errh, cblist, ...)
+    if task._q_join then
+        waitlist_wakeup(task._q_join, ...)
+    end
+end
+
 --- @param task task
 local function task_handle_cancel(task)
     task_detach_from_scheduler(task)
@@ -450,9 +546,44 @@ end
 
 
 --- @param task task
+local function task_handle_done(task, ...)
+    task_detach_from_scheduler(task)
+    task._status = "done"
+    task._nargs, task._args = _pack(...)
+    task_finish(task, true, ...)
+    task_close(task)
+end
+
+
+--- @param task task
+local function task_handle_error(task, err)
+    task_detach_from_scheduler(task)
+    task._status = "error"
+    task._nargs = 1
+    err = thread_error_handler(task._thread, err)
+    task._args = err
+    task_finish(task, false, err)
+    task_close(task)
+end
+
+
+--- @param task task
 local function task_do_cancel(task)
     waitlist_detach(task)
     task_handle_cancel(task)
+end
+
+--- @param obj task._wait_queue
+--- @return integer
+local function waitlist_cancel(obj)
+    local i = 0
+    local val = dqueue_pop_front("_wnext", "_wprev", obj)
+    while val do
+        i = i + 1
+        task_do_cancel(val)
+        val = dqueue_pop_front("_wnext", "_wprev", obj)
+    end
+    return i
 end
 
 
@@ -527,6 +658,14 @@ local function on_reply_transfer_block(task, other_task)
 end
 
 
+--- @param fn function
+--- @param ... any
+local function on_scheduler_call(task, fn, ...)
+    tasklist_tofront(task, task._sched._q_ready)
+    task._nargs, task._args = _pack(xpcall(fn, traceback, ...))
+end
+
+
 --- @type {[task._reply_id]:fun(task,...)}
 local TASK_REPLY = setmetatable({
     on_yield,
@@ -534,45 +673,48 @@ local TASK_REPLY = setmetatable({
     on_block,
     on_reply_transfer_yield,
     on_reply_transfer_block,
+    on_scheduler_call,
 }, {
     __index = function() return on_yield end
 })
 
 
+
+local _task_result_mapping = {
+    cancelled = function() return nil end,
+    error = function(task) return false, task._args end,
+    done = function(task) return true, _unpack(task._nargs, task._args) end,
+}
+
+
 --- @param task task
-local function task_handle_done(task, ...)
-    task_detach_from_scheduler(task)
-    task._status = "done"
-    task._nargs, task._args = _pack(...)
-    task_finish(task, true, ...)
-    task_close(task)
+--- @return boolean?
+--- @return ... any
+local function task_result(task)
+    local handler = _task_result_mapping[task._status]
+    if not handler then
+        error("Task not finished")
+    end
+    return handler(task)
 end
 
 
 --- @param task task
-local function task_handle_error(task, err)
-    task_detach_from_scheduler(task)
-    task._status = "error"
-    task._nargs = 1
-    task._args = err
-    task_finish(task, false, err)
-    task_close(task)
+--- @param func task._result_handler
+local function task_result_apply(task, func)
+    invoke_hook_1(task, task._errh, func, task_result(task))
 end
 
 
 --- @param task task
-local function task_handle_late_result(task)
-    local status = task._status
-    if status == "cancelled" then
-        return task_finish(task, nil)
-    end
-    if status == "error" then
-        return task_finish(task, false, task._args)
-    end
-    if status == "done" then
-        return task_finish(task, true, _unpack0(task._nargs, task._args))
-    end
+local function task_args_release(task)
+    local n = task._nargs
+    local args = task._args
+    task._nargs = 0
+    task._args = false
+    return _unpack(n, args)
 end
+
 
 
 local function invalid_step_reply(step_id)
@@ -581,6 +723,89 @@ local function invalid_step_reply(step_id)
         type(step_id),
         tostring(step_id)
     ), 2)
+end
+
+
+--- @async
+local function task_yield_reply_yield()
+    return co_yield(1)
+end
+
+
+--- @async
+local function task_yield_reply_cancel()
+    return co_yield(2)
+end
+
+
+--- @async
+--- @return ...
+local function task_yield_reply_block(...)
+    return co_yield(3, ...)
+end
+
+--- @params fn function
+--- @params ... any
+--- @return any
+local function task_yield_reply_scheduler_call(fn, ...)
+    return co_yield(6, fn, ...)
+end
+
+
+--- @param task task
+--- @param func task._result_handler
+local function task_late_callback(task, func)
+    if is_running() then
+        return task_yield_reply_scheduler_call(task_result_apply, task, func)
+    end
+    return task_result_apply(task, func)
+end
+
+--- @async
+--- @param obj task._wait_queue
+local function waitlist_block_on(obj)
+    dqueue_push_back("_wnext", "_wprev", obj, assert_current_task())
+    return task_yield_reply_block()
+end
+
+
+local function post_cancelled()
+    if is_running() then
+        return task_yield_reply_cancel()
+    end
+    error("Post into cancelled", 2)
+end
+
+
+local function wait_cancelled()
+    if is_running() then
+        return task_yield_reply_cancel()
+    end
+    error("Wait of a cancelled object outside of a task execution", 2)
+end
+
+
+--- @param task task
+local function assert_current(task)
+    local co = co_running()
+    if not co then
+        error("Not a coroutine")
+    end
+    if co ~= task._thread then
+        error(string.format("Not a current task %s ~= %s", co, task._thread))
+    end
+end
+
+
+--- @param task task
+local function assert_not_current(task)
+    local co = co_running()
+    if not co then
+        return
+    end
+    if co == task._thread then
+        error("Attempt to unblock current task: " .. tostring(task))
+    end
 end
 
 
@@ -613,69 +838,15 @@ end
 
 
 --- @param task task
-local function task_args_release(task)
-    local n = task._nargs
-    if n > 0 then
-        local args = task._args
-        task._nargs = 0
-        task._args = false
-        return _unpack1(n, args)
-    end
-end
-
-
---- @param task task
 local function task_step(task)
-    return task_handle_step_reply(task, co_resume(task._thread, task_args_release(task)))
-end
-
-
---- @async
-local function task_yield_reply_yield()
-    return co_yield(1)
-end
-
-
---- @async
-local function task_yield_reply_cancel()
-    return co_yield(2)
-end
-
-
---- @async
-local function task_yield_reply_block(...)
-    return co_yield(3, ...)
-end
-
-
---- @param task task
-local function assert_current(task)
-    local co = co_running()
-    if not co then
-        error("Not a coroutine")
-    end
-    if co ~= task._thread then
-        error(string.format("Not a current task %s ~= %s", co, task._thread))
-    end
-end
-
-
---- @param task task
-local function assert_not_current(task)
-    local co = co_running()
-    if not co then
-        return
-    end
-    if co == task._thread then
-        error("Attempt to unblock current task: " .. tostring(task))
-    end
+    task_handle_step_reply(task, co_resume(task._thread, task_args_release(task)))
 end
 
 
 --- @param func function
 function __task:fn(func)
     if task_is_finished(self) then
-        return task_handle_late_result(self)
+        return task_late_callback(self, func)
     end
 
     local cblist = self._fn
@@ -712,6 +883,32 @@ function __task:unblock(...)
     return task_do_unblock(self, _pack(...))
 end
 
+function __task:wait()
+    if co_running() == self._thread then
+        error("Attempt to wait current task")
+    end
+    if task_is_finished(self) then
+        return task_result(self)
+    end
+    if not self._q_join then
+        local q = { _wnext = false, _wprev = false }
+        q._wnext = q
+        q._wprev = q
+        self._q_join = q
+    end
+    return waitlist_block_on(self._q_join)
+end
+
+--- @return boolean
+function __task:isblocked()
+    return self._status == "blocked"
+end
+
+--- @return boolean
+function __task:iscancelled()
+    return self._status == "cancelled"
+end
+
 function __task:cancel()
     if co_running() ~= self._thread then
         return task_do_cancel(self)
@@ -746,12 +943,14 @@ local task_mt = {
 }
 
 
+--- @param nargs integer
+--- @param args any
 --- @return task
-local function new_task(func, args)
+local function new_task(func, nargs, args)
     --- @type task._task_data
     local t = {
         _thread = co_create(func),
-        _nargs = 0,
+        _nargs = nargs,
         _args = args,
         _fn = false,
         _status = "",
@@ -760,7 +959,8 @@ local function new_task(func, args)
         _wnext = false,
         _wprev = false,
         _sched = false,
-        _error_handler = false,
+        _q_join = false,
+        _errh = false,
     }
 
     t._tnext = t
@@ -796,7 +996,7 @@ function __scheduler:step(num_steps)
     else
         repeat
             local hasmore = scheduler_step_ready_task(self)
-        until hasmore
+        until not hasmore
     end
     dqueue_splice("_tnext", "_tprev", self._q_ready, self._q_yield)
     return self._num_tasks
@@ -810,6 +1010,7 @@ function __scheduler:spawn(func, ...)
     self._num_tasks = self._num_tasks + 1
     self._num_ready = self._num_ready + 1
     self._tasks[t] = true
+    register_task(t)
     return t
 end
 
@@ -877,6 +1078,24 @@ function __scheduler:ntasks()
     return self._num_tasks
 end
 
+local function collect_tasks(q, t, n)
+    local task = q._tnext
+    while task ~= q do
+        n = n + 1
+        t[n] = task
+        task = task._tnext
+    end
+    return n
+end
+
+function __scheduler:tasks()
+    local t = {}
+    local n = collect_tasks(self._q_ready, t, 0)
+    n = collect_tasks(self._q_yield, t, n)
+    collect_tasks(self._q_blocked, t, n)
+    return t
+end
+
 local scheduler_mt = {
     __name = "task.scheduler",
     __tostring = ud_tostring,
@@ -922,64 +1141,6 @@ local function spawn(func, ...)
     return scheduler_spawn(sched, func, ...)
 end
 
-
---- @param obj task._wait_queue
---- @return boolean
-local function waitlist_isempty(obj)
-    return dqueue_isempty("_wnext", "_wprev", obj)
-end
-
-
---- @param obj task._wait_queue
---- @param n integer
---- @param args any|any[]
---- @return integer
-local function waitlist_wakeup(obj, n, args)
-    local i = 0
-    local val = dqueue_pop_front("_wnext", "_wpref", obj)
-    while val ~= obj do
-        i = i + 1
-        task_do_unblock(val, n, args)
-        val = dqueue_pop_front("_wnext", "_wpref", obj)
-    end
-    return i
-end
-
-
---- @param obj task._wait_queue
---- @param n integer
---- @param args any|any[]
---- @return boolean
-local function waitlist_wakeup_one(obj, n, args)
-    local val = dqueue_pop_front("_wnext", "_wpref", obj)
-    if val then
-        task_do_unblock(val, n, args)
-        return true
-    end
-    return false
-end
-
-
---- @param obj task._wait_queue
---- @return integer
-local function waitlist_cancel(obj)
-    local i = 0
-    local val = dqueue_pop_front("_wnext", "_wpref", obj)
-    while val ~= obj do
-        i = i + 1
-        task_do_cancel(val)
-        val = dqueue_pop_front("_wnext", "_wpref", obj)
-    end
-    return i
-end
-
-
---- @async
---- @param obj task._wait_queue
-local function waitlist_block_on(obj)
-    dqueue_push_back("_wnext", "_wpref", obj, assert_current_task())
-    return task_yield_reply_block()
-end
 
 --- @param ... any
 --- @return integer
@@ -1043,7 +1204,7 @@ function __event:post(...)
     end
 
     local n, args = _pack(...)
-    self._state = n + 1
+    self._state = n + 4
     self._args = args
 
     waitlist_wakeup(self, n, args)
@@ -1056,13 +1217,23 @@ end
 --- @return ... any
 function __event:wait()
     if self._state == -1 then
-        return task_yield_reply_cancel()
+        return post_cancelled()
     end
     local state = self._state
     if state > 0 then
-        return _unpack1(state - 1, self._args)
+        return _unpack(state - 4, self._args)
     end
     return waitlist_block_on(self)
+end
+
+--- @return boolean
+--- @return ... any
+function __event:trywait()
+    local state = self._state
+    if state <= 0 then
+        return false
+    end
+    return true, _unpack(state - 4, self._args)
 end
 
 function __event:cancel()
@@ -1070,8 +1241,14 @@ function __event:cancel()
     waitlist_cancel(self)
 end
 
+--- @return boolean
 function __event:isposted()
     return self._state > 0
+end
+
+--- @return boolean
+function __event:iscancelled()
+    return self._state == -1
 end
 
 --- @param func function
@@ -1143,15 +1320,24 @@ local function _max(a, b)
 end
 
 
---- @param value any
+--- @param n number?
 --- @return integer
-local function posint(value)
+local function tointeger(n)
+    return (n - n % 1)
+end
+
+
+--- @param value any
+--- @param default integer
+--- @return integer
+local function _posint(value, default)
     if not value then
-        return 0
+        return default
     end
     local n = tonumber(value)
-    return n > 0 and n - n % 1 or 0
+    return n >= default and tointeger(n) or default
 end
+
 
 
 function __sem:post(value, maxvalue)
@@ -1160,12 +1346,12 @@ function __sem:post(value, maxvalue)
         return -1
     end
 
-    local v = posint(value)
+    local v = _posint(value, 0)
     if v <= 0 then
         return state
     end
 
-    local mv = posint(maxvalue)
+    local mv = _posint(maxvalue, 0)
     if mv > 0 then
         state = _max(state + v, mv)
     else
@@ -1173,8 +1359,8 @@ function __sem:post(value, maxvalue)
     end
 
     while state > 0 do
-        local t = dqueue_pop_front("_wnext", "_wpref", self)
-        if t == self then
+        local t = dqueue_pop_front("_wnext", "_wprev", self)
+        if not t then
             break
         end
         state = state - 1
@@ -1190,14 +1376,27 @@ end
 function __sem:wait()
     local state = self._state
     if state < 0 then
-        return task_yield_reply_cancel()
+        return wait_cancelled()
     end
     if state == 0 then
-        return task_yield_reply_block()
+        return waitlist_block_on(self)
     end
     state = state - 1
     self._state = state
     return state
+end
+
+function __sem:trywait()
+    local state = self._state
+    if state < 0 then
+        return wait_cancelled()
+    end
+    if state == 0 then
+        return false
+    end
+    state = state - 1
+    self._state = state
+    return true, state
 end
 
 --- @param self task.sem
@@ -1207,10 +1406,20 @@ function __sem:cancel()
 end
 
 --- @param self task.sem
-function __sem:reset()
+function __sem:reset(value)
     self._state = -1
     waitlist_cancel(self)
-    self._state = 0
+    self._state = _posint(value, 0)
+end
+
+--- @return boolean
+function __sem:isopen()
+    return self._state > 0
+end
+
+--- @return boolean
+function __sem:iscancelled()
+    return self._state < 0
 end
 
 --- @param self task.sem
@@ -1231,7 +1440,7 @@ local function new_sem(state)
     local s = {
         _wnext = false,
         _wprev = false,
-        _state = posint(state),
+        _state = _posint(state, 0),
     }
     s._wnext = s
     s._wprev = s
@@ -1239,6 +1448,159 @@ local function new_sem(state)
     return setmetatable(s, sem_mt)
 end
 
+function __latch:post(value)
+    local state = self._state
+    if state <= 0 then
+        return state
+    end
+
+    state = _max(state - _posint(value, 1), 0)
+    if state == 0 then
+        waitlist_wakeup(self, 0)
+    end
+
+    return state
+end
+
+--- @async
+function __latch:wait()
+    local state = self._state
+    if state < 0 then
+        return wait_cancelled()
+    end
+    if state > 0 then
+        return waitlist_block_on(self)
+    end
+end
+
+function __latch:trywait()
+    local state = self._state
+    if state < 0 then
+        return wait_cancelled()
+    end
+    return state == 0
+end
+
+--- @param self task.sem
+function __latch:cancel()
+    self._state = -1
+    waitlist_cancel(self)
+end
+
+--- @param self task.sem
+function __latch:reset(value)
+    self._state = -1
+    waitlist_cancel(self)
+    self._state = _posint(value, 0)
+end
+
+--- @return boolean
+function __latch:isopen()
+    return self._state == 0
+end
+
+--- @return boolean
+function __latch:iscancelled()
+    return self._state < 0
+end
+
+--- @param self task.sem
+function __latch:state()
+    return self._state
+end
+
+local latch_mt = {
+    __name = "task.latch",
+    __tostring = ud_tostring,
+    __index = __latch,
+}
+
+--- @return task.latch
+local function new_latch(state)
+    --- @type task._latch_data
+    local l = {
+        _wnext = false,
+        _wprev = false,
+        _state = _posint(state, 0),
+    }
+    l._wnext = l
+    l._wprev = l
+    --- @cast l task.latch
+    return setmetatable(l, latch_mt)
+end
+
+
+--- @async
+function __chan:post(...)
+    if not self._tx then
+        return post_cancelled()
+    end
+    local n, args = _pack(...)
+    repeat
+        if waitlist_wakeup_one(self._rx, n, args) then
+            return
+        end
+        waitlist_block_on(self._tx)
+    until self._tx
+    post_cancelled()
+end
+
+function __chan:trypost(...)
+    if not self._tx then
+        return post_cancelled()
+    end
+    return waitlist_wakeup_one(self._rx, _pack(...))
+end
+
+--- @async
+function __chan:wait()
+    if not self._rx then
+        return wait_cancelled()
+    end
+    waitlist_wakeup_one(self._tx, 0)
+    return waitlist_block_on(self._rx)
+end
+
+function __chan:trywait()
+    if not self._rx then
+        return false, "cancelled"
+    end
+    if waitlist_wakeup_one(self._tx, 0) then
+        return true, waitlist_block_on(self._rx)
+    end
+    return false
+end
+
+--- @return boolean
+function __chan:iscancelled()
+    return not (self._tx and self._rx)
+end
+
+function __chan:cancel()
+    local tx = self._tx
+    local rx = self._rx
+    self._tx = nil
+    self._rx = nil
+    waitlist_cancel(tx)
+    waitlist_cancel(rx)
+end
+
+local chan_mt = {
+    __name = "task.chan",
+    __tostring = ud_tostring,
+    __index = __chan,
+}
+
+
+local function new_chan()
+    --- @type task._chan_data
+    local s = {
+        _tx = { _wnext = false, _wprev = false },
+        _rx = { _wnext = false, _wprev = false },
+    }
+    --- @cast s task.chan
+    return setmetatable(s, chan_mt)
+end
 
 
 --- @param capacity integer
@@ -1247,7 +1609,7 @@ local function rq_init(capacity)
     return {
         r = 0,
         w = 0,
-        c = _max(posint(capacity), 1),
+        c = _posint(capacity, 1),
         n = 0,
     }
 end
@@ -1289,15 +1651,15 @@ end
 function __bqueue:post(value)
     while self._q do
         if rq_push(self._q, value) then
-            waitlist_wakeup_one(self._r, 0)
+            waitlist_wakeup_one(self._rx, 0)
             return
         end
-        waitlist_block_on(self._w)
+        waitlist_block_on(self._tx)
     end
 
     if not self._q then
         if current_task() then
-            task_yield_reply_cancel()
+            post_cancelled()
         else
             error("Attempt to post in closed queue")
         end
@@ -1307,10 +1669,10 @@ end
 function __bqueue:trypost(value)
     local q = self._q
     if not q then
-        return false
+        return false, "cancelled"
     end
     if rq_push(q, value) then
-        waitlist_wakeup_one(self._r, 0)
+        waitlist_wakeup_one(self._rx, 0)
         return true
     end
     return false
@@ -1322,25 +1684,31 @@ function __bqueue:wait()
     while self._q do
         local hasval, value = rq_pop(self._q)
         if hasval then
+            waitlist_wakeup_one(self._tx, 0)
             return value
         end
-        waitlist_block_on(self._r)
+        waitlist_block_on(self._rx)
     end
-    task_yield_reply_cancel()
+    wait_cancelled()
 end
 
 function __bqueue:trywait()
     local q = self._q
     if not q then
-        return false
+        return false, "cancelled"
     end
     return rq_pop(q)
 end
 
+--- @return boolean
+function __bqueue:iscancelled()
+    return not self._q
+end
+
 function __bqueue:cancel()
     self._q = nil
-    waitlist_cancel(self._r)
-    waitlist_cancel(self._w)
+    waitlist_cancel(self._tx)
+    waitlist_cancel(self._rx)
 end
 
 local bqueue_mt = {
@@ -1355,14 +1723,14 @@ local function new_bqueue(capacity)
     --- @type task._bqueue_data
     local bq = {
         _q = rq_init(capacity),
-        _r = { _wnext = false, _wprev = false },
-        _w = { _wnext = false, _wprev = false },
+        _tx = { _wnext = false, _wprev = false },
+        _rx = { _wnext = false, _wprev = false },
     }
 
-    bq._r._wnext = bq._r
-    bq._r._wprev = bq._r
-    bq._w._wnext = bq._w
-    bq._w._wprev = bq._w
+    bq._tx._wnext = bq._tx
+    bq._tx._wprev = bq._tx
+    bq._rx._wnext = bq._rx
+    bq._rx._wprev = bq._rx
 
     --- @cast bq task.bqueue
     return setmetatable(bq, bqueue_mt)
@@ -1483,7 +1851,7 @@ function __uqueue:wait()
         end
         waitlist_block_on(self)
     end
-    task_yield_reply_cancel()
+    wait_cancelled()
 end
 
 --- @return boolean
@@ -1491,9 +1859,13 @@ end
 function __uqueue:trywait()
     local q = self._q
     if not q then
-        return false
+        return false, "cancelled"
     end
     return alq_pop(q)
+end
+
+function __uqueue:iscancelled()
+    self._q = nil
 end
 
 function __uqueue:cancel()
@@ -1532,6 +1904,8 @@ return {
     signal = new_signal,
     event = new_event,
     sem = new_sem,
+    latch = new_latch,
+    chan = new_chan,
     bqueue = new_bqueue,
     uqueue = new_uqueue,
     current = current_task,
