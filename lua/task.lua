@@ -38,6 +38,7 @@ local __task = {}
 --- @field _q_blocked task._task_queue
 --- @field _q_yield task._task_queue
 --- @field _running task|false
+--- @field _fn {string:{function:true}}
 --- @field _num_tasks integer
 --- @field _num_ready integer
 --- @field _tasks {task:true}
@@ -50,12 +51,15 @@ local __scheduler = {}
 --- @field _args any|any[]|false
 --- @field _fn {function:boolean}|false
 
+--- @class (private, exact) task._nonblock_postable : function
+--- @operator call():any
+
 --- @alias task.event.state "init"|"posted"|"cancelled"
 
---- @class (exact) task.event : task._event_data
+--- @class (exact) task.event : task._event_data, task._nonblock_postable
 local __event = {}
 
---- @class (exact) task.signal : task._wait_queue
+--- @class (exact) task.signal : task._wait_queue, task._nonblock_postable
 local __signal = {}
 
 --- @class (private, exact) task._sem_data : task._wait_queue
@@ -99,10 +103,16 @@ local __chan = {}
 --- @class (exact) task.bqueue : task._bqueue_data
 local __bqueue = {}
 
+--- @class (private, exact) task._bwqueue_data : task._wait_queue
+--- @field _q _ring_queue
+
+--- @class (exact) task.wqueue : task._bwqueue_data, task._nonblock_postable
+local __bwqueue = {}
+
 --- @class (private, exact) task._uqueue_data : task._wait_queue
 --- @field _q _array_linked_queue
 
---- @class (exact) task.uqueue : task._uqueue_data
+--- @class (exact) task.uqueue : task._uqueue_data, task._nonblock_postable
 local __uqueue = {}
 
 
@@ -427,13 +437,41 @@ end
 
 
 --- @param task task
-local function task_detach_from_scheduler(task)
+--- @return task.scheduler
+local function assert_task_scheduler(task)
     local sched = task._sched
-    task._sched = false
-    tasklist_detach(task)
     if not sched then
         error(_no_scheduler_error_msg(task))
     end
+    return sched
+end
+
+
+local function _unexpected_scheduler_error_msg(sched, task)
+    return string.format("Task (%s) from different scheduler: expecte(%s) ~= got(%s)",
+        task, sched, task._sched)
+end
+
+local function _task_not_registered_error_msg(sched, task)
+    return string.format("Task (%s) not registered with scheduler (%s)",
+        task, sched)
+end
+
+
+local function assert_same_scheduler(sched, task)
+    if sched ~= task._sched then
+        error(_unexpected_scheduler_error_msg(sched, task))
+    end
+    if not sched._tasks[task] then
+        error(_task_not_registered_error_msg(sched, task))
+    end
+end
+
+
+--- @param task task
+local function task_detach_from_scheduler(task)
+    tasklist_detach(task)
+    local sched = assert_task_scheduler(task)
     if not task_is_blocked(task) then
         sched._num_ready = sched._num_ready - 1
     end
@@ -491,6 +529,15 @@ local function task_do_unblock(task, n, args)
     tasklist_toback(task, task._sched._q_ready)
     task._nargs = n
     task._args = args
+    task._status = ""
+end
+
+
+local function task_prepare_resume(task)
+    if not task_is_blocked(task) then
+        error(_not_blocked_error_msg(task))
+    end
+    tasklist_detach(task)
     task._status = ""
 end
 
@@ -842,6 +889,11 @@ local function task_step(task)
     task_handle_step_reply(task, co_resume(task._thread, task_args_release(task)))
 end
 
+--- @param task task
+local function task_resume(task, ...)
+    task_handle_step_reply(task, co_resume(task._thread, ...))
+end
+
 
 --- @param func function
 function __task:fn(func)
@@ -862,7 +914,7 @@ end
 function __task:delfn(func)
     local cblist = self._fn
     if cblist then
-        self._fn[func] = nil
+        cblist[func] = nil
     end
 end
 
@@ -909,6 +961,15 @@ function __task:iscancelled()
     return self._status == "cancelled"
 end
 
+--- @return boolean
+function __task:isdone()
+    return self._status == "done"
+end
+
+function __task:isready()
+    return self._status == "" and co_status(self._thread) ~= "dead"
+end
+
 function __task:cancel()
     if co_running() ~= self._thread then
         return task_do_cancel(self)
@@ -922,9 +983,9 @@ function __task:yield()
     return task_yield_reply_yield()
 end
 
---- @return task.scheduler?
+--- @return task.scheduler
 function __task:scheduler()
-    return self._sched or nil
+    return assert_task_scheduler(self)
 end
 
 --- @return string
@@ -973,12 +1034,32 @@ local function new_task(func, nargs, args)
 end
 
 
+local scheduler_events = {
+    step = true,
+    spawn = true,
+}
+
+
+--- @param sched task.scheduler
+--- @param name string
+--- @param ... any
+local function run_sched_hook(sched, name, ...)
+    invoke_hook(sched, error_handler, sched._fn[name], sched, ...)
+end
+
+
 --- @param sched task.scheduler
 local function scheduler_step_ready_task(sched)
     local t = dqueue_pop_front("_tnext", "_tprev", sched._q_ready)
     if not t then
         return false
     end
+
+    if not t:isready() then
+        error(string.format("Task (%s) not ready", t))
+    end
+
+    assert_same_scheduler(sched, t)
     sched._running = t
     task_step(t)
     sched._running = false
@@ -986,7 +1067,38 @@ local function scheduler_step_ready_task(sched)
 end
 
 
---- @param num_steps integer
+local function scheduler_resume_blocked_task(sched, task, ...)
+    assert_same_scheduler(sched, task)
+    sched._running = task
+    task_resume(task, ...)
+    sched._running = false
+end
+
+
+--- @param eventname string
+--- @param func function
+function __scheduler:fn(eventname, func)
+    if not scheduler_events[eventname] then
+        return
+    end
+    local cblist = self._fn[eventname]
+    if cblist then
+        cblist[func] = true
+    else
+        self._fn[eventname] = { [func] = true }
+    end
+end
+
+--- @param eventname string
+--- @param func function
+function __scheduler:delfn(eventname, func)
+    local cblist = self._fn[eventname]
+    if cblist then
+        cblist[func] = nil
+    end
+end
+
+--- @param num_steps? integer
 function __scheduler:step(num_steps)
     dqueue_splice("_tnext", "_tprev", self._q_ready, self._q_yield)
     if num_steps and num_steps > 0 then
@@ -999,10 +1111,28 @@ function __scheduler:step(num_steps)
         until not hasmore
     end
     dqueue_splice("_tnext", "_tprev", self._q_ready, self._q_yield)
+    run_sched_hook(self, "step")
+    return self._num_tasks
+end
+
+--- @param task task
+--- @param ... any
+function __scheduler:resume(task, ...)
+    if co_running() == task._thread then
+        error("Resume current task")
+    end
+
+    task_prepare_resume(task)
+    scheduler_resume_blocked_task(self, task, ...)
+
+    repeat until not scheduler_step_ready_task(self)
+    dqueue_splice("_tnext", "_tprev", self._q_ready, self._q_yield)
+    run_sched_hook(self, "step")
     return self._num_tasks
 end
 
 --- @param func async fun(...):...
+--- @return task
 function __scheduler:spawn(func, ...)
     local t = new_task(func, _pack(...))
     t._sched = self
@@ -1011,11 +1141,24 @@ function __scheduler:spawn(func, ...)
     self._num_ready = self._num_ready + 1
     self._tasks[t] = true
     register_task(t)
+    run_sched_hook(self, "spawn", t)
     return t
 end
 
+local scheduler_resume = __scheduler.resume
 local scheduler_spawn = __scheduler.spawn
 
+
+--- @param ... any
+function __task:resume(...)
+    local sched = assert_task_scheduler(self)
+    return scheduler_resume(sched, self, ...)
+end
+
+function __task:spawn(func, ...)
+    local sched = assert_task_scheduler(self)
+    return scheduler_spawn(sched, func, ...)
+end
 
 function __scheduler:current()
     local t = self._running
@@ -1113,6 +1256,7 @@ local function new_scheduler()
         _running = false,
         _num_tasks = 0,
         _num_ready = 0,
+        _fn = {},
         _tasks = {},
     }
 
@@ -1179,6 +1323,7 @@ local signal_mt = {
     __name = "task.signal",
     __tostring = ud_tostring,
     __index = __signal,
+    __call = __signal.post,
 }
 
 
@@ -1289,6 +1434,7 @@ local event_mt = {
     __name = "task.event",
     __tostring = ud_tostring,
     __index = __event,
+    __call = __event.post,
 }
 
 
@@ -1619,14 +1765,33 @@ end
 --- @param value any
 --- @return boolean
 local function rq_push(q, value)
-    if q.n == q.c then
+    local n, c = q.n, q.c
+    if n == c then
         return false
     end
 
-    q.n = q.n + 1
-    local idx = (q.w + 1) % q.c
+    local idx = (q.w + 1) % c
+    q.w = idx
+    q.n = n + 1
+    q[idx + 1] = value
+
+    return true
+end
+
+--- @param q _ring_queue
+--- @param value any
+--- @return boolean
+local function rq_push_wrap(q, value)
+    local n, c = q.n, q.c
+    local idx = (q.w + 1) % c
     q.w = idx
     q[idx + 1] = value
+
+    if n == c then
+        q.r = idx
+    else
+        q.n = n + 1
+    end
 
     return true
 end
@@ -1664,6 +1829,14 @@ function __bqueue:post(value)
             error("Attempt to post in closed queue")
         end
     end
+end
+
+function __bqueue:postforce(value)
+    if not self._q then
+        error("Attempt to push after cancel")
+    end
+    rq_push_wrap(self._q, value)
+    waitlist_wakeup_one(self._rx, 0)
 end
 
 function __bqueue:trypost(value)
@@ -1734,6 +1907,80 @@ local function new_bqueue(capacity)
 
     --- @cast bq task.bqueue
     return setmetatable(bq, bqueue_mt)
+end
+
+--- @param value any
+function __bwqueue:post(value)
+    if not self._q then
+        error("Attempt to push after cancel")
+    end
+    rq_push_wrap(self._q, value)
+    waitlist_wakeup_one(self, 0)
+end
+
+--- @param value any
+function __bwqueue:trypost(value)
+    if not self._q then
+        return false
+    end
+    rq_push_wrap(self._q, value)
+    waitlist_wakeup_one(self, 0)
+    return true
+end
+
+--- @async
+--- @return any
+function __bwqueue:wait()
+    while self._q do
+        local hasval, value = rq_pop(self._q)
+        if hasval then
+            return value
+        end
+        waitlist_block_on(self)
+    end
+    wait_cancelled()
+end
+
+--- @return boolean
+--- @return any
+function __bwqueue:trywait()
+    local q = self._q
+    if not q then
+        return false, "cancelled"
+    end
+    return rq_pop(q)
+end
+
+function __bwqueue:iscancelled()
+    self._q = nil
+end
+
+function __bwqueue:cancel()
+    self._q = nil
+    waitlist_cancel(self)
+end
+
+local wqueue_mt = {
+    __name = "task.bounded_wrapping_queue",
+    __tostring = ud_tostring,
+    __index = __bwqueue,
+    __call = __bwqueue.post,
+}
+
+--- @return task.wqueue
+local function new_bwqueue(capacity)
+    --- @type task._bwqueue_data
+    local wq = {
+        _q = rq_init(capacity),
+        _wnext = false,
+        _wprev = false
+    }
+
+    wq._wnext = wq
+    wq._wprev = wq
+
+    --- @cast wq task.wqueue
+    return setmetatable(wq, wqueue_mt)
 end
 
 
@@ -1877,6 +2124,7 @@ local uqueue_mt = {
     __name = "task.undbounded_queue",
     __tostring = ud_tostring,
     __index = __uqueue,
+    __call = __uqueue.post,
 }
 
 
@@ -1897,6 +2145,7 @@ local function new_uqueue()
 end
 
 
+--- @class task.module
 return {
     new_scheduler = new_scheduler,
     scheduler = current_scheduler,
@@ -1907,6 +2156,7 @@ return {
     latch = new_latch,
     chan = new_chan,
     bqueue = new_bqueue,
+    bwqueue = new_bwqueue,
     uqueue = new_uqueue,
     current = current_task,
     isrunning = is_running,
