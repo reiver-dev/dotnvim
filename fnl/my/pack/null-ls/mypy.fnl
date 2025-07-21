@@ -87,24 +87,24 @@
                           params.bufname]))
    :to_temp_file true
    :multiple_files true
+   :temp_dir (.. _G.STDPATH.cache "/null-ls-tmp-mypy")
    :check_exit_code (fn [code] (<= code 2))
    :on_output (fn [params done]
                 (LOG "Mypy done" :data params)
                 (done (mypy-parse params)))})
 
 
-(fn setup []
+(fn source []
   (local lsp (require "null-ls"))
-  (local generator (lsp.generator mypy-launcher))
-  (local mypy {:name "mypy"
-               :filetypes [:python]
-               :method lsp.methods.DIAGNOSTICS
-               :generator generator})
-  (local mypy-on-save {:name "mypy-on-save"
-                       :filetypes [:python]
-                       :method lsp.methods.DIAGNOSTICS_ON_SAVE
-                       :generator generator})
-  (lsp.register [mypy mypy-on-save]))
-
-
-{: setup}
+  (local {: generator_factory
+          : make_builtin} (require "null-ls.helpers"))
+  (local mypy
+    {:name "mypy"
+     :filetypes [:python]
+     :method [lsp.methods.DIAGNOSTICS lsp.methods.DIAGNOSTICS_ON_SAVE]
+     :generator_opts mypy-launcher
+     :factory generator_factory})
+  (make_builtin mypy))
+               
+  
+(source)
