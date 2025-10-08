@@ -8,6 +8,9 @@
 --- @field _wnext self|false
 --- @field _wprev self|false
 
+--- @class (private, exact) task._wait_subject : task._wait_queue
+--- @field _wfn function(self, any, integer, any[])
+
 --- @alias task._thread_error_handler fun(thread, string): string
 --- @alias task._error_handler fun(string, integer): string
 --- @alias task._result_handler fun(boolean?, ...)
@@ -18,7 +21,7 @@
 --- @field [integer] function|false
 --- @field [function] integer
 
---- @class (private, exact) task._task_data : task._task_queue, task._wait_queue
+--- @class (private, exact) task._task_data : task._task_queue, task._wait_subject
 --- @field _thread thread
 --- @field _nargs integer
 --- @field _args any|any[]|false
@@ -60,7 +63,7 @@ local __scheduler = {}
 --- @field _fn task._hook|false
 
 --- @class (private, exact) task._nonblock_postable : function
---- @operator call():any
+--- @operator call(...):any
 
 --- @alias task.event.state "init"|"posted"|"cancelled"
 
@@ -122,6 +125,30 @@ local __bwqueue = {}
 
 --- @class (exact) task.uqueue : task._uqueue_data, task._nonblock_postable
 local __uqueue = {}
+
+--- @class (private, exact) task._race_data : task._wait_queue
+--- @field _count integer
+--- @field _polled {task._wait_subject:true}|false
+
+--- @class (private, exact) task._poll_data : task._race_data
+--- @field _args false|any[][]
+
+--- @class task.race: task._race_data, task._nonblock_postable
+local __race = {}
+
+--- @class (private, exact) task._waitany_data : task._poll_data
+
+--- @class task.waitany: task._waitany_data, task._nonblock_postable
+local __waitany = {}
+
+--- @generic T
+--- @alias task.__sequence T[]
+
+--- @class (private, exact) task._waitall_data : task._poll_data
+
+--- @class task.waitall: task._waitall_data, task._nonblock_postable
+local __waitall = {}
+
 
 
 local co_yield = coroutine.yield
@@ -421,19 +448,53 @@ end
 
 
 --- @param hook task._hook
+local function hook_compact(hook)
+    local f = 0
+    for i = 1, hook.n do
+        if not hook[i] then
+            f = i
+            break
+        end
+    end
+    if f == 0 then
+        return
+    end
+    local j = f
+    for i = (f + 1), hook.n do
+        local val = hook[i]
+        if val then
+            hook[j] = val
+            hook[val] = j
+            j = j + 1
+        end
+    end
+    for i = hook.n, hook.c + 1, -1 do
+        hook[i] = nil
+    end
+    hook.n = hook.c
+end
+
+
+--- @param hook task._hook
 --- @param func function
 local function hook_del(hook, func)
     local num = hook[func]
     if not num then
         return
     end
-    hook.c = hook.c - 1
+    local c = hook.c - 1
+    local n = hook.n
     hook[func] = nil
-    if num == hook.n then
+    if num == n then
         hook[num] = nil
-        hook.n = hook.n - 1
+        n = n - 1
     else
         hook[num] = false
+    end
+    hook.c = c
+    hook.n = n
+    if (n - c) > c then
+        hook_compact(hook)
     end
 end
 
@@ -631,7 +692,7 @@ local function waitlist_wakeup(obj, n, args)
     local val = dqueue_pop_front("_wnext", "_wprev", obj)
     while val do
         i = i + 1
-        task_do_unblock(val, n, args)
+        val._wfn(val, obj, n, args)
         val = dqueue_pop_front("_wnext", "_wprev", obj)
     end
     return i
@@ -645,7 +706,7 @@ end
 local function waitlist_wakeup_one(obj, n, args)
     local val = dqueue_pop_front("_wnext", "_wprev", obj)
     if val then
-        task_do_unblock(val, n, args)
+        val._wfn(val, obj, n, args)
         return true
     end
     return false
@@ -655,7 +716,7 @@ end
 local function task_finish(task, ...)
     local cblist = task._fn
     task._fn = false
-    hook_invoke(task, task._errh, cblist, ...)
+    hook_invoke(task, task._errh, cblist, task, ...)
     if task._q_join then
         waitlist_wakeup(task._q_join, ...)
     end
@@ -711,6 +772,15 @@ local function task_do_cancel_force(task)
     task_handle_cancel(task)
 end
 
+
+local function task_notify(task, _, n, args)
+    if n == -1 and args == "cancelled" and not task._shield then
+        task_do_cancel(task)
+    else
+        task_do_unblock(task, n, args)
+    end
+end
+
 --- @param obj task._wait_queue
 --- @return integer
 local function waitlist_cancel(obj)
@@ -718,7 +788,7 @@ local function waitlist_cancel(obj)
     local val = dqueue_pop_front("_wnext", "_wprev", obj)
     while val do
         i = i + 1
-        task_do_cancel(val)
+        val._wfn(val, obj, -1, "cancelled")
         val = dqueue_pop_front("_wnext", "_wprev", obj)
     end
     return i
@@ -1181,6 +1251,7 @@ local function new_task(func, nargs, args)
         _tprev = false,
         _wnext = false,
         _wprev = false,
+        _wfn = task_notify,
         _shield = false,
         _sched = false,
         _q_join = false,
@@ -1526,7 +1597,7 @@ function __event:post(...)
 
     waitlist_wakeup(self, n, args)
 
-    hook_invoke(self, nil, self._fn, ...)
+    hook_invoke(self, nil, self._fn, self, ...)
     self._fn = false
 end
 
@@ -1714,7 +1785,7 @@ function __sem:post(value, maxvalue)
             break
         end
         state = state - 1
-        task_do_unblock(t, 1)
+        t._wfn(t, self, 1, 1)
     end
 
     self._state = state
@@ -2438,6 +2509,242 @@ local function new_uqueue()
 end
 
 
+local function _race_close_late(parent, tbl)
+    local pcall = pcall
+    for _, v in tbl, next do
+        local close = v.close
+        if close then
+            local ok, err = pcall(close, v)
+            if not ok then
+                report_callback_error(parent, v, err)
+            end
+        end
+    end
+end
+
+
+local function _race_add(self, obj)
+    obj:fn(self)
+    self._count = self._count + 1
+end
+
+
+local function _race_del(self, obj)
+    local p = self._polled
+    if not p or not p[obj] then
+        return false
+    end
+    p[obj] = nil
+    obj:delfn(self)
+    self._count = self._count - 1
+    return true
+end
+
+
+local function _race_wait(self)
+    return waitlist_block_on(self)
+end
+
+
+local function _race_reset(self)
+    for _, v in self._polled do
+        v:delfn(self)
+    end
+    self._count = 0
+    self._polled = false
+end
+
+
+local function _race_react(self, obj, ...)
+    local p = self._polled
+    if not p or not p[obj] then
+        return
+    end
+    obj:delfn(self)
+    self.__count = self.__count - 1
+    _race_close_late(self, p)
+    waitlist_wakeup(self, _pack(...))
+end
+
+
+__race.add = _race_add
+__race.del = _race_del
+__race.wait = _race_wait
+__race.reset = _race_reset
+
+
+local race_mt = {
+    __name = "task.race",
+    __tostring = ud_tostring,
+    __index = __race,
+    __call = _race_react,
+}
+
+--- @return task.race
+local function new_race(...)
+    local n = select("#", ...)
+    local polled = n ~= 0 and {}
+
+    if n then
+        for _, obj in ipairs { ... } do
+            polled[obj] = true
+        end
+    end
+
+    --- @type task.race
+    local t
+    t = {
+        _count = n,
+        _polled = polled,
+        _wnext = false,
+        _wprev = false,
+        _wfn = _race_react,
+    }
+    t._wnext = t
+    t._wprev = t
+
+    return setmetatable(t, race_mt)
+end
+
+local function _poll_react(self, obj, ...)
+    local p = self._polled
+    if not p or not p[obj] then
+        return
+    end
+    obj:delfn(self)
+    self.__count = self.__count - 1
+    local args = self._args
+    local result = { ..., n = select("#", ...), source = obj }
+    if not args then
+        args = { result }
+        self._args = args
+    else
+        args[#args + 1] = result
+    end
+end
+
+
+local function _waitany_react(self, obj, ...)
+    _poll_react(self, obj, ...)
+    waitlist_wakeup(self, 0)
+end
+
+
+local function _poll_wait(self)
+    if not self._args then
+        waitlist_block_on(self)
+    end
+    local args = self._args
+    self._args = false
+    return args
+end
+
+
+local function _poll_cancel(self)
+    for _, v in self._polled do
+        v:delfn(self)
+        v:close()
+    end
+end
+
+
+__waitany.add = _race_add
+__waitany.del = _race_del
+__waitany.wait = _poll_wait
+__waitany.reset = _race_reset
+__waitany.close = _poll_cancel
+
+
+local waitany_mt = {
+    __name = "task.waitany",
+    __tostring = ud_tostring,
+    __index = __waitany,
+    __call = _waitany_react,
+}
+
+local function new_waitany(...)
+    local n = select("#", ...)
+    local polled = n ~= 0 and {}
+
+    if n then
+        for _, obj in ipairs { ... } do
+            polled[obj] = true
+        end
+    end
+
+    --- @type task.waitany
+    local t
+    t = {
+        _count = n,
+        _polled = polled,
+        _wnext = false,
+        _wprev = false,
+        _wfn = _waitany_react,
+        _args = false,
+    }
+    t._wnext = t
+    t._wprev = t
+
+    return setmetatable(t, waitany_mt)
+end
+
+
+--- @param self task._waitall_data
+local function _waitall_react(self, obj, ...)
+    _poll_react(self, obj, ...)
+    if self._count == 0 then
+        self._args = false
+        waitlist_wakeup(self, 0)
+    end
+end
+
+
+__waitall.add = _race_add
+__waitall.del = _race_del
+__waitall.wait = _poll_wait
+__waitall.reset = _race_reset
+__waitall.close = _poll_cancel
+
+
+function __waitall:reset()
+    self._args = false
+    _race_reset(self)
+end
+
+local waitall_mt = {
+    __name = "task.waitall",
+    __tostring = ud_tostring,
+    __index = __waitall,
+    __call = _waitall_react,
+}
+
+local function new_waitall(...)
+    local n = select("#", ...)
+    local polled = n ~= 0 and {}
+
+    if n then
+        for _, obj in ipairs { ... } do
+            polled[obj] = true
+        end
+    end
+
+    --- @type task.waitall
+    local t
+    t = {
+        _count = n,
+        _polled = polled,
+        _wnext = false,
+        _wprev = false,
+        _wfn = _waitall_react,
+        _args = false,
+    }
+    t._wnext = t
+    t._wprev = t
+
+    return setmetatable(t, waitall_mt)
+end
+
+
 --- @class task.module
 return {
     new_scheduler = new_scheduler,
@@ -2451,6 +2758,9 @@ return {
     bqueue = new_bqueue,
     bwqueue = new_bwqueue,
     uqueue = new_uqueue,
+    race = new_race,
+    waitany = new_waitany,
+    waitall = new_waitall,
     current = current_task,
     isrunning = is_running,
     yield = task_yield_reply_yield,
