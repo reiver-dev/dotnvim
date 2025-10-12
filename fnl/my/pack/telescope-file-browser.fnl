@@ -27,7 +27,7 @@
 
 (fn shellslash-entry-maker []
   (local base-entry-maker (require "telescope._extensions.file_browser.make_entry"))
-  (local base-opts {:entry_cache {}})
+  (local base-opts {:_entry_cache {}})
   (fn [opts]
     (local make-entry (base-entry-maker (vim.tbl_extend :force base-opts opts)))
     (update-separator-mt make-entry)
