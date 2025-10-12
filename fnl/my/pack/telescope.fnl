@@ -58,11 +58,13 @@
            :q actions.close}
        :i {:<C-g> actions.close
            :<C-c> actions.close
-           :<C-f> false
+           :<C-a> false
+           :<C-b> false
            :<C-d> false
-           :<C-u> false
            :<C-e> false
+           :<C-f> false
            :<C-h> false
+           :<C-u> false
            :<M-u> actions.preview_scrolling_up
            :<M-d> actions.preview_scrolling_down}}
       :prompt_prefix "❯ "
