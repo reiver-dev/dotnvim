@@ -87,12 +87,27 @@
   (vim.lsp.stop_client (get-clients)))
 
 
+(fn load-capabilities [name]
+  (local f (io.open (vim.fs.joinpath _G.STDPATH.state
+                                     "my"
+                                     (.. "lsp-cap-" name ".json"))
+                    "r"))
+  (when f
+    (local (data err) (f:read "*all")) 
+    (f:close)
+    (when err (error err))
+    (vim.json.decode data)))
+
+
+
 (fn setup []
   (each [mode keys (pairs keymap)]
     (each [key action (pairs keys)]
       (vim.keymap.set mode key
                       #(_T "my.lsp.handlers" action)
-                      {:desc (.. "my.lsp.handlers::" action)}))))
+                      {:desc (.. "my.lsp.handlers::" action)})))
+  (case (load-capabilities "cmp")
+    cap (vim.lsp.config :* cap)))
 
 
 {: on-attach 

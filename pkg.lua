@@ -26,8 +26,8 @@ pkg {
 }
 
 pkg {
-    name = "neodev.nvim",
-    url = "folke/neodev.nvim",
+    name = "lazydev.nvim",
+    url = "folke/lazydev.nvim",
 }
 
 pkg {
@@ -61,6 +61,7 @@ pkg {
     url = "hrsh7th/cmp-nvim-lsp",
     after = {"cmp"},
     opt = true,
+    run = function() _T("my.pack.cmp-lsp", "reset") end,
     config = function() _T("my.pack.cmp-lsp", "setup") end,
 }
 
@@ -199,11 +200,11 @@ pkg {
 pkg {
     name = "lspconfig",
     url = "neovim/nvim-lspconfig",
-    module = {"lspconfig"},
-    cmd = {"LspInfo", "LspStart", "LspStop", "LspRestart"},
-    requires = {"cmp-lsp"},
-    config = function() _T("my.pack.lspconfig", "setup") end,
-    opt = true,
+    config = function()
+        package.preload.lspconfig = function(...)
+            error("[LOAD PROHIBITED] " .. vim.inspect{...})
+        end
+    end,
 }
 
 pkg {
