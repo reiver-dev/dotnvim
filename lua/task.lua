@@ -73,8 +73,16 @@ local __event = {}
 --- @class (exact) task.signal : task._wait_queue, task._nonblock_postable
 local __signal = {}
 
+
+--- @class (exact) task._flag_data : task._wait_queue, task._nonblock_postable
+--- @field _state integer
+
+--- @class (exact) task.flag : task._flag_data
+local __flag = {}
+
 --- @class (private, exact) task._sem_data : task._wait_queue
 --- @field _state integer
+--- @field _limit integer
 
 --- @class task.sem : task._sem_data
 local __sem = {}
@@ -759,7 +767,7 @@ end
 local function task_do_cancel(task)
     waitlist_detach(task)
     if task._shield then
-        task_do_unblock(task, -1, "cancelled")
+        task_do_unblock(task, -3, "cancelled")
         return
     end
     task_handle_cancel(task)
@@ -774,7 +782,7 @@ end
 
 
 local function task_notify(task, _, n, args)
-    if n == -1 and args == "cancelled" and not task._shield then
+    if not n and not task._shield then
         task_do_cancel(task)
     else
         task_do_unblock(task, n, args)
@@ -788,7 +796,7 @@ local function waitlist_cancel(obj)
     local val = dqueue_pop_front("_wnext", "_wprev", obj)
     while val do
         i = i + 1
-        val._wfn(val, obj, -1, "cancelled")
+        val._wfn(val, obj, false)
         val = dqueue_pop_front("_wnext", "_wprev", obj)
     end
     return i
@@ -923,7 +931,7 @@ end
 --- @params ... any
 --- @return any
 local function task_yield_reply_scheduler_call(fn, ...)
-    return co_yield(6, fn, ...)
+    return co_yield(7, fn, ...)
 end
 
 
@@ -1523,6 +1531,45 @@ local function spawn(func, ...)
 end
 
 
+--- @param self {_fn: task._hook|false}
+--- @param func function
+local function object_hook_add(self, func)
+    if not _iscallable(func) then
+        error(_expected_callable_error_msg(func))
+    end
+    local cbt = self._fn
+    if cbt then
+        hook_add(cbt, func)
+        return
+    end
+    self._fn = hook_init(func)
+end
+
+
+--- @param self {_fn: task._hook|false}
+--- @param func function
+local function object_hook_del(self, func)
+    local cbt = self._fn
+    if cbt then
+        hook_del(cbt, func)
+    end
+end
+
+
+--- @param self {_fn: task._hook|false}
+--- @param ... any
+local function object_hook_post(self, ...)
+    hook_invoke(self, nil, self._fn, self, ...)
+    self._fn = false
+end
+
+
+local function object_hook_cancel(self)
+    hook_invoke(self, nil, self._fn, self, nil, "cancelled")
+    self._fn = false
+end
+
+
 --- @param ... any
 --- @return integer
 function __signal:post(...)
@@ -1585,6 +1632,90 @@ local function new_signal()
 end
 
 
+--- @return integer
+function __flag:post()
+    self._state = 1
+    return waitlist_wakeup(self, 1, true)
+end
+
+--- @return boolean
+function __flag:wait()
+    local s = self._state
+    if s == 0 then
+        return waitlist_block_on(self)
+    elseif s == 1 then
+        return true
+    end
+    return wait_cancelled()
+end
+
+--- @return boolean|nil, string?
+function __flag:pwait()
+    local s = self._state
+    if s == 0 then
+        return waitlist_block_on(self)
+    elseif s == 1 then
+        return true
+    end
+    return _task_result_cancelled()
+end
+
+
+function __flag:trywait()
+    local s = self._state
+    if s == 0 then
+        return false
+    elseif s == 1 then
+        return true
+    end
+    return wait_cancelled()
+end
+
+
+--- @return boolean|nil, string?
+function __flag:trypwait()
+    local s = self._state
+    if s == 0 then
+        return false
+    elseif s == 1 then
+        return true
+    end
+    return _task_result_cancelled()
+end
+
+
+function __flag:close()
+    self._state = -1
+    waitlist_cancel(self)
+end
+
+
+function __flag:reset()
+    self._state = 0
+    waitlist_cancel(self)
+end
+
+
+local flag_mt = {
+    __name = "task.flag",
+    __tostring = ud_tostring,
+    __index = __flag,
+    __call = __flag.post,
+}
+
+
+local function new_flag()
+    local f = {
+        _wnext = false,
+        _wprev = false,
+        _state = 0,
+    }
+    f._wnext = f
+    f._wprev = f
+    return setmetatable(f, flag_mt)
+end
+
+
 --- @param ... any
 function __event:post(...)
     if self._state ~= 0 then
@@ -1597,8 +1728,7 @@ function __event:post(...)
 
     waitlist_wakeup(self, n, args)
 
-    hook_invoke(self, nil, self._fn, self, ...)
-    self._fn = false
+    object_hook_post(self, ...)
 end
 
 --- @async
@@ -1656,6 +1786,7 @@ end
 function __event:close()
     self._state = -1
     waitlist_cancel(self)
+    object_hook_cancel(self)
 end
 
 --- @return boolean
@@ -1670,31 +1801,29 @@ end
 
 --- @param func function
 function __event:fn(func)
-    if not _iscallable(func) then
-        error(_expected_callable_error_msg(func))
+    if self._state == 0 then
+        object_hook_add(self, func)
     end
-    local cbt = self._fn
-    if cbt then
-        hook_add(cbt, func)
+    if self._state == -1 then
+        hook_invoke_1(self, nil, func, self, nil, "cancelled")
         return
     end
-    self._fn = hook_init(func)
+    local n = self._state - 4
+    local args = self._args
+    hook_invoke_1(self, nil, func, self, _unpack(n, args))
 end
 
 --- @param func function
 function __event:delfn(func)
-    local cbt = self._fn
-    if cbt then
-        hook_del(cbt, func)
-    end
+    object_hook_del(self, func)
 end
 
 function __event:reset()
     self._state = -1
     waitlist_cancel(self)
+    object_hook_cancel(self)
     self._state = 0
     self._args = false
-    self._fn = false
 end
 
 --- @return task.event.state
@@ -1760,19 +1889,20 @@ local function _posint(value, default)
 end
 
 
-
-function __sem:post(value, maxvalue)
+--- @param value integer
+function __sem:post(value)
     local state = self._state
     if state < 0 then
         return -1
     end
 
     local v = _posint(value, 0)
-    if v <= 0 then
+    if v == 0 then
         return state
     end
 
-    local mv = _posint(maxvalue, 0)
+
+    local mv = self._limit
     if mv > 0 then
         state = _max(state + v, mv)
     else
@@ -1780,12 +1910,10 @@ function __sem:post(value, maxvalue)
     end
 
     while state > 0 do
-        local t = dqueue_pop_front("_wnext", "_wprev", self)
-        if not t then
+        if not waitlist_wakeup_one(self, 1, 1) then
             break
         end
         state = state - 1
-        t._wfn(t, self, 1, 1)
     end
 
     self._state = state
@@ -1841,10 +1969,11 @@ function __sem:close()
 end
 
 --- @param self task.sem
-function __sem:reset(value)
+function __sem:reset(value, limit)
     self._state = -1
     waitlist_cancel(self)
     self._state = _posint(value, 0)
+    self._limit = _posint(limit, 0)
 end
 
 --- @return boolean
@@ -1870,12 +1999,13 @@ local sem_mt = {
 
 
 --- @return task.sem
-local function new_sem(state)
+local function new_sem(state, limit)
     --- @type task._sem_data
     local s = {
         _wnext = false,
         _wprev = false,
         _state = _posint(state, 0),
+        _limit = _posint(limit, 0)
     }
     s._wnext = s
     s._wprev = s
@@ -1935,13 +2065,13 @@ function __latch:trypwait()
     return state == 0
 end
 
---- @param self task.sem
+--- @param self task.latch
 function __latch:close()
     self._state = -1
     waitlist_cancel(self)
 end
 
---- @param self task.sem
+--- @param self task.latch
 function __latch:reset(value)
     self._state = -1
     waitlist_cancel(self)
@@ -2563,7 +2693,7 @@ local function _race_react(self, obj, ...)
     obj:delfn(self)
     self.__count = self.__count - 1
     _race_close_late(self, p)
-    waitlist_wakeup(self, _pack(...))
+    waitlist_wakeup(self, _pack(obj, ...))
 end
 
 
@@ -2751,6 +2881,7 @@ return {
     scheduler = current_scheduler,
     spawn = spawn,
     signal = new_signal,
+    flag = new_flag,
     event = new_event,
     sem = new_sem,
     latch = new_latch,
