@@ -43,7 +43,7 @@
 
 
 (fn strip [text]
-  (when text (path.rtrim text #(isws ($1:byte $2)))))
+  (if text (path.rtrim text #(isws ($1:byte $2))) ""))
                             
 
 (fn find-git-head [dir]
