@@ -12,11 +12,11 @@
     (values str ...)))
 
 
-(fn shellslash-patch []
-  (local utils (require "nvim-treesitter.utils"))
-  (each [_ name (ipairs [:get_package_path :get_site_dir :get_cache_dir])]
-    (let [func (. utils name)]
-      (tset utils name (fn [] (shellslash-normalize (func)))))))
+; (fn shellslash-patch []
+;   (local utils (require "nvim-treesitter.utils"))
+;   (each [_ name (ipairs [:get_package_path :get_site_dir :get_cache_dir])]
+;     (let [func (. utils name)]
+;       (tset utils name (fn [] (shellslash-normalize (func)))))))
 
 
 (local disabled-langs
@@ -38,8 +38,8 @@
 
 
 (fn configure []
-  (when (= 1 (vim.fn.has "win32")) (shellslash-patch))
-  (local ts (require "nvim-treesitter.configs"))
+  ;; (when (= 1 (vim.fn.has "win32")) (shellslash-patch))
+  (local ts (require "nvim-treesitter.config"))
   (ts.setup
     {:highlight {:enable true
                  :disable disable-highlight?}

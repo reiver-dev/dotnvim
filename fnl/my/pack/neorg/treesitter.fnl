@@ -1,7 +1,7 @@
 ;;; Tree-sitter parsers for neorg
 
 (fn setup []
-  (local pcfg (_T :nvim-treesitter.parsers :get_parser_configs))
+  (local pcfg (require :nvim-treesitter.parsers))
 
   (set pcfg.norg
        {:install_info
