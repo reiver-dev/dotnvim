@@ -2,21 +2,23 @@
 
 local pkg = ...
 
-pkg {
-    name = "packer.nvim",
-    url = "wbthomason/packer.nvim",
-    opt = true,
-}
+if not vim.pack then
+    pkg {
+        name = "fennel",
+        url = "bakpakin/Fennel",
+        opt = true,
+        rtp = "rtp",
+        run = function()
+            vim.schedule(_F("bootstrap.fennel.ensure_compiler", "setup", {force = true}))
+        end,
+    }
 
-pkg {
-    name = "fennel",
-    url = "bakpakin/Fennel",
-    opt = true,
-    rtp = "rtp",
-    run = function()
-        vim.schedule(_F("bootstrap.fennel.ensure_compiler", "setup", {force = true}))
-    end,
-}
+    pkg {
+        name = "packer.nvim",
+        url = "wbthomason/packer.nvim",
+        opt = true,
+    }
+end
 
 pkg {
     name = "conjure",
@@ -257,11 +259,6 @@ pkg {
     url = "nvim-treesitter/nvim-treesitter-textobjects",
 }
 
-pkg {
-    name = "nvim-treesitter-playground",
-    url = "nvim-treesitter/playground",
-}
-
 -- File-specific
 
 pkg {
@@ -427,7 +424,7 @@ pkg {
 
 pkg {
     name = "prettier-quickfix",
-    url = "https://gitlab.com/yorickpeterse/nvim-pqf",
+    url = "yorickpeterse/nvim-pqf",
     config = function() _T("pqf", "setup") end,
 }
 
@@ -480,15 +477,15 @@ pkg {
 
 pkg {
     name = "happyhacking-theme",
-    url = "https://gitlab.com/yorickpeterse/happy_hacking.vim",
+    url = "yorickpeterse/happy_hacking.vim",
 }
 
 pkg {
     name = "grey-theme",
-    url = "https://gitlab.com/yorickpeterse/nvim-grey",
+    url = "yorickpeterse/nvim-grey",
 }
 
 pkg {
     name = "paper-theme",
-    url = "https://gitlab.com/yorickpeterse/vim-paper",
+    url = "yorickpeterse/vim-paper",
 }

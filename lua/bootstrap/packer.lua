@@ -115,6 +115,24 @@ local function refresh()
 end
 
 
+--- @param plug vim.pack.PlugData
+--- @retrn string
+local function pack_name(plug)
+    return plug.spec.name or vim.fs.basename(plug.path)
+end
+
+
+--- @return {string:vim.pack.PlugData}
+local function pack_plugins()
+    if not vim.pack then return {} end
+    local plugs = {}
+    for _, p in ipairs(vim.pack.get()) do
+        plugs[pack_name(p)] = p
+    end
+    return plugs
+end
+
+
 local function open_dir(plugin_names, command_mods)
     local packer_plugins = _G.packer_plugins
     for _, name in ipairs(plugin_names) do
@@ -127,11 +145,44 @@ local function open_dir(plugin_names, command_mods)
             )
         end
     end
+    local plugs = pack_plugins()
+    for _, name in ipairs(plugin_names) do
+        local plugin = plugs[name]
+        if plugin then
+            vim.cmd(
+                (command_mods or "")
+                .. " split "
+                .. vim.fn.fnameescape(plugin.path)
+            )
+        end
+    end
+end
+
+
+local function plugin_complete(prefix)
+    local packer_plugins = _T("packer", "plugin_complete", prefix)
+    if vim.pack then
+        local pp = {}
+        local i = 1
+        for _, p in ipairs(vim.pack.get()) do
+            local name = pack_name(p)
+            if vim.startswith(name, prefix) then
+                pp[i] = name
+                i = i + 1
+            end
+        end
+        table.sort(pp)
+        local i = #packer_plugins
+        for _, p in ipairs(pp) do
+            packer_plugins[i] = p
+            i = i + 1
+        end
+    end
+    return packer_plugins
 end
 
 
 local function setup()
-    local plugin_complete = _F("packer", "plugin_complete")
     local make_command = function(name)
         return function(opts)
             refresh()

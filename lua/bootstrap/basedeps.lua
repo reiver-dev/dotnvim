@@ -5,12 +5,13 @@ local modules = require("bootstrap.modules")
 local fn = vim.fn
 
 ---@type string
-local packages = fn.stdpath("data"):gsub("\\", "/") .. "/site/pack/packer"
+local packages = fn.stdpath("data"):gsub("\\", "/") .. "/site/pack/core"
 
 local packer_root = packages .. "/opt/packer.nvim"
 local fennel_root = packages .. "/opt/fennel"
 
 
+---@param name string
 ---@param source string
 ---@param dest string
 ---@return boolean
@@ -20,6 +21,104 @@ local function download(source, dest)
         return true
     end
     return false
+end
+
+
+---@param path string
+local function ensure_rtp(path)
+    ---@diagnostic disable-next-line: undefined-field
+    vim.opt.runtimepath:append(path)
+end
+
+
+local _pack_event = {}
+
+
+local function pack_event(spec, ev)
+    local data = spec.data
+
+    if data.install then
+        if ev == "install" then
+            data.install() 
+        end
+    end
+
+    if data.run then
+        if ev == "install" or ev == "update" then
+            data.run()
+        end
+    end
+
+    if data.config then
+        data.config()
+    end
+end
+
+
+---@param ev any
+local function pack_hook(ev)
+    print("EV", vim.inspect(ev))
+    ---@type vim.pack.PlugData
+    local evd = ev.data
+    local spec = evd.spec
+    if spec.data then
+        pack_event(spec, evd.kind)
+    else
+        _pack_event[spec.name] = evd.kind
+    end
+end
+
+
+local function pack_load(pack)
+    local spec = pack.spec
+
+    if not spec.data then
+        _pack_event[spec.name] = nil
+        return
+    end
+
+    local ev = _pack_event[spec.name]
+    if not ev then
+        return
+    end
+
+    pack_event(spec, ev)
+end
+
+
+local function pack_add()
+    vim.pack.add(
+        {
+            {
+                name = "fennel",
+                src = "https://github.com/bakpakin/Fennel",
+                data = {
+                    run = function()
+                        modules.load_package("fennel")
+                        require "bootstrap.fennel.ensure_compiler".setup { force = true }
+                    end,
+                    config = function()
+                        modules.eval_after_load("fennel", function()
+                            ensure_rtp(fennel_root .. "/rtp")
+                        end)
+                    end
+                },
+            },
+            {
+                name = "packer.nvim",
+                src = "https://github.com/wbthomason/packer.nvim",
+                data = {
+                    install = function()
+                        vim.cmd("packadd packer.nvim")
+                    end,
+                },
+            },
+        },
+        {
+            load = pack_load,
+            confirm = false,
+        }
+    )
 end
 
 
@@ -62,25 +161,27 @@ local function ensure_plugin_loaders(package_name, module_name)
 end
 
 
----@param path string
-local function ensure_rtp(path)
-    ---@diagnostic disable-next-line: undefined-field
-    vim.opt.runtimepath:append(path)
-end
-
-
 local function setup()
-    if download("https://github.com/wbthomason/packer.nvim", packer_root) then
-        vim.cmd("packadd packer.nvim")
-    end
+    if vim.pack then
+        vim.api.nvim_create_autocmd("PackChanged", {
+            group = vim.api.nvim_create_augroup("my.pack", {clear = true}),
+            pattern = "*",
+            callback = pack_hook,
+        })
+        pack_add()
+    else
+        if download("https://github.com/wbthomason/packer.nvim", packer_root) then
+            vim.cmd("packadd packer.nvim")
+        end
 
-    modules.eval_after_load("fennel", function()
-        ensure_rtp(fennel_root .. "/rtp")
-    end)
+        modules.eval_after_load("fennel", function()
+            ensure_rtp(fennel_root .. "/rtp")
+        end)
 
-    if download("https://github.com/bakpakin/Fennel", fennel_root) then
-        vim.cmd("packadd fennel")
-        require "bootstrap.fennel.ensure_compiler".setup()
+        if download("https://github.com/bakpakin/Fennel", fennel_root) then
+            vim.cmd("packadd fennel")
+            require "bootstrap.fennel.ensure_compiler".setup()
+        end
     end
 
     ensure_plugin_loaders("packer.nvim", "packer")
