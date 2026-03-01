@@ -8,17 +8,18 @@
   (when err (error err)))
   
 
-(fn reset-impl []
+(fn reset-impl [pkg]
+  (LOAD_PACKAGE pkg.spec.name)
   (local caps (vim.json.encode (_T :cmp_nvim_lsp :default_capabilities)
                                {:indent "  "}))
   (vim.fn.mkdir PARDIR "p")
   (spew PATH caps))
                   
 
-(fn reset []
+(fn reset [pkg]
   (if (vim.in_fast_event)
-    (vim.schedule reset-impl))
-  (reset-impl))
+    (vim.schedule (fn [] (reset-impl pkg))))
+  (reset-impl pkg))
 
 
 (fn setup [])

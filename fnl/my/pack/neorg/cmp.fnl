@@ -6,7 +6,7 @@
 
 
 (fn setup []
-  (when _G.packer_plugins :neorg
+  (when (_T :my.pack :installed? :neorg)
     (_T :my.pack.neorg.autoload :run
         :cmp load-cmp)))
 

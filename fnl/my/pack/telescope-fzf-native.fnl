@@ -7,29 +7,6 @@
       (table.concat subcommand " ")) " && "))
   
 
-(fn start [command cwd]
-  (let [bufnr (vim.api.nvim_create_buf true true)
-        opts {:cwd cwd
-              :on_exit (fn [jobid data event]
-                         (vim.notify (string.format "Telescope FZF build exited: %d" data)))}]
-    (vim.cmd (string.format ":vertical botright sbuffer %d" bufnr))
-    (vim.fn.termopen command opts)))
-
-
-(fn keep-window-finalize [oldwin ok ...]
-  (vim.api.nvim_set_current_win oldwin)
-  (when (not ok) (error ...))
-  ...)
-
-
-(fn keep-window [func ...]
-  (let [curwin (vim.api.nvim_get_current_win)
-        argc (select :# ...)
-        argv [...]]
-    (keep-window-finalize
-      curwin (xpcall #(func (unpack argv 1 argc)) debug.traceback))))
-
-
 (local build-command
   (if
     (= 1 (vim.fn.has :win32))
@@ -45,11 +22,10 @@
 
 
 (fn compile-library [plugin]
-  (vim.notify "Building telescope fzf lib")
-  (local path (if plugin
-                plugin.install_path
-                (?. _G :packer_plugins :telescope-fzf-native :path)))
-  (keep-window start (shell-join build-command) path))
+  (local name (if plugin plugin.spec.name "UNDEFINED"))
+  (local path (if plugin plugin.path "UNDEFINED"))
+  (vim.notify (string.format "Building `%s` in `%s`" name path))
+  (_T :my.pack :start name (shell-join build-command) path))
 
 
 (fn setup []

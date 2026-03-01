@@ -123,8 +123,8 @@ end
 
 
 local function setup()
-    table.insert(package.loaders, 3, module_searcher)
-    table.insert(package.loaders, 2, expedite_cached_searcher)
+    table.insert(package.loaders, 3, expedite_cached_searcher)
+    table.insert(package.loaders, #package.loaders - 3 + 1, module_searcher)
 end
 
 

@@ -23,42 +23,83 @@ local function is_in_rtp(name)
     return nil
 end
 
+---@param path string
+local function source_after(name)
+    local pkgs = vim.pack.get({name}, {info = false})
+    for _, pkg in ipairs(pkgs) do
+        if pkg and pkg.path then
+            local loc = pkg.path .. "/after/plugin/**/*.{vim,lua}"
+            local after_paths = vim.fn.glob(loc, false, true)
+            for _, p in ipairs(after_paths) do
+                vim.cmd.source({ p, magic = { file = false } })
+            end
+        end
+    end
+end
 
+
+local before_load_hook = {}
 local after_load_hook = {}
+local after_any_load_hook = {}
 
 
 local function is_loaded(name)
-    local packer_plugins = _G.packer_plugins
-    if packer_plugins then
-        local pack = packer_plugins[name]
-        if pack then return pack.loaded end
-    end
     return is_in_rtp(name) ~= nil
 end
 
 
-local function eval_after_load(name, func)
+local function hook_add(hook, name, func)
     if is_loaded(name) then
         func(name)
     end
-    local hooks = after_load_hook[name]
-    if hooks == nil then
-        after_load_hook[name] = {func}
+    local cbs = hook[name]
+    if cbs == nil then
+        hook[name] = {func}
     else
-        hooks[#hooks + 1] = func
+        cbs[#cbs + 1] = func
     end
 end
 
 
-local function call_after_load(name, ...)
-    local hooks = after_load_hook[name]
-    if hooks == nil then
+local function hook_call(hook, name, ...)
+    local cbs = hook[name]
+    if cbs == nil then
         return
     end
-    for _, hook in ipairs(hooks) do
+    for _, hook in ipairs(cbs) do
         hook(name, ...)
     end
-    after_load_hook[name] = nil
+    hook[name] = nil
+end
+
+local function eval_before_load(name, func)
+    hook_add(before_load_hook, name, func)
+end
+
+
+local function call_before_load(name, ...)
+    hook_call(before_load_hook, name, ...)
+end
+
+
+local function eval_after_load(name, func)
+    hook_add(after_load_hook, name, func)
+end
+
+
+local function call_after_load(name, ...)
+    hook_call(after_load_hook, name, ...)
+end
+
+
+local function eval_any_load(func)
+    after_any_load_hook[#after_any_load_hook + 1] = func
+end
+
+local function call_any_load(...)
+    for _, cb in ipairs(after_any_load_hook) do
+        cb(...)
+    end
 end
 
 
@@ -73,7 +114,7 @@ local function loaded_packages()
 end
 
 
-local function load_direct_packages(names)
+local function load_packages(names)
     if not (names and next(names)) then
         return
     end
@@ -91,87 +132,33 @@ local function load_direct_packages(names)
         local cmddef = { cmd = "packadd", args = { "" } }
         for _, name in ipairs(non_loaded_names) do
             cmddef.args[1] = name
+            call_before_load(name)
             vim.cmd(cmddef)
             call_after_load(name)
-        end
-    end
-end
-
-
-local function load_packer_packages(names, plugins)
-    require("packer.load")(names, {}, plugins or _G.packer_plugins);
-end
-
-
-local function partition_packages(plugins, ...)
-    local managed = {}
-    local direct = {}
-    for i = 1,select("#", ...) do
-        local name = select(i, ...)
-        if type(name) == "string" and name ~= "" then
-            local plugin = plugins[name]
-            if plugin then
-                if not plugin.loaded then
-                    managed[#managed + 1] = name
-                end
-            else
-                direct[#direct + 1] = name
+            call_any_load(name)
+            if vim.v.vim_did_enter == 1 then
+                source_after(name)
             end
         end
     end
-    return managed, direct
-end
-
-
-local function load_single_package(name)
-    local plugins = _G.packer_plugins
-    if plugins and next(plugins) then
-        local plugin = plugins[name]
-        if plugin then
-            return plugin.loaded or load_packer_packages({name}, plugins)
-        end
-    end
-    load_direct_packages { name }
-end
-
-
-local function load_many_packages(...)
-    local plugins = _G.packer_plugins
-    if plugins and next(plugins) then
-        local managed, direct = partition_packages(plugins, ...)
-        if #direct > 0 then
-            load_direct_packages(direct)
-        end
-        if #managed > 0 then
-            load_packer_packages(managed, plugins)
-        end
-        return
-    end
-    return load_direct_packages({...})
 end
 
 
 local function load_package(...)
-    local n = select("#", ...)
-    if n == 0 then
-        return
-    elseif n == 1 then
-        return load_single_package(...)
-    else
-        return load_many_packages(...)
-    end
+    return load_packages({...})
 end
 
 
 local function complete_package(arg)
-    local plugins = _G.packer_plugins
+    local plugins = vim.pack.get(nil, {info = false})
     local loadable_list = {}
     local loadable = {}
     local i = 1
 
     if plugins then
-        for name, plugin in pairs(plugins) do
-            if not plugin.loaded then
+        for _, plugin in ipairs(plugins) do
+            local name = plugin.spec.name
+            if not is_loaded(name) then
                 loadable_list[i] = name
                 loadable[name] = true
                 i = i + 1
@@ -222,8 +209,13 @@ return {
     setup = setup,
     load_package = load_package,
     complete_package = complete_package,
+    is_loaded = is_loaded,
     eval_after_load = eval_after_load,
     call_after_load = call_after_load,
+    eval_before_load = eval_before_load,
+    call_before_load = call_before_load,
+    eval_after_any_load = eval_any_load,
+    call_after_any_load = call_any_load,
 }
 
 --- modules.lua ends here

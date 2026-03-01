@@ -10,14 +10,13 @@ local function setup()
 
     require("bootstrap.log").setup()
     require("bootstrap.idle").setup()
-    -- Download package manager and friends
     require("bootstrap.trampouline").setup()
-    require("bootstrap.basedeps").setup()
     require("bootstrap.modules").setup()
+    require("bootstrap.pack").setup()
+    require("bootstrap.basedeps").setup()
     require("bootstrap.fennel").setup()
     require("bootstrap.reload").setup()
     require("bootstrap.eval").setup()
-    require("bootstrap.packer").setup()
     require("my").setup()
 end
 

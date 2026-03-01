@@ -1,40 +1,33 @@
 -- Plugins initialization
 
+
 local pkg = ...
 
-if not vim.pack then
-    pkg {
-        name = "fennel",
-        url = "bakpakin/Fennel",
-        opt = true,
-        rtp = "rtp",
-        run = function()
-            vim.schedule(_F("bootstrap.fennel.ensure_compiler", "setup", {force = true}))
-        end,
-    }
-
-    pkg {
-        name = "packer.nvim",
-        url = "wbthomason/packer.nvim",
-        opt = true,
-    }
-end
+pkg {
+    name = "fennel",
+    url = "https://github.com/bakpakin/Fennel",
+    opt = true,
+    rtp = "rtp",
+    run = function()
+        vim.schedule(_F("bootstrap.fennel.ensure_compiler", "setup", {force = true}))
+    end,
+}
 
 pkg {
     name = "conjure",
-    url = "Olical/conjure",
+    url = "https://github.com/Olical/conjure",
     ft  = {"fennel"},
     opt = true,
 }
 
 pkg {
     name = "lazydev.nvim",
-    url = "folke/lazydev.nvim",
+    url = "https://github.com/folke/lazydev.nvim",
 }
 
 pkg {
     name = "which-key",
-    url = "folke/which-key.nvim",
+    url = "https://github.com/folke/which-key.nvim",
     config = function()
         local M = require("which-key.plugins.registers")
         M.registers = M.registers:gsub("[+*]", "")
@@ -44,13 +37,13 @@ pkg {
 
 pkg {
     name = "fennel.vim",
-    url = "bakpakin/fennel.vim",
+    url = "https://github.com/bakpakin/fennel.vim",
 }
 
 -- completion with nvim-cmp
 pkg {
     name = "cmp",
-    url = "hrsh7th/nvim-cmp",
+    url = "https://github.com/hrsh7th/nvim-cmp",
     keys = { {"i", "<C-x><C-x>"}, },
     event = {"InsertEnter"},
     module = {"cmp"},
@@ -60,10 +53,10 @@ pkg {
 
 pkg {
     name = "cmp-lsp",
-    url = "hrsh7th/cmp-nvim-lsp",
+    url = "https://github.com/hrsh7th/cmp-nvim-lsp",
     after = {"cmp"},
     opt = true,
-    run = function() _T("my.pack.cmp-lsp", "reset") end,
+    run = function(...) _T("my.pack.cmp-lsp", "reset", ...) end,
     config = function() _T("my.pack.cmp-lsp", "setup") end,
 }
 
@@ -71,25 +64,25 @@ pkg {
     name ="cmp-buffer",
     after = {"cmp"},
     opt = true,
-    url = "hrsh7th/cmp-buffer",
+    url = "https://github.com/hrsh7th/cmp-buffer",
 }
 
 pkg {
     name = "cmp-path",
     after = {"cmp"},
     opt = true,
-    url = "hrsh7th/cmp-path",
+    url = "https://github.com/hrsh7th/cmp-path",
 }
 pkg {
     name = "cmp-nvim-lua",
     after = {"cmp"},
     opt = true,
-    url = "hrsh7th/cmp-nvim-lua",
+    url = "https://github.com/hrsh7th/cmp-nvim-lua",
 }
 
 pkg {
     name = "cmp-conjure",
-    url = "PaterJason/cmp-conjure",
+    url = "https://github.com/PaterJason/cmp-conjure",
     opt = true,
     after = {"conjure", "cmp"},
 }
@@ -97,13 +90,13 @@ pkg {
 -- end
 pkg {
     name = "colorizer",
-    url = "catgoose/nvim-colorizer.lua",
+    url = "https://github.com/catgoose/nvim-colorizer.lua",
     config = function() _T("colorizer", "setup") end,
 }
 
 pkg {
     name = "terminal",
-    url = "norcalli/nvim-terminal.lua",
+    url = "https://github.com/norcalli/nvim-terminal.lua",
     ft = "terminal",
     config = function ()
         _T("terminal", "setup")
@@ -119,27 +112,27 @@ pkg {
 
 pkg {
     name = "popup",
-    url = "nvim-lua/popup.nvim",
+    url = "https://github.com/nvim-lua/popup.nvim",
 }
 
 pkg {
     name = "plenary",
-    url = "nvim-lua/plenary.nvim",
+    url = "https://github.com/nvim-lua/plenary.nvim",
 }
 
 pkg {
     name = "nui",
-    url = "MunifTanjim/nui.nvim",
+    url = "https://github.com/MunifTanjim/nui.nvim",
 }
 
 pkg {
     name = "parinfer-lua",
-    url = "gpanders/nvim-parinfer",
+    url = "https://github.com/gpanders/nvim-parinfer",
 }
 
 pkg {
     name = "neorg",
-    url = "nvim-neorg/neorg",
+    url = "https://github.com/nvim-neorg/neorg",
     opt = true,
     cmd = {"NeorgStart"},
     ft = "norg",
@@ -151,13 +144,13 @@ pkg {
 if false then
     pkg {
         name = "fzf",
-        url = "junegunn/fzf",
+        url = "https://github.com/junegunn/fzf",
         run = function() vim.call("fzf#install") end,
     }
 
     pkg {
         name = "fzf.vim",
-        url = "junegunn/fzf.vim",
+        url = "https://github.com/junegunn/fzf.vim",
         config = function() _T("my.pack.fzf", "setup") end,
         requires = {"fzf"},
     }
@@ -165,7 +158,7 @@ end
 
 pkg {
     name = "diffview",
-    url = "sindrets/diffview.nvim",
+    url = "https://github.com/sindrets/diffview.nvim",
     opt = true,
     cmd = (function()
         local cmds = {}
@@ -182,26 +175,26 @@ pkg {
 
 pkg {
     name = "readline.vim",
-    url = "ryvnf/readline.vim",
+    url = "https://github.com/ryvnf/readline.vim",
     event = "CmdlineEnter",
 }
 
 pkg {
     name = "snippets.nvim",
-    url = "norcalli/snippets.nvim",
+    url = "https://github.com/norcalli/snippets.nvim",
     event = "InsertCharPre",
 }
 
 pkg {
     name = "rest-client",
-    url = "NTBBloodbath/rest.nvim",
+    url = "https://github.com/NTBBloodbath/rest.nvim",
     disable = true,
 }
 
 -- LSP
 pkg {
     name = "lspconfig",
-    url = "neovim/nvim-lspconfig",
+    url = "https://github.com/neovim/nvim-lspconfig",
     config = function()
         package.preload.lspconfig = function(...)
             error("[LOAD PROHIBITED] " .. vim.inspect{...})
@@ -211,7 +204,7 @@ pkg {
 
 pkg {
     name = "none-ls",
-    url = "nvimtools/none-ls.nvim",
+    url = "https://github.com/nvimtools/none-ls.nvim",
     opt = true,
     cmd = {"NullLsLog", "NullLsInfo"},
     module = {"null-ls"},
@@ -219,7 +212,7 @@ pkg {
 
 pkg {
     name = "lsptrouble",
-    url = "folke/lsp-trouble.nvim",
+    url = "https://github.com/folke/lsp-trouble.nvim",
     event = {"DiagnosticChanged"},
     cmd = {"Trouble", "TroubleToggle", "TroubleRefresh", "TroubleClose"},
     config = function() _T("my.pack.lsptrouble", "setup") end,
@@ -227,55 +220,55 @@ pkg {
 
 pkg {
     name = "mason",
-    url = "williamboman/mason.nvim",
+    url = "https://github.com/williamboman/mason.nvim",
     config = function() _T("my.pack.mason", "setup") end
 }
 
 pkg {
     name = "lspkind",
-    url = "onsails/lspkind-nvim",
+    url = "https://github.com/onsails/lspkind-nvim",
 }
 
 -- Debugging
 pkg {
     name = "nvim-dap",
-    url = "mfussenegger/nvim-dap",
+    url = "https://github.com/mfussenegger/nvim-dap",
 }
 
 pkg {
     name = "nvim-gdb",
-    url = "sakhnik/nvim-gdb",
+    url = "https://github.com/sakhnik/nvim-gdb",
 }
 
 -- Treesitter
 pkg {
     name = "nvim-treesitter",
-    url = "nvim-treesitter/nvim-treesitter",
+    url = "https://github.com/nvim-treesitter/nvim-treesitter",
     config = function() _T("my.treesitter", "setup") end,
 }
 
 pkg {
     name = "nvim-treesitter-textobjects",
-    url = "nvim-treesitter/nvim-treesitter-textobjects",
+    url = "https://github.com/nvim-treesitter/nvim-treesitter-textobjects",
 }
 
 -- File-specific
 
 pkg {
     name = "vim-fish",
-    url = "dag/vim-fish",
+    url = "https://github.com/dag/vim-fish",
 }
 
 pkg {
     name = "python-pep8-indent",
-    url = "Vimjas/vim-python-pep8-indent",
+    url = "https://github.com/Vimjas/vim-python-pep8-indent",
     ft = {"python", "cython"},
 }
 
 -- Editing
 -- pkg {
 --     name = "langmapper",
---     url = "Wansmer/langmapper.nvim",
+--     url = "https://github.com/Wansmer/langmapper.nvim",
 --     config = function()
 --         require("langmapper").setup{}
 --     end,
@@ -283,25 +276,25 @@ pkg {
 
 pkg {
     name = "table-mode",
-    url = "dhruvasagar/vim-table-mode",
+    url = "https://github.com/dhruvasagar/vim-table-mode",
     cmd = {"Tableize", "TableModeEnable", "TableModeToggle"},
 }
 
 pkg {
     name = "tabular",
-    url = "godlygeek/tabular",
+    url = "https://github.com/godlygeek/tabular",
     cmd = {"Tabularize"},
 }
 
 pkg {
     name = "easy-align",
-    url = "junegunn/vim-easy-align",
+    url = "https://github.com/junegunn/vim-easy-align",
     cmd = {"EasyAlign"},
 }
 
 pkg {
     name = "matchup",
-    url = "andymass/vim-matchup",
+    url = "https://github.com/andymass/vim-matchup",
     config = function()
         vim.g.matchup_matchparen_offscreen = {
             method = "popup"
@@ -311,24 +304,24 @@ pkg {
 
 pkg {
     name = "nvim-surround",
-    url = "kylechui/nvim-surround",
+    url = "https://github.com/kylechui/nvim-surround",
     config = function() _T("nvim-surround", "setup") end
 }
 
 pkg {
     name = "visual-multi",
-    url = "mg979/vim-visual-multi",
+    url = "https://github.com/mg979/vim-visual-multi",
 }
 
 pkg {
     name = "comment",
-    url = "numToStr/Comment.nvim",
+    url = "https://github.com/numToStr/Comment.nvim",
     config = function() _T("Comment", "setup") end,
 }
 
 pkg {
     name = "neogen",
-    url = "danymat/neogen",
+    url = "https://github.com/danymat/neogen",
     opt = true,
     keys = {{"n", "<leader>nf"}},
     config = function() _T("my.pack.neogen", "setup") end,
@@ -336,7 +329,7 @@ pkg {
 
 pkg {
     name = "far.vim",
-    url = "brooth/far.vim",
+    url = "https://github.com/brooth/far.vim",
     cmd = {"Farr", "Farf"},
     config = function()
         vim.g["far#source"] = "rg"
@@ -346,24 +339,24 @@ pkg {
 -- VCS
 pkg {
     name = "signify",
-    url = "mhinz/vim-signify",
+    url = "https://github.com/mhinz/vim-signify",
 }
 
 pkg {
     name = "vim-fugitive",
-    url = "tpope/vim-fugitive",
+    url = "https://github.com/tpope/vim-fugitive",
 }
 
 -- Repl
 pkg {
     name = "iron.nvim",
-    url = "hkupty/iron.nvim",
+    url = "https://github.com/hkupty/iron.nvim",
 }
 
 -- Telescope
 pkg {
     name = "telescope",
-    url = "nvim-telescope/telescope.nvim",
+    url = "https://github.com/nvim-telescope/telescope.nvim",
     opt = true,
     cmd = {"Telescope"},
     module = {"telescope"},
@@ -373,7 +366,7 @@ pkg {
 
 pkg {
     name = "telescope-file-browser",
-    url = "nvim-telescope/telescope-file-browser.nvim",
+    url = "https://github.com/nvim-telescope/telescope-file-browser.nvim",
     opt = true,
     after = {"telescope"},
     keys = {{"n", "<C-x>f"}},
@@ -384,7 +377,7 @@ pkg {
 
 pkg {
     name = "telescope-fzf-native",
-    url = "nvim-telescope/telescope-fzf-native.nvim",
+    url = "https://github.com/nvim-telescope/telescope-fzf-native.nvim",
     opt = true,
     after = { "telescope" },
     run = function(...) _T("my.pack.telescope-fzf-native", "compile-library", ...) end,
@@ -394,7 +387,7 @@ pkg {
 -- FileTree
 pkg {
     name = "oil",
-    url = "stevearc/oil.nvim",
+    url = "https://github.com/stevearc/oil.nvim",
     config = function()
         _T("my.pack.oil", "setup")
     end,
@@ -403,14 +396,14 @@ pkg {
 -- Tasks
 pkg {
     name = "asyncrun",
-    url = "skywind3000/asyncrun.vim",
+    url = "https://github.com/skywind3000/asyncrun.vim",
     cmd = {"Make", "AsyncRun", "AsyncStop"},
     config = function() _T("my.pack.asyncrun", "setup") end,
 }
 
 pkg {
     name = "asynctasks",
-    url = "skywind3000/asynctasks.vim",
+    url = "https://github.com/skywind3000/asynctasks.vim",
     cmd = {"AsyncTask", "AsyncTaskList", "AsyncTaskMacro", "AsyncTaskProfile"},
     wants = {"asyncrun"},
 }
@@ -418,74 +411,74 @@ pkg {
 -- UI
 pkg {
     name = "devicons",
-    url = "kyazdani42/nvim-web-devicons",
+    url = "https://github.com/kyazdani42/nvim-web-devicons",
     config = function() _T("nvim-web-devicons", "setup") end,
 }
 
 pkg {
     name = "prettier-quickfix",
-    url = "yorickpeterse/nvim-pqf",
+    url = "https://github.com/yorickpeterse/nvim-pqf",
     config = function() _T("pqf", "setup") end,
 }
 
 pkg {
     name = "better-quickfix",
-    url = "kevinhwang91/nvim-bqf",
+    url = "https://github.com/kevinhwang91/nvim-bqf",
 }
 
 -- Theming libs
 pkg {
     name = "colorbuddy",
-    url = "tjdevries/colorbuddy.nvim",
+    url = "https://github.com/tjdevries/colorbuddy.nvim",
 }
 
 pkg {
     name = "lush",
-    url = "rktjmp/lush.nvim",
+    url = "https://github.com/rktjmp/lush.nvim",
 }
 
 -- Themes
 pkg {
     name = "darcula-solid-theme",
-    url = "briones-gabriel/darcula-solid.nvim",
+    url = "https://github.com/briones-gabriel/darcula-solid.nvim",
 }
 
 pkg {
     name = "edge-theme",
-    url = "sainnhe/edge",
+    url = "https://github.com/sainnhe/edge",
 }
 
 pkg {
     name = "kanagawa-theme",
-    url = "rebelot/kanagawa.nvim",
+    url = "https://github.com/rebelot/kanagawa.nvim",
 }
 
 pkg {
     name = "inspired-github-theme",
-    url = "mvpopuk/inspired-github.vim",
+    url = "https://github.com/mvpopuk/inspired-github.vim",
 }
 
 pkg {
     name = "papercolor-theme",
-    url = "NLKNguyen/papercolor-theme",
+    url = "https://github.com/NLKNguyen/papercolor-theme",
 }
 
 pkg {
     name = "modus-theme",
-    url = "ishan9299/modus-theme-vim",
+    url = "https://github.com/ishan9299/modus-theme-vim",
 }
 
 pkg {
     name = "happyhacking-theme",
-    url = "yorickpeterse/happy_hacking.vim",
+    url = "https://github.com/yorickpeterse/happy_hacking.vim",
 }
 
 pkg {
     name = "grey-theme",
-    url = "yorickpeterse/nvim-grey",
+    url = "https://github.com/yorickpeterse/nvim-grey",
 }
 
 pkg {
     name = "paper-theme",
-    url = "yorickpeterse/vim-paper",
+    url = "https://github.com/yorickpeterse/vim-paper",
 }

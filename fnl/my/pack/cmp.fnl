@@ -52,11 +52,15 @@
 
 
 (local mapping
-  {:<C-p> (cmp.mapping.select_prev_item)
-   :<C-n> (cmp.mapping.select_next_item)
+  {:<C-p> (cmp.mapping.select_prev_item {:behavior cmp.SelectBehavior.Select})
+   :<C-n> (cmp.mapping.select_next_item {:behavior cmp.SelectBehavior.Select})
    :<C-d> (cmp.mapping.scroll_docs -4)
    :<C-f> (cmp.mapping.scroll_docs 4)
    :<C-x><C-x> (cmp.mapping.complete)
+   :<C-l> (cmp.mapping (fn [fallback]
+                         (if (cmp.visible)
+                           (cmp.complete_common_string)
+                           (fallback))))
    :<C-e> (cmp.mapping.abort)
    :<C-y> (cmp.mapping.confirm {:select false})
    :<CR> (cmp.mapping.confirm
@@ -72,12 +76,15 @@
                         :maxwidth 50
                         :menu source-mapping})
       _ nil))
-  (cmp.setup {:mapping mapping
+
+  (cmp.setup {:preselect cmp.PreselectMode.None
+              :mapping (cmp.mapping.preset.insert mapping)
               :completion {:autocomplete false}
               :formatting {:format format-entry}
               :experimental {:ghost_text true}
-              :sources sources})
-  (when _G.packer_plugins.neorg
+              :sources (cmp.config.sources sources)})
+
+  (when (_T :my.pack :installed? :neorg)
     (_T :my.pack.neorg.cmp :setup)))
 
 
