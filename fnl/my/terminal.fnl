@@ -61,12 +61,10 @@
 
 
 (fn chdir [bufnr directory]
-  (vim.notify (string.format "bufnr: %s, directory: %s" bufnr directory))
   (_T :my.directory :force-default-directory bufnr directory))
 
 
 (fn set-title [bufnr title]
-  (print "BUFNR:" bufnr "TITLE:" title)
   (set-local bufnr "terminal" "title" title))
 
 
