@@ -247,8 +247,31 @@
   [vim.o.shell])
 
 
-(fn memoize-osc [opts]
-  (set-local 0 "terminal" "osc" opts))
+(fn hostname-valid? [host]
+  (or (= host "") (= host (vim.uv.os_gethostname))))
+
+
+(fn handle-osc7-file [payload]
+  (local (host path) (string.match payload "^file://([^/]*)(/.*)$"))
+  (when (and host (hostname-valid? host))
+    (vim.uri_to_fname (.. "file://" path))))
+
+
+(fn handle-osc [opts]
+  (set-local opts.buf "terminal" "osc" opts)
+  (local sequence opts.data.sequence)
+  (local (start stop num) (string.find sequence "^\027%](%d+);"))
+  (when (and num (= (tonumber num) 7))
+    (local path (handle-osc7-file (string.sub sequence (+ stop 1))))
+    (when path
+      (set-local opts.buf "terminal" "chdir" path))))
+
+
+(fn on-term-request [opts]
+  (local (ok err) (pcall handle-osc opts))
+  (when (not ok)
+    (vim.schedule #(vim.notify (string.format "OSC ERROR: %s\n%s" err (vim.inspect opts))
+                               vim.log.levels.ERROR))))
 
 
 (fn setup []
@@ -261,7 +284,8 @@
   (vim.api.nvim_create_autocmd
     :TermRequest
     {:group group
-     :callback memoize-osc})
+     :callback on-term-request
+     :nested true})
   (vim.api.nvim_set_keymap :v "<leader>x" ""
                            {:noremap true
                             :callback send-visual})
